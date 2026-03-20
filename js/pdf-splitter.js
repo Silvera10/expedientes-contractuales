@@ -820,32 +820,27 @@ async function iniciarAnalisisPDF(input){
       // Convertir HTML a PDF para almacenamiento
       const container = document.createElement('div');
       container.innerHTML = htmlText;
-      // Visible pero fuera de pantalla para que html2canvas funcione
-      container.style.cssText = 'position:fixed;left:0;top:0;width:210mm;z-index:-1;opacity:0;';
+      container.style.cssText = 'position:fixed;left:0;top:0;width:210mm;z-index:99999;background:#fff;';
       document.body.appendChild(container);
 
       try {
-        const opts = {
-          margin: [10, 10, 10, 10],
-          image: { type: 'jpeg', quality: 0.95 },
+        const pdfArrayBuffer = await html2pdf().set({
+          margin: 10,
           html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
-        };
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+        }).from(container).outputPdf('arraybuffer');
 
-        // Paso a paso para obtener acceso al jsPDF
-        const worker = html2pdf().set(opts).from(container);
-        await worker.toContainer();
-        await worker.toCanvas();
-        await worker.toImg();
-        await worker.toPdf();
+        _splitterData.pdfBytes = pdfArrayBuffer instanceof ArrayBuffer
+          ? pdfArrayBuffer
+          : new Uint8Array(pdfArrayBuffer).buffer;
 
-        // Acceder al jsPDF interno y obtener ArrayBuffer
-        const jsPdfObj = worker.get('pdf');
-        const pdfArrayBuffer = jsPdfObj.output('arraybuffer');
-
-        _splitterData.pdfBytes = new Uint8Array(pdfArrayBuffer).buffer;
-        console.log('HTML convertido a PDF:', _splitterData.pdfBytes.byteLength, 'bytes');
+        console.log('HTML → PDF:', _splitterData.pdfBytes.byteLength, 'bytes');
+      } catch(convErr){
+        console.error('Error convirtiendo HTML a PDF:', convErr);
+        // Fallback: guardar HTML como blob marcado como PDF
+        const encoder = new TextEncoder();
+        _splitterData.pdfBytes = encoder.encode(htmlText).buffer;
+        console.warn('Fallback: HTML guardado como bytes sin convertir');
       } finally {
         document.body.removeChild(container);
       }
