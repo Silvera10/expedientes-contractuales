@@ -13,55 +13,55 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'cert_plan_compras',
     nombre: 'Certificación Plan de Compras',
-    palabras: ['plan de compras', 'certificación plan de compras', 'certificacion plan de compras', 'plan anual de adquisiciones', 'plan de adquisiciones', 'necesidad incluida en el plan anual', 'línea paa', 'linea paa', 'según línea paa', 'segun linea paa'],
+    palabras: ['pre-01', 'plan de compras', 'certificación plan de compras', 'certificacion plan de compras', 'plan anual de adquisiciones', 'plan de adquisiciones', 'necesidad incluida en el plan anual', 'línea paa', 'linea paa', 'según línea paa', 'segun linea paa'],
     peso: 3
   },
   {
     tipo: 'estudio_previo',
     nombre: 'Estudio Previo / Necesidad',
-    palabras: ['estudio previo', 'estudios previos', 'estudio de necesidad', 'análisis del sector', 'analisis del sector', 'justificación de la contratación', 'justificacion de la contratacion', 'necesidad según línea paa', 'necesidad segun linea paa'],
+    palabras: ['pre-02', 'estudio previo', 'estudios previos', 'estudio de necesidad', 'análisis del sector', 'analisis del sector', 'justificación de la contratación', 'justificacion de la contratacion', 'necesidad según línea paa', 'necesidad segun linea paa'],
     peso: 3
   },
   {
     tipo: 'solicitud_cdp',
     nombre: 'Solicitud de CDP',
-    palabras: ['solicitud de cdp', 'solicitud de disponibilidad', 'solicitud certificado de disponibilidad', 'solicitar cdp', 'solicitud disponibilidad presupuestal', 'se solicita expedir cdp', 'solicito expedir'],
+    palabras: ['pre-03', 'solicitud de cdp', 'solicitud de disponibilidad', 'solicitud certificado de disponibilidad', 'solicitar cdp', 'solicitud disponibilidad presupuestal', 'se solicita expedir cdp', 'solicito expedir'],
     peso: 3
   },
   {
     tipo: 'cdp',
     nombre: 'CDP',
-    palabras: ['certificado de disponibilidad presupuestal', 'disponibilidad presupuestal', 'cdp no', 'cdp n°', 'cdp n.°', 'cdp numero', 'amparado con cdp'],
+    palabras: ['pre-04', 'certificado de disponibilidad presupuestal', 'disponibilidad presupuestal', 'cdp no', 'cdp n°', 'cdp n.°', 'cdp numero', 'amparado con cdp'],
     peso: 3
   },
   {
     tipo: 'invitacion',
     nombre: 'Invitación a Ofertar',
-    palabras: ['invitación a ofertar', 'invitacion a ofertar', 'invitación a cotizar', 'invitacion a cotizar', 'invitación pública', 'invitacion publica', 'solicitud de cotización', 'solicitud de cotizacion', 'invita respetuosamente a presentar', 'proceso de mínima cuantía', 'proceso de minima cuantia', 'invita de manera general', 'presentar oferta', 'presentar cotización', 'presentar cotizacion', 'cronograma del proceso', 'requisitos habilitantes', 'régimen especial', 'regimen especial', 'decreto 4791', 'fondo de servicios educativos', 'ley de garantías', 'ley de garantias', 'presupuesto oficial', 'forma de pago', 'criterio de selección', 'criterio de seleccion'],
+    palabras: ['pre-05', 'invitación a ofertar', 'invitacion a ofertar', 'invitación a cotizar', 'invitacion a cotizar', 'invitación pública', 'invitacion publica', 'solicitud de cotización', 'solicitud de cotizacion', 'invita respetuosamente a presentar', 'proceso de mínima cuantía', 'proceso de minima cuantia', 'invita de manera general', 'presentar oferta', 'presentar cotización', 'presentar cotizacion', 'cronograma del proceso', 'requisitos habilitantes', 'régimen especial', 'regimen especial', 'decreto 4791', 'fondo de servicios educativos', 'ley de garantías', 'ley de garantias', 'presupuesto oficial', 'forma de pago', 'criterio de selección', 'criterio de seleccion'],
     peso: 2
   },
   {
     tipo: 'cotizaciones',
     nombre: 'Cotización(es)',
-    palabras: ['cotización', 'cotizacion', 'propuesta económica', 'propuesta economica', 'oferta económica', 'oferta economica', 'oferta o propuesta económica', 'oferta o propuesta economica', 'carta de presentación de oferta', 'carta de presentacion de oferta', 'valor de la propuesta', 'presupuesto de'],
+    palabras: ['pre-06', 'cotización', 'cotizacion', 'propuesta económica', 'propuesta economica', 'oferta económica', 'oferta economica', 'oferta o propuesta económica', 'oferta o propuesta economica', 'carta de presentación de oferta', 'carta de presentacion de oferta', 'valor de la propuesta', 'presupuesto de'],
     peso: 2
   },
   {
     tipo: 'carta_propuesta',
     nombre: 'Carta de Propuesta',
-    palabras: ['carta de respuesta', 'respuesta a invitación', 'respuesta a invitacion', 'carta de presentación', 'carta de presentacion', 'propuesta de servicios', 'carta de presentación de oferta', 'carta de presentacion de oferta', 'aceptación de condiciones', 'aceptacion de condiciones', 'escrito de aceptación', 'escrito de aceptacion'],
+    palabras: ['pre-07', 'carta de respuesta', 'respuesta a invitación', 'respuesta a invitacion', 'carta de presentación', 'carta de presentacion', 'propuesta de servicios', 'carta de presentación de oferta', 'carta de presentacion de oferta', 'aceptación de condiciones', 'aceptacion de condiciones', 'escrito de aceptación', 'escrito de aceptacion'],
     peso: 3
   },
   {
     tipo: 'evaluacion',
     nombre: 'Evaluación de Ofertas',
-    palabras: ['evaluación de oferta', 'evaluacion de oferta', 'evaluación de ofertas', 'evaluacion de ofertas', 'evaluación de propuestas', 'evaluacion de propuestas', 'propuestas recibidas y evaluación', 'propuestas recibidas y evaluacion', 'verificación de requisitos habilitantes', 'verificacion de requisitos habilitantes', 'conclusiones de la evaluación', 'conclusiones de la evaluacion', 'se recomienda su selección', 'se recomienda su seleccion', 'seleccionado', 'metodología de evaluación', 'metodologia de evaluacion', 'informe de evaluación', 'informe de evaluacion', 'cuadro comparativo'],
+    palabras: ['pre-08', 'evaluación de oferta', 'evaluacion de oferta', 'evaluación de ofertas', 'evaluacion de ofertas', 'evaluación de propuestas', 'evaluacion de propuestas', 'propuestas recibidas y evaluación', 'propuestas recibidas y evaluacion', 'verificación de requisitos habilitantes', 'verificacion de requisitos habilitantes', 'conclusiones de la evaluación', 'conclusiones de la evaluacion', 'se recomienda su selección', 'se recomienda su seleccion', 'seleccionado', 'metodología de evaluación', 'metodologia de evaluacion', 'informe de evaluación', 'informe de evaluacion', 'cuadro comparativo'],
     peso: 3
   },
   {
     tipo: 'aceptacion',
     nombre: 'Aceptación de Oferta',
-    palabras: ['aceptación de oferta', 'aceptacion de oferta', 'aceptación de la oferta', 'aceptacion de la oferta', 'adjudicación', 'adjudicacion', 'se acepta la oferta', 'comunicación de aceptación', 'comunicacion de aceptacion'],
+    palabras: ['pre-09', 'aceptación de oferta', 'aceptacion de oferta', 'aceptación de la oferta', 'aceptacion de la oferta', 'adjudicación', 'adjudicacion', 'se acepta la oferta', 'comunicación de aceptación', 'comunicacion de aceptacion'],
     peso: 3
   },
 
@@ -71,67 +71,67 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'rut',
     nombre: 'RUT',
-    palabras: ['registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'dian', 'formulario del registro', 'responsabilidades tributarias', 'rut', 'nit', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial'],
+    palabras: ['doc-01', 'registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'dian', 'formulario del registro', 'responsabilidades tributarias', 'rut', 'nit', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial'],
     peso: 3
   },
   {
     tipo: 'cedula',
     nombre: 'Cédula',
-    palabras: ['cédula de ciudadanía', 'cedula de ciudadania', 'república de colombia', 'republica de colombia', 'registraduría', 'registraduria', 'identificación personal', 'identificacion personal', 'documento de identidad', 'fotocopia documento', 'cédula', 'cedula', 'número de identificación', 'numero de identificacion'],
+    palabras: ['doc-02', 'cédula de ciudadanía', 'cedula de ciudadania', 'república de colombia', 'republica de colombia', 'registraduría', 'registraduria', 'identificación personal', 'identificacion personal', 'documento de identidad', 'fotocopia documento', 'cédula', 'cedula', 'número de identificación', 'numero de identificacion'],
     peso: 3
   },
   {
     tipo: 'antec_policia',
     nombre: 'Antecedentes Policía',
-    palabras: ['policía nacional', 'policia nacional', 'antecedentes judiciales', 'certificado judicial', 'no registra antecedentes', 'consulta en línea de antecedentes penales', 'consulta en linea de antecedentes penales', 'requerimientos judiciales', 'no tiene asuntos pendientes con las autoridades judiciales', 'antecedentes penales', 'antecedentes.policia.gov.co', 'dijin', 'artículo 248', 'articulo 248'],
+    palabras: ['doc-03', 'policía nacional', 'policia nacional', 'antecedentes judiciales', 'certificado judicial', 'no registra antecedentes', 'consulta en línea de antecedentes penales', 'consulta en linea de antecedentes penales', 'requerimientos judiciales', 'no tiene asuntos pendientes con las autoridades judiciales', 'antecedentes penales', 'antecedentes.policia.gov.co', 'dijin', 'artículo 248', 'articulo 248'],
     peso: 3
   },
   {
     tipo: 'antec_procuraduria',
     nombre: 'Antecedentes Procuraduría',
-    palabras: ['procuraduría general', 'procuraduria general', 'certificado de antecedentes disciplinarios', 'antecedentes disciplinarios', 'siri', 'procuraduría general de la nación', 'procuraduria general de la nacion', 'no registra sanciones ni inhabilidades vigentes', 'certificado de antecedentes', 'certificado ordinario', 'registro de sanciones e inhabilidades', 'procuraduria.gov.co'],
+    palabras: ['doc-04', 'procuraduría general', 'procuraduria general', 'certificado de antecedentes disciplinarios', 'antecedentes disciplinarios', 'siri', 'procuraduría general de la nación', 'procuraduria general de la nacion', 'no registra sanciones ni inhabilidades vigentes', 'certificado de antecedentes', 'certificado ordinario', 'registro de sanciones e inhabilidades', 'procuraduria.gov.co'],
     peso: 3
   },
   {
     tipo: 'antec_contraloria',
     nombre: 'Antecedentes Contraloría',
-    palabras: ['contraloría general', 'contraloria general', 'antecedentes fiscales', 'certificado de antecedentes fiscales', 'responsabilidad fiscal', 'paz y salvo fiscal', 'boletín de responsables fiscales', 'boletin de responsables fiscales', 'no se encuentra reportado como responsable fiscal', 'sibor', 'contraloría delegada', 'contraloria delegada', 'intervención judicial y cobro coactivo', 'intervencion judicial y cobro coactivo'],
+    palabras: ['doc-05', 'contraloría general', 'contraloria general', 'antecedentes fiscales', 'certificado de antecedentes fiscales', 'responsabilidad fiscal', 'paz y salvo fiscal', 'boletín de responsables fiscales', 'boletin de responsables fiscales', 'no se encuentra reportado como responsable fiscal', 'sibor', 'contraloría delegada', 'contraloria delegada', 'intervención judicial y cobro coactivo', 'intervencion judicial y cobro coactivo'],
     peso: 3
   },
   {
     tipo: 'medidas_correctivas',
     nombre: 'Medidas Correctivas',
-    palabras: ['medidas correctivas', 'registro nacional de medidas', 'rnmc', 'código nacional de policía', 'codigo nacional de policia', 'convivencia', 'registro nacional de medidas correctivas', 'código de policía', 'codigo de policia', 'no tiene medidas correctivas pendientes por cumplir', 'consulta ciudadano', 'ley 1801 de 2016', 'código nacional de seguridad', 'codigo nacional de seguridad', 'srvcnpc.policia.gov.co', 'consulta rnmc'],
+    palabras: ['doc-06', 'medidas correctivas', 'registro nacional de medidas', 'rnmc', 'código nacional de policía', 'codigo nacional de policia', 'convivencia', 'registro nacional de medidas correctivas', 'código de policía', 'codigo de policia', 'no tiene medidas correctivas pendientes por cumplir', 'consulta ciudadano', 'ley 1801 de 2016', 'código nacional de seguridad', 'codigo nacional de seguridad', 'srvcnpc.policia.gov.co', 'consulta rnmc'],
     peso: 3
   },
   {
     tipo: 'inhabilidades',
     nombre: 'Consulta de Inhabilidades',
-    palabras: ['consulta de inhabilidades', 'inhabilidades para contratar', 'registro de inhabilidades', 'certificado inhabilidades', 'no estar incurso en inhabilidad', 'inhabilidades por delitos sexuales', 'delitos sexuales contra menores'],
+    palabras: ['doc-07', 'consulta de inhabilidades', 'inhabilidades para contratar', 'registro de inhabilidades', 'certificado inhabilidades', 'no estar incurso en inhabilidad', 'inhabilidades por delitos sexuales', 'delitos sexuales contra menores'],
     peso: 3
   },
   {
     tipo: 'redeam',
     nombre: 'REDEAM',
-    palabras: ['redeam', 'redam', 'registro de deudores alimentarios', 'deudores alimentarios morosos', 'obligaciones alimentarias', 'icbf', 'no tener anotación en el registro', 'no tener anotacion en el registro'],
+    palabras: ['doc-08', 'redeam', 'redam', 'registro de deudores alimentarios', 'deudores alimentarios morosos', 'obligaciones alimentarias', 'icbf', 'no tener anotación en el registro', 'no tener anotacion en el registro'],
     peso: 3
   },
   {
     tipo: 'camara_comercio',
     nombre: 'Cámara de Comercio',
-    palabras: ['cámara de comercio', 'camara de comercio', 'certificado de existencia', 'representación legal', 'representacion legal', 'matrícula mercantil', 'matricula mercantil', 'registro mercantil', 'establecimiento de comercio', 'existencia y representación legal', 'existencia y representacion legal', 'renovación de la matrícula', 'renovacion de la matricula', 'persona natural comerciante', 'actividad comercial', 'rues', 'registro único empresarial', 'registro unico empresarial', 'confecámaras', 'confecamaras'],
+    palabras: ['doc-11', 'cámara de comercio', 'camara de comercio', 'certificado de existencia', 'representación legal', 'representacion legal', 'matrícula mercantil', 'matricula mercantil', 'registro mercantil', 'establecimiento de comercio', 'existencia y representación legal', 'existencia y representacion legal', 'renovación de la matrícula', 'renovacion de la matricula', 'persona natural comerciante', 'actividad comercial', 'rues', 'registro único empresarial', 'registro unico empresarial', 'confecámaras', 'confecamaras'],
     peso: 3
   },
   {
     tipo: 'habeas_data',
     nombre: 'Habeas Data',
-    palabras: ['habeas data', 'tratamiento de datos personales', 'datos personales', 'autorización de datos', 'autorizacion de datos', 'protección de datos', 'proteccion de datos', 'ley 1581', 'autorización tratamiento de datos', 'autorizacion tratamiento de datos', 'autoriza el tratamiento y publicidad'],
+    palabras: ['doc-09', 'habeas data', 'tratamiento de datos personales', 'datos personales', 'autorización de datos', 'autorizacion de datos', 'protección de datos', 'proteccion de datos', 'ley 1581', 'autorización tratamiento de datos', 'autorizacion tratamiento de datos', 'autoriza el tratamiento y publicidad'],
     peso: 3
   },
   {
     tipo: 'seguridad_social',
     nombre: 'Seguridad Social',
-    palabras: ['seguridad social', 'planilla integrada', 'pila', 'aportes parafiscales', 'afiliación vigente', 'afiliacion vigente', 'constancia de afiliación', 'constancia de afiliacion', 'planilla de pago', 'riesgos laborales', 'sistema general de seguridad social', 'sgss'],
+    palabras: ['doc-10', 'seguridad social', 'planilla integrada', 'pila', 'aportes parafiscales', 'afiliación vigente', 'afiliacion vigente', 'constancia de afiliación', 'constancia de afiliacion', 'planilla de pago', 'riesgos laborales', 'sistema general de seguridad social', 'sgss'],
     peso: 3
   },
 
@@ -141,19 +141,19 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'contrato',
     nombre: 'Contrato Firmado',
-    palabras: ['contrato de prestación de servicios', 'contrato de prestacion de servicios', 'contrato de compraventa', 'contrato de suministro', 'entre los suscritos', 'hemos convenido en celebrar', 'cláusula primera', 'clausula primera', 'cláusula segunda', 'clausula segunda', 'cláusula tercera', 'clausula tercera', 'contrato n°', 'contrato n.°', 'contrato no.', 'obligaciones del contratista', 'duración del contrato', 'valor y forma de pago', 'causales de terminación', 'causales de terminacion', 'solución de controversias', 'solucion de controversias', 'domicilio contractual', 'perfeccionamiento del contrato'],
+    palabras: ['con-01', 'contrato de prestación de servicios', 'contrato de prestacion de servicios', 'contrato de compraventa', 'contrato de suministro', 'entre los suscritos', 'hemos convenido en celebrar', 'cláusula primera', 'clausula primera', 'cláusula segunda', 'clausula segunda', 'cláusula tercera', 'clausula tercera', 'contrato n°', 'contrato n.°', 'contrato no.', 'obligaciones del contratista', 'duración del contrato', 'valor y forma de pago', 'causales de terminación', 'causales de terminacion', 'solución de controversias', 'solucion de controversias', 'domicilio contractual', 'perfeccionamiento del contrato'],
     peso: 3
   },
   {
     tipo: 'rp',
     nombre: 'Registro Presupuestal',
-    palabras: ['registro presupuestal', 'rp no', 'rp n°', 'rp n.°', 'rp numero', 'certificado de registro presupuestal', 'compromiso presupuestal'],
+    palabras: ['con-02', 'registro presupuestal', 'rp no', 'rp n°', 'rp n.°', 'rp numero', 'certificado de registro presupuestal', 'compromiso presupuestal'],
     peso: 3
   },
   {
     tipo: 'acta_inicio',
     nombre: 'Acta de Inicio',
-    palabras: ['acta de inicio', 'acta de iniciación', 'acta de iniciacion', 'inicio del contrato', 'se da inicio', 'fecha de inicio del contrato'],
+    palabras: ['con-03', 'acta de inicio', 'acta de iniciación', 'acta de iniciacion', 'inicio del contrato', 'se da inicio', 'fecha de inicio del contrato'],
     peso: 3
   },
 
@@ -163,31 +163,31 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'orden_compra',
     nombre: 'Orden de Compra / Servicio',
-    palabras: ['orden de compra', 'orden de compras', 'orden de suministro', 'orden de servicio', 'orden de trabajo'],
+    palabras: ['eje-01', 'orden de compra', 'orden de compras', 'orden de suministro', 'orden de servicio', 'orden de trabajo'],
     peso: 3
   },
   {
     tipo: 'factura',
     nombre: 'Factura / Cuenta de Cobro',
-    palabras: ['factura de venta', 'factura electrónica', 'factura electronica', 'cuenta de cobro', 'factura no', 'factura n°', 'factura n.°', 'subtotal', 'total a pagar', 'valor neto'],
+    palabras: ['eje-02', 'factura de venta', 'factura electrónica', 'factura electronica', 'cuenta de cobro', 'factura no', 'factura n°', 'factura n.°', 'subtotal', 'total a pagar', 'valor neto'],
     peso: 3
   },
   {
     tipo: 'informe_contratista',
     nombre: 'Informe del Contratista',
-    palabras: ['informe del contratista', 'informe de actividades', 'informe de gestión', 'informe de gestion', 'actividades realizadas', 'informe de ejecución', 'informe de ejecucion', 'informe final de actividades'],
+    palabras: ['eje-03', 'informe del contratista', 'informe de actividades', 'informe de gestión', 'informe de gestion', 'actividades realizadas', 'informe de ejecución', 'informe de ejecucion', 'informe final de actividades'],
     peso: 3
   },
   {
     tipo: 'informe_supervisor',
     nombre: 'Informe de Supervisión',
-    palabras: ['informe de supervisión', 'informe de supervision', 'informe del supervisor', 'certificación de cumplimiento', 'certificacion de cumplimiento', 'el supervisor certifica', 'certifico que el contratista'],
+    palabras: ['eje-04', 'informe de supervisión', 'informe de supervision', 'informe del supervisor', 'certificación de cumplimiento', 'certificacion de cumplimiento', 'el supervisor certifica', 'certifico que el contratista'],
     peso: 3
   },
   {
     tipo: 'acta_recibido',
     nombre: 'Acta Recibo a Satisfacción',
-    palabras: ['acta de recibo', 'recibo a satisfacción', 'recibo a satisfaccion', 'a entera satisfacción', 'a entera satisfaccion', 'recibido a conformidad', 'acta de recibido a satisfacción', 'acta de recibido a satisfaccion'],
+    palabras: ['eje-05', 'acta de recibo', 'recibo a satisfacción', 'recibo a satisfaccion', 'a entera satisfacción', 'a entera satisfaccion', 'recibido a conformidad', 'acta de recibido a satisfacción', 'acta de recibido a satisfaccion'],
     peso: 3
   },
 
@@ -197,19 +197,19 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'orden_pago',
     nombre: 'Orden de Pago',
-    palabras: ['orden de pago', 'orden pago', 'autorización de pago', 'autorizacion de pago', 'solicitud de pago', 'autorizo el pago'],
+    palabras: ['pag-01', 'orden de pago', 'orden pago', 'autorización de pago', 'autorizacion de pago', 'solicitud de pago', 'autorizo el pago'],
     peso: 3
   },
   {
     tipo: 'egreso',
     nombre: 'Comprobante de Egreso',
-    palabras: ['comprobante de egreso', 'comprobante egreso', 'egreso no', 'egreso n°', 'egreso n.°', 'comprobante de pago', 'transferencia bancaria', 'pago neto'],
+    palabras: ['pag-02', 'comprobante de egreso', 'comprobante egreso', 'egreso no', 'egreso n°', 'egreso n.°', 'comprobante de pago', 'transferencia bancaria', 'pago neto'],
     peso: 3
   },
   {
     tipo: 'acta_liquidacion',
     nombre: 'Acta de Liquidación',
-    palabras: ['acta de liquidación', 'acta de liquidacion', 'liquidación del contrato', 'liquidacion del contrato', 'balance financiero del contrato', 'liquidación bilateral', 'liquidacion bilateral'],
+    palabras: ['pag-03', 'acta de liquidación', 'acta de liquidacion', 'liquidación del contrato', 'liquidacion del contrato', 'balance financiero del contrato', 'liquidación bilateral', 'liquidacion bilateral'],
     peso: 3
   },
 
@@ -219,43 +219,43 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'cdp_original',
     nombre: 'CDP Original (vigencia anterior)',
-    palabras: ['certificado de disponibilidad presupuestal', 'disponibilidad presupuestal', 'cdp no', 'cdp n°', 'cdp n.°', 'vigencia anterior'],
+    palabras: ['ant-01', 'certificado de disponibilidad presupuestal', 'disponibilidad presupuestal', 'cdp no', 'cdp n°', 'cdp n.°', 'vigencia anterior'],
     peso: 2
   },
   {
     tipo: 'rp_original',
     nombre: 'RP Original (compromiso anterior)',
-    palabras: ['registro presupuestal', 'compromiso presupuestal', 'rp no', 'rp n°', 'rp n.°', 'vigencia anterior'],
+    palabras: ['ant-02', 'registro presupuestal', 'compromiso presupuestal', 'rp no', 'rp n°', 'rp n.°', 'vigencia anterior'],
     peso: 2
   },
   {
     tipo: 'contrato_original',
     nombre: 'Contrato Original (vigencia anterior)',
-    palabras: ['contrato de prestación de servicios', 'contrato de prestacion de servicios', 'contrato de compraventa', 'contrato de suministro', 'vigencia anterior'],
+    palabras: ['ant-03', 'contrato de prestación de servicios', 'contrato de prestacion de servicios', 'contrato de compraventa', 'contrato de suministro', 'vigencia anterior'],
     peso: 2
   },
   {
     tipo: 'acuerdo_adicion',
     nombre: 'Acuerdo de Adición / Prórroga',
-    palabras: ['acuerdo de adición', 'acuerdo de adicion', 'adición al contrato', 'adicion al contrato', 'prórroga', 'prorroga', 'otro sí', 'otro si', 'otrosí', 'otrosi', 'modificatorio'],
+    palabras: ['adi-01', 'acuerdo de adición', 'acuerdo de adicion', 'adición al contrato', 'adicion al contrato', 'prórroga', 'prorroga', 'otro sí', 'otro si', 'otrosí', 'otrosi', 'modificatorio'],
     peso: 3
   },
   {
     tipo: 'cdp_adicion',
     nombre: 'CDP Adición (vigencia actual)',
-    palabras: ['certificado de disponibilidad presupuestal', 'disponibilidad presupuestal', 'cdp no', 'cdp n°', 'cdp n.°', 'adición', 'adicion'],
+    palabras: ['adi-02', 'certificado de disponibilidad presupuestal', 'disponibilidad presupuestal', 'cdp no', 'cdp n°', 'cdp n.°', 'adición', 'adicion'],
     peso: 2
   },
   {
     tipo: 'rp_adicion',
     nombre: 'RP Adición (vigencia actual)',
-    palabras: ['registro presupuestal', 'compromiso presupuestal', 'rp no', 'rp n°', 'rp n.°', 'adición', 'adicion'],
+    palabras: ['adi-03', 'registro presupuestal', 'compromiso presupuestal', 'rp no', 'rp n°', 'rp n.°', 'adición', 'adicion'],
     peso: 2
   },
   {
     tipo: 'cert_cuenta_pagar',
     nombre: 'Certificación Cuenta por Pagar',
-    palabras: ['cuenta por pagar', 'cuentas por pagar', 'certificación de cuenta', 'certificacion de cuenta', 'rezago presupuestal', 'reserva presupuestal', 'vigencia expirada'],
+    palabras: ['adi-04', 'cuenta por pagar', 'cuentas por pagar', 'certificación de cuenta', 'certificacion de cuenta', 'rezago presupuestal', 'reserva presupuestal', 'vigencia expirada'],
     peso: 3
   }
 ];
@@ -370,6 +370,9 @@ const DOCUMENT_START_PATTERNS = [
   /rp\s*(n[°.oº]|no\.?|numero)\s*\d/i,
   /contrato\s*(n[°.oº]|no\.?|numero)\s*\d/i,
   /egreso\s*(n[°.oº]|no\.?|numero)\s*\d/i,
+
+  // Códigos FOSE (PRE-01, CON-01, DOC-01, EJE-01, PAG-01, etc.)
+  /\b(PRE|DOC|CON|EJE|PAG|ANT|ADI)-\d{2}\b/,
 ];
 
 /* ══════════════════════════════════════════
@@ -483,6 +486,9 @@ const MESES_MAP = {
 
 function extraerFechaDelTexto(texto){
   let m;
+
+  // Normalizar espacios múltiples y saltos de línea
+  texto = texto.replace(/\s+/g, ' ').trim();
 
   // Normalizar año de 2 dígitos a 4
   function normAnio(a){
