@@ -820,27 +820,35 @@ async function iniciarAnalisisPDF(input){
       // Convertir HTML a PDF para almacenamiento
       const container = document.createElement('div');
       container.innerHTML = htmlText;
-      container.style.cssText = 'position:absolute;left:-9999px;top:0;width:210mm;';
+      // Visible pero fuera de pantalla para que html2canvas funcione
+      container.style.cssText = 'position:fixed;left:0;top:0;width:210mm;z-index:-1;opacity:0;';
       document.body.appendChild(container);
 
-      const worker = html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename: file.name.replace(/\.html?$/i, '.pdf'),
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(container);
+      try {
+        const opts = {
+          margin: [10, 10, 10, 10],
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        };
 
-      // Obtener el PDF como Blob
-      const pdfBlob = await worker.toPdf().output('blob');
-      document.body.removeChild(container);
+        // Paso a paso para obtener acceso al jsPDF
+        const worker = html2pdf().set(opts).from(container);
+        await worker.toContainer();
+        await worker.toCanvas();
+        await worker.toImg();
+        await worker.toPdf();
 
-      // Convertir Blob a ArrayBuffer
-      const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+        // Acceder al jsPDF interno y obtener ArrayBuffer
+        const jsPdfObj = worker.get('pdf');
+        const pdfArrayBuffer = jsPdfObj.output('arraybuffer');
 
-      // Guardar el PDF convertido
-      _splitterData.pdfBytes = pdfArrayBuffer.slice(0);
+        _splitterData.pdfBytes = new Uint8Array(pdfArrayBuffer).buffer;
+        console.log('HTML convertido a PDF:', _splitterData.pdfBytes.byteLength, 'bytes');
+      } finally {
+        document.body.removeChild(container);
+      }
 
       if(progresoEl) progresoEl.textContent = 'Clasificando documento...';
       if(barEl) barEl.style.width = '80%';
