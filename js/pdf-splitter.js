@@ -885,29 +885,42 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Renderizando HTML...';
       if(barEl) barEl.style.width = '40%';
 
-      // Renderizar HTML visualmente usando html2canvas para preservar formato
-      const renderContainer = document.createElement('div');
-      renderContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:816px;background:#fff;z-index:-1;';
-      renderContainer.innerHTML = htmlText;
-      document.body.appendChild(renderContainer);
+      // Renderizar HTML en un iframe oculto para aislar estilos
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:absolute;left:0;top:0;width:816px;height:1200px;opacity:0;pointer-events:none;z-index:-1;';
+      document.body.appendChild(iframe);
 
-      // Esperar a que se renderice
-      await new Promise(r => setTimeout(r, 500));
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(htmlText);
+      iframeDoc.close();
+
+      // Esperar a que se renderice completamente (imágenes, fuentes, etc.)
+      await new Promise(r => setTimeout(r, 800));
+
+      // Ajustar altura del iframe al contenido real
+      const bodyH = iframeDoc.body.scrollHeight || iframeDoc.documentElement.scrollHeight;
+      iframe.style.height = bodyH + 'px';
+      await new Promise(r => setTimeout(r, 300));
 
       if(progresoEl) progresoEl.textContent = 'Capturando documento...';
       if(barEl) barEl.style.width = '60%';
 
-      // Capturar con html2canvas
-      const canvas = await html2canvas(renderContainer, {
+      // Capturar con html2canvas dentro del iframe
+      const canvas = await html2canvas(iframeDoc.body, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         width: 816,
-        windowWidth: 816
+        height: bodyH,
+        windowWidth: 816,
+        windowHeight: bodyH
       });
 
-      // Limpiar
-      document.body.removeChild(renderContainer);
+      console.log('Canvas:', canvas.width, 'x', canvas.height, 'px');
+
+      // Limpiar iframe
+      document.body.removeChild(iframe);
 
       if(progresoEl) progresoEl.textContent = 'Generando PDF...';
       if(barEl) barEl.style.width = '80%';
