@@ -5,6 +5,30 @@
    Usa pdf.js (Mozilla) para extraer texto de cada página.
 ══════════════════════════════════════════════════════════ */
 
+/* ── Sanitizar texto para WinAnsi (pdf-lib) ── */
+// WinAnsi solo soporta códigos 0x20-0x7E y algunos 0x80-0xFF
+// Esta función reemplaza caracteres no soportados por equivalentes o espacios
+function sanitizarWinAnsi(texto){
+  return texto.replace(/./g, function(ch){
+    const code = ch.charCodeAt(0);
+    // ASCII imprimible (0x20-0x7E) + tab/newline
+    if(code === 9 || code === 10 || code === 13) return ch;
+    if(code >= 0x20 && code <= 0x7E) return ch;
+    // WinAnsi extended (0xA0-0xFF): ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
+    if(code >= 0xA0 && code <= 0xFF) return ch;
+    // Reemplazos comunes
+    if(ch === '\u2013' || ch === '\u2014') return '-'; // — –
+    if(ch === '\u2018' || ch === '\u2019') return "'"; // ' '
+    if(ch === '\u201C' || ch === '\u201D') return '"'; // " "
+    if(ch === '\u2026') return '...'; // …
+    if(ch === '\u2022') return '-';   // •
+    if(ch === '\u0152') return 'OE';  // Œ
+    if(ch === '\u0153') return 'oe';  // œ
+    // Todo lo demás: espacio
+    return ' ';
+  }).replace(/ {2,}/g, ' ');
+}
+
 /* ── Palabras clave para detectar cada tipo de documento ── */
 const DETECTOR_REGLAS = [
   // ═══════════════════════════════════════
@@ -812,7 +836,9 @@ async function iniciarAnalisisPDF(input){
       // Extraer texto plano del HTML
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = htmlText;
-      const textoPlano = (tempDiv.textContent || tempDiv.innerText || '').trim();
+      // Sanitizar: solo permitir caracteres que WinAnsi puede codificar
+      const textoRaw = (tempDiv.textContent || tempDiv.innerText || '').trim();
+      const textoPlano = sanitizarWinAnsi(textoRaw);
 
       if(progresoEl) progresoEl.textContent = 'Convirtiendo HTML a PDF...';
       if(barEl) barEl.style.width = '50%';
@@ -860,7 +886,7 @@ async function iniciarAnalisisPDF(input){
           if(texto){
             // Detectar si es título (todo mayúsculas y corto)
             const esTitulo = texto === texto.toUpperCase() && texto.length < 80 && texto.length > 3;
-            page.drawText(texto, {
+            page.drawText(sanitizarWinAnsi(texto), {
               x: margin.left,
               y,
               size: esTitulo ? 11 : fontSize,
