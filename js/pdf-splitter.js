@@ -823,19 +823,24 @@ async function iniciarAnalisisPDF(input){
       container.style.cssText = 'position:absolute;left:-9999px;top:0;width:210mm;';
       document.body.appendChild(container);
 
-      const pdfBlob = await html2pdf().set({
+      const worker = html2pdf().set({
         margin: [10, 10, 10, 10],
         filename: file.name.replace(/\.html?$/i, '.pdf'),
         image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
-      }).from(container).outputPdf('arraybuffer');
+      }).from(container);
 
+      // Obtener el PDF como Blob
+      const pdfBlob = await worker.toPdf().output('blob');
       document.body.removeChild(container);
 
+      // Convertir Blob a ArrayBuffer
+      const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+
       // Guardar el PDF convertido
-      _splitterData.pdfBytes = pdfBlob.slice ? pdfBlob.slice(0) : new Uint8Array(pdfBlob).buffer;
+      _splitterData.pdfBytes = pdfArrayBuffer.slice(0);
 
       if(progresoEl) progresoEl.textContent = 'Clasificando documento...';
       if(barEl) barEl.style.width = '80%';
