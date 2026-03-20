@@ -875,77 +875,84 @@ async function iniciarAnalisisPDF(input){
 
       const htmlText = await file.text();
 
-      // Extraer texto plano del HTML (sin CSS ni scripts)
+      // Extraer texto plano del HTML (sin CSS ni scripts) para clasificación
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = htmlText;
-      // Eliminar <style>, <script>, <link> antes de extraer texto
-      tempDiv.querySelectorAll('style, script, link').forEach(el => el.remove());
-      // Sanitizar: solo permitir caracteres que WinAnsi puede codificar
-      const textoRaw = (tempDiv.textContent || tempDiv.innerText || '').trim();
-      const textoPlano = sanitizarWinAnsi(textoRaw);
+      const tempForText = tempDiv.cloneNode(true);
+      tempForText.querySelectorAll('style, script, link').forEach(el => el.remove());
+      const textoPlano = (tempForText.textContent || tempForText.innerText || '').trim();
 
-      if(progresoEl) progresoEl.textContent = 'Convirtiendo HTML a PDF...';
-      if(barEl) barEl.style.width = '50%';
+      if(progresoEl) progresoEl.textContent = 'Renderizando HTML...';
+      if(barEl) barEl.style.width = '40%';
 
-      // Convertir HTML a PDF usando pdf-lib (más confiable que html2pdf.js)
-      const pdfDoc = await PDFLib.PDFDocument.create();
-      const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-      const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
-      const fontSize = 10;
-      const lineHeight = 14;
-      const margin = { top: 50, bottom: 50, left: 50, right: 50 };
-      const pageW = 612; // Letter
-      const pageH = 792;
-      const maxWidth = pageW - margin.left - margin.right;
-      const maxLinesPerPage = Math.floor((pageH - margin.top - margin.bottom) / lineHeight);
+      // Renderizar HTML visualmente usando html2canvas para preservar formato
+      const renderContainer = document.createElement('div');
+      renderContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:816px;background:#fff;z-index:-1;';
+      renderContainer.innerHTML = htmlText;
+      document.body.appendChild(renderContainer);
 
-      // Extraer texto estructurado del HTML
-      const lineas = textoPlano.split(/\n/).flatMap(linea => {
-        linea = linea.trim();
-        if(!linea) return [''];
-        // Dividir líneas largas
-        const result = [];
-        while(linea.length > 0){
-          const maxChars = Math.floor(maxWidth / (fontSize * 0.5));
-          if(linea.length <= maxChars){
-            result.push(linea);
-            break;
-          }
-          let corte = linea.lastIndexOf(' ', maxChars);
-          if(corte <= 0) corte = maxChars;
-          result.push(linea.substring(0, corte));
-          linea = linea.substring(corte).trim();
-        }
-        return result;
+      // Esperar a que se renderice
+      await new Promise(r => setTimeout(r, 500));
+
+      if(progresoEl) progresoEl.textContent = 'Capturando documento...';
+      if(barEl) barEl.style.width = '60%';
+
+      // Capturar con html2canvas
+      const canvas = await html2canvas(renderContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 816,
+        windowWidth: 816
       });
 
-      // Crear páginas
-      let lineaIdx = 0;
-      while(lineaIdx < lineas.length){
-        const page = pdfDoc.addPage([pageW, pageH]);
-        let y = pageH - margin.top;
+      // Limpiar
+      document.body.removeChild(renderContainer);
 
-        for(let i = 0; i < maxLinesPerPage && lineaIdx < lineas.length; i++){
-          const texto = lineas[lineaIdx];
-          if(texto){
-            // Detectar si es título (todo mayúsculas y corto)
-            const esTitulo = texto === texto.toUpperCase() && texto.length < 80 && texto.length > 3;
-            page.drawText(sanitizarWinAnsi(texto), {
-              x: margin.left,
-              y,
-              size: esTitulo ? 11 : fontSize,
-              font: esTitulo ? fontBold : font,
-              color: PDFLib.rgb(0, 0, 0)
-            });
-          }
-          y -= lineHeight;
-          lineaIdx++;
-        }
+      if(progresoEl) progresoEl.textContent = 'Generando PDF...';
+      if(barEl) barEl.style.width = '80%';
+
+      // Crear PDF con la imagen capturada
+      const pageW = 612; // Letter width in points
+      const pageH = 792; // Letter height in points
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+      // Calcular cuántas páginas necesitamos
+      const imgAspect = canvas.height / canvas.width;
+      const contentW = pageW - 40; // margins
+      const contentH = pageH - 40;
+      const totalImgH = contentW * imgAspect;
+      const numPages = Math.ceil(totalImgH / contentH);
+
+      const pdfDoc = await PDFLib.PDFDocument.create();
+
+      // Embed la imagen completa
+      const imgBytes = await fetch(imgData).then(r => r.arrayBuffer());
+      const jpgImage = await pdfDoc.embedJpg(imgBytes);
+
+      for(let p = 0; p < numPages; p++){
+        const page = pdfDoc.addPage([pageW, pageH]);
+        // Calcular qué porción de la imagen va en esta página
+        const srcY = (p * contentH / totalImgH) * canvas.height;
+        const srcH = (contentH / totalImgH) * canvas.height;
+
+        // Dibujar la imagen completa pero desplazada
+        const scale = contentW / canvas.width * 2; // *2 porque scale:2 en html2canvas
+        const drawH = totalImgH;
+        const drawY = -p * contentH + 20; // offset vertical
+
+        // Clip drawing area
+        page.drawImage(jpgImage, {
+          x: 20,
+          y: drawY,
+          width: contentW,
+          height: drawH
+        });
       }
 
       const pdfBytes = await pdfDoc.save();
       _splitterData.pdfBytes = pdfBytes.buffer;
-      console.log('HTML → PDF (pdf-lib):', _splitterData.pdfBytes.byteLength, 'bytes');
+      console.log('HTML → PDF (html2canvas):', _splitterData.pdfBytes.byteLength, 'bytes');
 
       if(progresoEl) progresoEl.textContent = 'Clasificando documento...';
       if(barEl) barEl.style.width = '80%';
