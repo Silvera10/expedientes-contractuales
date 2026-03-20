@@ -904,24 +904,32 @@ async function iniciarAnalisisPDF(input){
       const renderDiv = document.createElement('div');
       renderDiv.id = 'html-pdf-render';
       // Visible pero detrás del modal (z-index del modal backdrop = 1040)
-      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:816px;z-index:1;background:#fff;overflow:visible;';
+      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:816px;z-index:1;background:#fff;overflow:hidden;';
       // Inyectar HTML completo: extraer body y styles
       const parser = new DOMParser();
       const htmlDoc = parser.parseFromString(htmlText, 'text/html');
-      // Copiar todos los estilos inline
+      // Copiar todos los estilos inline, reescribiendo body → #html-pdf-render
       let allStyles = '';
       htmlDoc.querySelectorAll('style').forEach(s => {
-        // Reescribir body → #html-pdf-render para aislar
         let css = s.textContent;
         css = css.replace(/@page[^{]*\{[^}]*\}/g, ''); // quitar @page
         css = css.replace(/@media\s+print\s*\{[\s\S]*?\}\s*\}/g, ''); // quitar @media print
+        // Reescribir selectores 'body' para que apliquen al div de render
+        css = css.replace(/\bbody\b/g, '#html-pdf-render');
         allStyles += css + '\n';
       });
       // Inyectar con reset y estilos originales
       renderDiv.innerHTML = `
         <style>
-          #html-pdf-render { font-family: Arial, sans-serif; font-size: 11pt; color: #000; padding: 1.5cm 2cm; box-sizing: border-box; }
-          #html-pdf-render * { box-sizing: border-box; }
+          #html-pdf-render {
+            font-family: Arial, sans-serif; font-size: 11pt; color: #000;
+            padding: 40px 50px; box-sizing: border-box;
+            word-wrap: break-word; overflow-wrap: break-word;
+          }
+          #html-pdf-render * { box-sizing: border-box; max-width: 100%; }
+          #html-pdf-render table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+          #html-pdf-render td, #html-pdf-render th { word-wrap: break-word; overflow-wrap: break-word; padding: 4px 6px; }
+          #html-pdf-render img { max-width: 100%; height: auto; }
           ${allStyles}
         </style>
         ${htmlDoc.body.innerHTML}
