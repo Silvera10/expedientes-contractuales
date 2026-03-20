@@ -817,33 +817,65 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Convirtiendo HTML a PDF...';
       if(barEl) barEl.style.width = '50%';
 
-      // Convertir HTML a PDF para almacenamiento
-      const container = document.createElement('div');
-      container.innerHTML = htmlText;
-      container.style.cssText = 'position:fixed;left:0;top:0;width:210mm;z-index:99999;background:#fff;';
-      document.body.appendChild(container);
+      // Convertir HTML a PDF usando pdf-lib (más confiable que html2pdf.js)
+      const pdfDoc = await PDFLib.PDFDocument.create();
+      const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+      const fontSize = 10;
+      const lineHeight = 14;
+      const margin = { top: 50, bottom: 50, left: 50, right: 50 };
+      const pageW = 612; // Letter
+      const pageH = 792;
+      const maxWidth = pageW - margin.left - margin.right;
+      const maxLinesPerPage = Math.floor((pageH - margin.top - margin.bottom) / lineHeight);
 
-      try {
-        const pdfArrayBuffer = await html2pdf().set({
-          margin: 10,
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
-        }).from(container).outputPdf('arraybuffer');
+      // Extraer texto estructurado del HTML
+      const lineas = textoPlano.split(/\n/).flatMap(linea => {
+        linea = linea.trim();
+        if(!linea) return [''];
+        // Dividir líneas largas
+        const result = [];
+        while(linea.length > 0){
+          const maxChars = Math.floor(maxWidth / (fontSize * 0.5));
+          if(linea.length <= maxChars){
+            result.push(linea);
+            break;
+          }
+          let corte = linea.lastIndexOf(' ', maxChars);
+          if(corte <= 0) corte = maxChars;
+          result.push(linea.substring(0, corte));
+          linea = linea.substring(corte).trim();
+        }
+        return result;
+      });
 
-        _splitterData.pdfBytes = pdfArrayBuffer instanceof ArrayBuffer
-          ? pdfArrayBuffer
-          : new Uint8Array(pdfArrayBuffer).buffer;
+      // Crear páginas
+      let lineaIdx = 0;
+      while(lineaIdx < lineas.length){
+        const page = pdfDoc.addPage([pageW, pageH]);
+        let y = pageH - margin.top;
 
-        console.log('HTML → PDF:', _splitterData.pdfBytes.byteLength, 'bytes');
-      } catch(convErr){
-        console.error('Error convirtiendo HTML a PDF:', convErr);
-        // Fallback: guardar HTML como blob marcado como PDF
-        const encoder = new TextEncoder();
-        _splitterData.pdfBytes = encoder.encode(htmlText).buffer;
-        console.warn('Fallback: HTML guardado como bytes sin convertir');
-      } finally {
-        document.body.removeChild(container);
+        for(let i = 0; i < maxLinesPerPage && lineaIdx < lineas.length; i++){
+          const texto = lineas[lineaIdx];
+          if(texto){
+            // Detectar si es título (todo mayúsculas y corto)
+            const esTitulo = texto === texto.toUpperCase() && texto.length < 80 && texto.length > 3;
+            page.drawText(texto, {
+              x: margin.left,
+              y,
+              size: esTitulo ? 11 : fontSize,
+              font: esTitulo ? fontBold : font,
+              color: PDFLib.rgb(0, 0, 0)
+            });
+          }
+          y -= lineHeight;
+          lineaIdx++;
+        }
       }
+
+      const pdfBytes = await pdfDoc.save();
+      _splitterData.pdfBytes = pdfBytes.buffer;
+      console.log('HTML → PDF (pdf-lib):', _splitterData.pdfBytes.byteLength, 'bytes');
 
       if(progresoEl) progresoEl.textContent = 'Clasificando documento...';
       if(barEl) barEl.style.width = '80%';
