@@ -652,6 +652,18 @@ function detectarLimites(paginas){
       }
     }
 
+    // FILTRO FOSE: si la página anterior tiene código FOSE y esta NO tiene uno diferente,
+    // es continuación del mismo documento
+    if(esInicio && i > 0){
+      const prevTexto = paginas[i-1].texto || '';
+      const foseEnPrev = prevTexto.match(/\b(PRE|DOC|CON|EJE|PAG|ANT|ADI)-\d{2}\b/i);
+      const foseEnEsta = textoTop.match(/\b(PRE|DOC|CON|EJE|PAG|ANT|ADI)-\d{2}\b/i);
+      if(foseEnPrev && !foseEnEsta){
+        // Página anterior tiene código FOSE, esta no → es continuación
+        esInicio = false;
+      }
+    }
+
     // FILTRO ANTI-FALSOS POSITIVOS: si el patrón es de entidad gubernamental,
     // verificar que NO estemos dentro de un documento contractual que simplemente
     // menciona esas entidades en una tabla de requisitos
@@ -1059,8 +1071,31 @@ async function iniciarAnalisisPDF(input){
 
       _splitterData.paginas = paginas;
 
-      // Sistema de 2 pasadas: detectar límites + clasificar grupos
-      _splitterData.grupos = detectarYAgrupar(paginas);
+      // Tratar TODO el archivo como UN solo documento
+      // Clasificar usando texto combinado + nombre del archivo
+      const textoCompleto = paginas.map(p => p.texto).join(' ');
+      const nombreArchivoPDF = file.name.toLowerCase().replace(/[_\-\.]/g, ' ');
+      const paginaParaClasificar = { texto: nombreArchivoPDF + ' ' + textoCompleto, textoSuperior: paginas[0]?.textoSuperior || '' };
+      const { tipo: tipoPDF, confianza: confianzaPDF } = clasificarGrupo([paginaParaClasificar]);
+
+      const fechaPDF = extraerFechaDelTexto(paginas.map(p => p.texto).join(' '));
+      const reglaPDF = DETECTOR_REGLAS.find(r => r.tipo === tipoPDF);
+
+      paginas.forEach((p, idx) => {
+        p.tipoDetectado = tipoPDF;
+        p.confianza = confianzaPDF;
+        p.tipoAsignado = tipoPDF;
+        p.esInicio = idx === 0;
+      });
+
+      _splitterData.grupos = [{
+        tipo: tipoPDF || 'no_identificado',
+        nombre: reglaPDF ? reglaPDF.nombre : 'No identificado',
+        paginaDesde: 1,
+        paginaHasta: paginas.length,
+        confianza: confianzaPDF,
+        fechaDetectada: fechaPDF
+      }];
 
       // Mostrar resultados
       mostrarResultadosSplitter();
