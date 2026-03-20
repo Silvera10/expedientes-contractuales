@@ -1,0 +1,175 @@
+/* ══════════════════════════════════════════
+   EXPEDIENTES CONTRACTUALES — Estilos
+══════════════════════════════════════════ */
+
+:root {
+  --azul: #1a3a5c;
+  --azul2: #2d5f8a;
+  --dorado: #d4a017;
+  --verde: #198754;
+  --rojo: #dc3545;
+  --amarillo: #ffc107;
+  --gris: #6c757d;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f0f2f5;
+  font-size: 13px;
+}
+
+/* ── Auth Overlay ── */
+#auth-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: linear-gradient(135deg, #1a3a5c 0%, #2d5f8a 50%, #1a6b3c 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.auth-card {
+  width: 380px; max-width: 95vw;
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.auth-header {
+  background: rgba(0,0,0,0.2);
+  color: #fff; text-align: center;
+  padding: 30px 20px 20px;
+}
+.auth-body {
+  background: #fff;
+  padding: 25px;
+}
+
+/* ── Toast ── */
+.toast-msg {
+  padding: 10px 16px; border-radius: 8px;
+  color: #fff; font-size: 12px; font-weight: 500;
+  margin-top: 6px; animation: slideIn 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.toast-msg.success { background: var(--verde); }
+.toast-msg.danger { background: var(--rojo); }
+.toast-msg.warning { background: var(--amarillo); color: #333; }
+.toast-msg.info { background: var(--azul2); }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ── Lista de expedientes ── */
+.exp-item {
+  cursor: pointer; padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+  transition: background 0.15s;
+}
+.exp-item:hover { background: #f8f9fa; }
+.exp-item.active { background: #e8f0fe; border-left: 3px solid var(--azul2); }
+.exp-item .exp-numero { font-weight: 700; color: var(--azul); font-size: 13px; }
+.exp-item .exp-contratista { font-size: 11px; color: var(--gris); }
+.exp-item .exp-estado { font-size: 10px; }
+
+/* ── Badges de estado ── */
+.badge-progreso { background: var(--amarillo); color: #333; }
+.badge-completo { background: var(--verde); }
+.badge-bloqueado { background: var(--gris); }
+
+/* ── Panel de documentos ── */
+.doc-slot {
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s;
+  background: #fff;
+}
+.doc-slot:hover { border-color: var(--azul2); background: #f8f9fa; }
+.doc-slot.uploaded {
+  border-color: var(--verde);
+  border-style: solid;
+  background: #f0fdf4;
+}
+.doc-slot.uploaded:hover { background: #dcfce7; }
+
+.doc-slot .doc-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff;
+  flex-shrink: 0;
+}
+.doc-slot .doc-info { flex: 1; min-width: 0; }
+.doc-slot .doc-name { font-weight: 600; font-size: 12px; }
+.doc-slot .doc-meta { font-size: 10px; color: var(--gris); }
+.doc-slot .doc-actions { display: flex; gap: 4px; }
+
+/* ── Semaforo ── */
+.semaforo { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.semaforo.verde { background: var(--verde); }
+.semaforo.amarillo { background: var(--amarillo); }
+.semaforo.rojo { background: var(--rojo); }
+
+/* ── Etapas ── */
+.etapa-header {
+  font-size: 12px; font-weight: 700;
+  padding: 6px 10px; border-radius: 6px;
+  margin-bottom: 8px;
+}
+.etapa-pre { background: #e8f0fe; color: #1a56db; }
+.etapa-sel { background: #fef3c7; color: #92400e; }
+.etapa-con { background: #d1fae5; color: #065f46; }
+.etapa-eje { background: #ede9fe; color: #5b21b6; }
+.etapa-pag { background: #fee2e2; color: #991b1b; }
+.etapa-ant { background: #f3f4f6; color: #374151; border-left: 3px solid #6c757d; }
+.etapa-adi { background: #fff7ed; color: #9a3412; border-left: 3px solid #fd7e14; }
+
+/* ── Barra de progreso expediente ── */
+.progress-bar-exp {
+  height: 8px; border-radius: 4px;
+  background: #e9ecef; overflow: hidden;
+}
+.progress-bar-exp .fill {
+  height: 100%; border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* ── Cards KPI ── */
+.kpi-card {
+  text-align: center; padding: 12px;
+  border-radius: 8px; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.kpi-card .kpi-val { font-size: 1.5rem; font-weight: 800; }
+.kpi-card .kpi-label { font-size: 10px; color: var(--gris); text-transform: uppercase; }
+
+/* ── Botones de accion ── */
+.btn-generar {
+  background: linear-gradient(135deg, var(--azul), var(--azul2));
+  color: #fff; border: none; font-weight: 700;
+  padding: 10px 24px; border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(26,58,92,0.3);
+  transition: all 0.2s;
+}
+.btn-generar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(26,58,92,0.4);
+  color: #fff;
+}
+
+/* ── Auditoria ── */
+.doc-slot .form-control[type="date"] {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+.doc-slot.uploaded .doc-meta .bi-exclamation-triangle {
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .auth-card { width: 95vw; }
+  .container-fluid { padding: 8px; }
+}

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expedientes Contractuales</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     AUTH OVERLAY (Login / Registro)
+══════════════════════════════════════════ -->
+<div id="auth-overlay" style="display:flex">
+  <div class="auth-card">
+    <div class="auth-header">
+      <i class="bi bi-folder-check" style="font-size:2.5rem"></i>
+      <h4 class="mt-2 mb-0">Expedientes Contractuales</h4>
+      <small class="text-light opacity-75">Instituciones Educativas &mdash; Ley 80</small>
+    </div>
+    <div class="auth-body">
+      <div id="auth-error" class="alert alert-danger py-2 small" style="display:none"></div>
+
+      <!-- Login -->
+      <div id="form-login">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Correo electr&oacute;nico</label>
+          <input type="email" id="auth-email" class="form-control" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Contrase&ntilde;a</label>
+          <input type="password" id="auth-pass" class="form-control" placeholder="********">
+        </div>
+        <button id="btn-login" class="btn btn-primary w-100 fw-bold" onclick="doLogin()">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Ingresar
+        </button>
+        <div class="text-center mt-3">
+          <small>No tienes cuenta? <a href="#" onclick="toggleAuthForm('register')">Crear cuenta</a></small>
+        </div>
+      </div>
+
+      <!-- Registro -->
+      <div id="form-register" style="display:none">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Nombre completo</label>
+          <input type="text" id="reg-nombre" class="form-control" placeholder="Juan P&eacute;rez">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Correo electr&oacute;nico</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Contrase&ntilde;a (m&iacute;nimo 6 caracteres)</label>
+          <input type="password" id="reg-pass" class="form-control" placeholder="********">
+        </div>
+        <button id="btn-register" class="btn btn-success w-100 fw-bold" onclick="doRegister()">
+          <i class="bi bi-person-plus me-1"></i>Crear cuenta
+        </button>
+        <div class="text-center mt-3">
+          <small>Ya tienes cuenta? <a href="#" onclick="toggleAuthForm('login')">Iniciar sesi&oacute;n</a></small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     APP PRINCIPAL
+══════════════════════════════════════════ -->
+<div id="app-container" style="display:none">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark py-1" style="background:linear-gradient(135deg,#1a3a5c,#2d5f8a)">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 d-flex align-items-center gap-2" style="font-size:14px">
+        <i class="bi bi-folder-check" style="font-size:1.3rem"></i>
+        <span class="fw-bold">Expedientes Contractuales</span>
+      </span>
+      <div class="d-flex align-items-center gap-2">
+        <span id="sync-status" class="badge bg-secondary" title="Estado de sincronizaci&oacute;n">
+          <i class="bi bi-cloud-slash"></i>
+        </span>
+        <span id="user-name" class="text-white small"></span>
+        <button class="btn btn-outline-light btn-sm py-0 px-2" onclick="doLogout()" title="Cerrar sesi&oacute;n">
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido principal -->
+  <div class="container-fluid py-3">
+    <div class="row">
+
+      <!-- Panel izquierdo: Lista de expedientes -->
+      <div class="col-md-4 col-lg-3">
+        <div class="card shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center py-2" style="background:#1a3a5c;color:#fff">
+            <span class="fw-bold small"><i class="bi bi-list-ul me-1"></i>Mis Expedientes</span>
+            <button class="btn btn-warning btn-sm py-0 px-2" onclick="nuevoExpediente()" title="Nuevo expediente">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+          <div id="lista-expedientes" class="list-group list-group-flush" style="max-height:calc(100vh - 180px);overflow-y:auto">
+            <p class="text-muted text-center py-4 small">Cargando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel derecho: Detalle del expediente -->
+      <div class="col-md-8 col-lg-9">
+        <div id="panel-detalle">
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-folder2-open" style="font-size:4rem;opacity:0.3"></i>
+            <p class="mt-2">Seleccione un expediente o cree uno nuevo</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: Nuevo / Editar Expediente
+══════════════════════════════════════════ -->
+<div class="modal fade" id="modalExpediente" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header py-2" style="background:#1a3a5c;color:#fff">
+        <h6 class="modal-title"><i class="bi bi-folder-plus me-2"></i><span id="modal-titulo">Nuevo Expediente</span></h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="exp-id">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Instituci&oacute;n Educativa <span class="text-danger">*</span></label>
+          <input type="text" id="exp-institucion" class="form-control" placeholder="Ej: I.E. Alta Monta&ntilde;a">
+        </div>
+        <!-- Tipo de contrato -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Tipo de contrato <span class="text-danger">*</span></label>
+          <select id="exp-tipo-vigencia" class="form-select" onchange="toggleVigenciaAnterior()">
+            <option value="actual">Vigencia actual</option>
+            <option value="anterior">Vigencia anterior (con adici&oacute;n/pr&oacute;rroga)</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label class="form-label small fw-bold">N&deg; Contrato <span class="text-danger">*</span></label>
+            <input type="text" id="exp-numero" class="form-control" placeholder="Ej: 001">
+          </div>
+          <div class="col-6 mb-3">
+            <label class="form-label small fw-bold">Vigencia (A&ntilde;o) <span class="text-danger">*</span></label>
+            <input type="number" id="exp-anio" class="form-control" value="2026">
+          </div>
+        </div>
+        <!-- Campos extra vigencia anterior -->
+        <div id="campos-vigencia-anterior" style="display:none">
+          <div class="alert alert-warning py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            Contrato de vigencia anterior con compromiso. Se generar&aacute;n secciones separadas para documentos originales y de la adici&oacute;n.
+          </div>
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label small fw-bold">Vigencia original del contrato</label>
+              <input type="number" id="exp-anio-original" class="form-control" value="2025">
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label small fw-bold">Vigencia de pago (adici&oacute;n)</label>
+              <input type="number" id="exp-anio-pago" class="form-control" value="2026">
+            </div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Contratista <span class="text-danger">*</span></label>
+          <input type="text" id="exp-contratista" class="form-control" placeholder="Nombre del contratista">
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label class="form-label small fw-bold">NIT / C&eacute;dula</label>
+            <input type="text" id="exp-nit" class="form-control" placeholder="Ej: 900123456-7">
+          </div>
+          <div class="col-6 mb-3">
+            <label class="form-label small fw-bold">Valor del contrato</label>
+            <input type="text" id="exp-valor" class="form-control" placeholder="Ej: 5000000">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label class="form-label small fw-bold">Fecha del Contrato <span class="text-danger">*</span></label>
+            <input type="date" id="exp-fecha-contrato" class="form-control">
+          </div>
+          <div class="col-6 mb-3">
+            <label class="form-label small fw-bold">Fecha Acta de Inicio</label>
+            <input type="date" id="exp-fecha-inicio" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Objeto del contrato</label>
+          <textarea id="exp-objeto" class="form-control" rows="2" placeholder="Descripci&oacute;n breve del objeto contractual"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm fw-bold" onclick="guardarExpediente()">
+          <i class="bi bi-check-lg me-1"></i>Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: Subida masiva (PDF completo)
+══════════════════════════════════════════ -->
+<div class="modal fade" id="modalSplitter" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header py-2" style="background:#198754;color:#fff">
+        <h6 class="modal-title"><i class="bi bi-scissors me-2"></i>Subir Expediente Completo (PDF)</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="splitter-exp-id">
+
+        <!-- Paso 1: Subir PDF -->
+        <div id="splitter-paso1">
+          <div class="text-center py-4">
+            <i class="bi bi-file-earmark-pdf" style="font-size:3rem;color:#dc3545"></i>
+            <h5 class="mt-2">Suba el PDF con todos los documentos del expediente</h5>
+            <p class="text-muted small">La app leer&aacute; cada p&aacute;gina y detectar&aacute; autom&aacute;ticamente qu&eacute; documento es</p>
+            <label class="btn btn-success btn-lg mt-2">
+              <i class="bi bi-upload me-2"></i>Seleccionar PDF
+              <input type="file" accept=".pdf" style="display:none" onchange="iniciarAnalisisPDF(this)">
+            </label>
+          </div>
+        </div>
+
+        <!-- Paso 2: Analizando -->
+        <div id="splitter-paso2" style="display:none">
+          <div class="text-center py-4">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <h5>Analizando documento...</h5>
+            <p class="text-muted small" id="splitter-progreso">Inicializando...</p>
+            <div class="progress mx-auto mt-2" style="width:60%;height:6px">
+              <div id="splitter-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+            </div>
+            <p class="text-muted small mt-2"><i class="bi bi-info-circle me-1"></i>Si el PDF es escaneado se usar&aacute; OCR autom&aacute;tico.<br>Puede tardar 3-5 segundos por p&aacute;gina escaneada.</p>
+          </div>
+        </div>
+
+        <!-- Paso 3: Resultados -->
+        <div id="splitter-paso3" style="display:none">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong id="splitter-resumen"></strong> &mdash; Revise y corrija las asignaciones si es necesario.
+          </div>
+          <div id="splitter-resultados" style="max-height:50vh;overflow-y:auto"></div>
+        </div>
+      </div>
+      <div class="modal-footer py-2" id="splitter-footer" style="display:none">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success btn-sm fw-bold" onclick="confirmarSeparacion()">
+          <i class="bi bi-check-lg me-1"></i>Confirmar y asignar documentos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TOAST (notificaciones)
+══════════════════════════════════════════ -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast-container"></div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script src="js/supabase.js"></script>
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/pdf-splitter.js"></script>
+<script src="js/pdf-engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
