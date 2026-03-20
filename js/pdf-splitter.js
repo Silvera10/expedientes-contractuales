@@ -742,7 +742,9 @@ function clasificarGrupo(paginasDelGrupo){
       const peso = (i === 0) ? 3.0 : 1.0; // Primera página pesa 3x
       for(const palabra of regla.palabras){
         if(texto.includes(palabra)){
-          puntaje += regla.peso * peso;
+          // Códigos FOSE (eje-04, pre-01, etc.) tienen peso definitivo
+          const esFose = /^(pre|doc|con|eje|pag|ant|adi)-\d{2}$/i.test(palabra);
+          puntaje += esFose ? 50 : (regla.peso * peso);
         }
       }
     }
