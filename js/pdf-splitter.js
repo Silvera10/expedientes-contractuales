@@ -107,7 +107,7 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'inhabilidades',
     nombre: 'Consulta de Inhabilidades',
-    palabras: ['consulta de inhabilidades', 'inhabilidades para contratar', 'inhabilitado', 'registro de inhabilidades', 'ley 1474', 'inhabilidades e incompatibilidades', 'certificado inhabilidades', 'no estar incurso en inhabilidad', 'inhabilidades por delitos sexuales', 'delitos sexuales contra menores'],
+    palabras: ['consulta de inhabilidades', 'inhabilidades para contratar', 'registro de inhabilidades', 'certificado inhabilidades', 'no estar incurso en inhabilidad', 'inhabilidades por delitos sexuales', 'delitos sexuales contra menores'],
     peso: 3
   },
   {
@@ -581,7 +581,14 @@ const CONTEXT_CONTRACTUAL_KEYWORDS = [
   'forma de pago', 'plazo de ejecución', 'plazo de ejecucion',
   'obligaciones del contratista', 'obligaciones del contratante',
   'cláusula', 'clausula', 'régimen especial', 'regimen especial',
-  'tabla de requisitos', 'documentación requerida', 'documentacion requerida'
+  'tabla de requisitos', 'documentación requerida', 'documentacion requerida',
+  'causales de terminación', 'causales de terminacion',
+  'documentos del contrato', 'perfeccionamiento del contrato',
+  'solución de controversias', 'solucion de controversias',
+  'domicilio contractual', 'entre los suscritos',
+  'hemos convenido en celebrar', 'inhabilidades e incompatibilidades',
+  'ley 1474', 'análisis de riesgos', 'analisis de riesgos',
+  'evaluación de las propuestas', 'evaluacion de las propuestas'
 ];
 
 /* ══════════════════════════════════════════
