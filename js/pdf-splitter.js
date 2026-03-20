@@ -267,7 +267,8 @@ let _splitterData = {
   pdfBytes: null,       // ArrayBuffer del PDF original
   paginas: [],          // [{num, texto, tipoDetectado, confianza, tipoAsignado}]
   grupos: [],           // [{tipo, nombre, paginaDesde, paginaHasta}]
-  expId: null
+  expId: null,
+  docsGuardados: 0      // Contador de documentos guardados en esta sesión
 };
 
 /* Umbral: si el texto extraido tiene menos de estos caracteres, usar OCR */
@@ -1037,16 +1038,18 @@ async function confirmarSeparacion(){
       await DB.saveDocumento(doc);
     }
 
+    _splitterData.docsGuardados += grupos.length;
+
     // Actualizar estado
     await actualizarEstadoExpediente(expId);
 
-    // Cerrar modal
-    bootstrap.Modal.getInstance(document.getElementById('modalSplitter')).hide();
-
-    // Re-render
+    // Re-render el detalle detrás del modal
     renderDetalleExpediente(expId);
 
-    toast(`${grupos.length} documentos separados y asignados exitosamente`);
+    toast(`${grupos.length} documentos asignados. Total esta sesión: ${_splitterData.docsGuardados}`);
+
+    // Volver al paso 1 para cargar más documentos
+    mostrarPasoCargarMas();
 
   } catch(e){
     console.error('Error separando PDF:', e);
@@ -1055,13 +1058,67 @@ async function confirmarSeparacion(){
 }
 
 /* ══════════════════════════════════════════
+   MOSTRAR PASO "CARGAR MÁS" DESPUÉS DE CONFIRMAR
+══════════════════════════════════════════ */
+function mostrarPasoCargarMas(){
+  document.getElementById('splitter-paso1').style.display = '';
+  document.getElementById('splitter-paso2').style.display = 'none';
+  document.getElementById('splitter-paso3').style.display = 'none';
+  document.getElementById('splitter-footer').style.display = 'none';
+
+  // Reemplazar contenido del paso 1 con mensaje de éxito + opciones
+  const paso1 = document.getElementById('splitter-paso1');
+  paso1.innerHTML = `
+    <div class="text-center py-4">
+      <i class="bi bi-check-circle-fill" style="font-size:3rem;color:#198754"></i>
+      <h5 class="mt-2 text-success">${_splitterData.docsGuardados} documento(s) asignados</h5>
+      <p class="text-muted small">¿Desea cargar más documentos para este expediente?</p>
+      <div class="d-flex justify-content-center gap-3 mt-3">
+        <label class="btn btn-success btn-lg">
+          <i class="bi bi-upload me-2"></i>Cargar otro PDF
+          <input type="file" accept=".pdf" style="display:none" onchange="iniciarAnalisisPDF(this)">
+        </label>
+        <button class="btn btn-outline-secondary btn-lg" onclick="finalizarSplitter()">
+          <i class="bi bi-check-lg me-2"></i>Finalizar
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Finalizar y cerrar modal ── */
+function finalizarSplitter(){
+  bootstrap.Modal.getInstance(document.getElementById('modalSplitter')).hide();
+  // Restaurar paso 1 original para la próxima vez
+  restaurarPaso1Original();
+  toast(`Carga completa: ${_splitterData.docsGuardados} documentos asignados al expediente`);
+}
+
+/* ── Restaurar el HTML original del paso 1 ── */
+function restaurarPaso1Original(){
+  const paso1 = document.getElementById('splitter-paso1');
+  paso1.innerHTML = `
+    <div class="text-center py-4">
+      <i class="bi bi-file-earmark-pdf" style="font-size:3rem;color:#dc3545"></i>
+      <h5 class="mt-2">Suba el PDF con todos los documentos del expediente</h5>
+      <p class="text-muted small">La app leerá cada página y detectará automáticamente qué documento es</p>
+      <label class="btn btn-success btn-lg mt-2">
+        <i class="bi bi-upload me-2"></i>Seleccionar PDF
+        <input type="file" accept=".pdf" style="display:none" onchange="iniciarAnalisisPDF(this)">
+      </label>
+    </div>
+  `;
+}
+
+/* ══════════════════════════════════════════
    ABRIR MODAL DEL SPLITTER
 ══════════════════════════════════════════ */
 function abrirSplitter(expId){
-  _splitterData = { pdfBytes: null, paginas: [], grupos: [], expId };
+  _splitterData = { pdfBytes: null, paginas: [], grupos: [], expId, docsGuardados: 0 };
 
   // Reset UI
   document.getElementById('splitter-exp-id').value = expId;
+  restaurarPaso1Original();
   document.getElementById('splitter-paso1').style.display = '';
   document.getElementById('splitter-paso2').style.display = 'none';
   document.getElementById('splitter-paso3').style.display = 'none';
