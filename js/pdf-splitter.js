@@ -784,8 +784,11 @@ async function iniciarAnalisisPDF(input){
   const file = input.files[0];
   if(!file) return;
 
-  if(file.type !== 'application/pdf'){
-    toast('Solo se permiten archivos PDF', 'danger');
+  const esHTML = file.name.endsWith('.html') || file.name.endsWith('.htm') || file.type === 'text/html';
+  const esPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+
+  if(!esPDF && !esHTML){
+    toast('Solo se permiten archivos PDF o HTML', 'danger');
     input.value = '';
     return;
   }
@@ -797,7 +800,34 @@ async function iniciarAnalisisPDF(input){
   document.getElementById('splitter-footer').style.display = 'none';
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
+    let arrayBuffer;
+
+    if(esHTML){
+      // Convertir HTML a PDF usando html2pdf.js
+      const progresoEl = document.getElementById('splitter-progreso');
+      if(progresoEl) progresoEl.textContent = 'Convirtiendo HTML a PDF...';
+
+      const htmlText = await file.text();
+      const container = document.createElement('div');
+      container.innerHTML = htmlText;
+      container.style.cssText = 'position:absolute;left:-9999px;top:0;width:210mm;';
+      document.body.appendChild(container);
+
+      const pdfBlob = await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: file.name.replace(/\.html?$/i, '.pdf'),
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(container).outputPdf('arraybuffer');
+
+      document.body.removeChild(container);
+      arrayBuffer = pdfBlob;
+    } else {
+      arrayBuffer = await file.arrayBuffer();
+    }
+
     // Guardar una COPIA del ArrayBuffer (pdf.js puede detach el original)
     _splitterData.pdfBytes = arrayBuffer.slice(0);
 
@@ -1088,8 +1118,8 @@ function mostrarPasoCargarMas(){
       <p class="text-muted small">¿Desea cargar más documentos para este expediente?</p>
       <div class="d-flex justify-content-center gap-3 mt-3">
         <label class="btn btn-success btn-lg">
-          <i class="bi bi-upload me-2"></i>Cargar otro PDF
-          <input type="file" accept=".pdf" style="display:none" onchange="iniciarAnalisisPDF(this)">
+          <i class="bi bi-upload me-2"></i>Cargar otro archivo
+          <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisPDF(this)">
         </label>
         <button class="btn btn-outline-secondary btn-lg" onclick="finalizarSplitter()">
           <i class="bi bi-check-lg me-2"></i>Finalizar
@@ -1113,11 +1143,11 @@ function restaurarPaso1Original(){
   paso1.innerHTML = `
     <div class="text-center py-4">
       <i class="bi bi-file-earmark-pdf" style="font-size:3rem;color:#dc3545"></i>
-      <h5 class="mt-2">Suba el PDF con todos los documentos del expediente</h5>
-      <p class="text-muted small">La app leerá cada página y detectará automáticamente qué documento es</p>
+      <h5 class="mt-2">Suba el documento del expediente</h5>
+      <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> — La app detectará automáticamente qué documento es</p>
       <label class="btn btn-success btn-lg mt-2">
-        <i class="bi bi-upload me-2"></i>Seleccionar PDF
-        <input type="file" accept=".pdf" style="display:none" onchange="iniciarAnalisisPDF(this)">
+        <i class="bi bi-upload me-2"></i>Seleccionar archivo
+        <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisPDF(this)">
       </label>
     </div>
   `;

@@ -230,11 +230,11 @@
         <div id="splitter-paso1">
           <div class="text-center py-4">
             <i class="bi bi-file-earmark-pdf" style="font-size:3rem;color:#dc3545"></i>
-            <h5 class="mt-2">Suba el PDF con todos los documentos del expediente</h5>
-            <p class="text-muted small">La app leer&aacute; cada p&aacute;gina y detectar&aacute; autom&aacute;ticamente qu&eacute; documento es</p>
+            <h5 class="mt-2">Suba el documento del expediente</h5>
+            <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> &mdash; La app detectar&aacute; autom&aacute;ticamente qu&eacute; documento es</p>
             <label class="btn btn-success btn-lg mt-2">
               <i class="bi bi-upload me-2"></i>Seleccionar PDF
-              <input type="file" accept=".pdf" style="display:none" onchange="iniciarAnalisisPDF(this)">
+              <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisPDF(this)">
             </label>
           </div>
         </div>
@@ -284,6 +284,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script src="js/supabase.js"></script>
 <script src="js/db.js"></script>
