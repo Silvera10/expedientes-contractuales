@@ -95,7 +95,7 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'rut',
     nombre: 'RUT',
-    palabras: ['doc-01', 'registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'dian', 'formulario del registro', 'responsabilidades tributarias', 'rut', 'nit', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial'],
+    palabras: ['doc-01', 'registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'formulario del registro', 'responsabilidades tributarias', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial', 'formulario del rut', 'consulta del rut', 'impresión del rut'],
     peso: 3
   },
   {
@@ -923,8 +923,11 @@ async function iniciarAnalisisPDF(input){
 
       _splitterData.paginas = [pagina];
 
-      // Clasificar usando el texto completo
-      const { tipo, confianza } = clasificarGrupo([pagina]);
+      // Clasificar usando el texto completo + nombre del archivo
+      const nombreArchivo = file.name.toLowerCase().replace(/[_\-\.]/g, ' ');
+      // Agregar nombre del archivo al texto para clasificación
+      const paginaConNombre = { ...pagina, texto: nombreArchivo + ' ' + pagina.texto };
+      const { tipo, confianza } = clasificarGrupo([paginaConNombre]);
       pagina.tipoDetectado = tipo;
       pagina.confianza = confianza;
       pagina.tipoAsignado = tipo;
