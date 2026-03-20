@@ -800,14 +800,24 @@ async function iniciarAnalisisPDF(input){
   document.getElementById('splitter-footer').style.display = 'none';
 
   try {
-    let arrayBuffer;
-
     if(esHTML){
-      // Convertir HTML a PDF usando html2pdf.js
+      // ── FLUJO HTML: extraer texto directo del HTML, convertir a PDF para storage ──
       const progresoEl = document.getElementById('splitter-progreso');
-      if(progresoEl) progresoEl.textContent = 'Convirtiendo HTML a PDF...';
+      const barEl = document.getElementById('splitter-progress-bar');
+      if(progresoEl) progresoEl.textContent = 'Leyendo HTML...';
+      if(barEl) barEl.style.width = '30%';
 
       const htmlText = await file.text();
+
+      // Extraer texto plano del HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlText;
+      const textoPlano = (tempDiv.textContent || tempDiv.innerText || '').trim();
+
+      if(progresoEl) progresoEl.textContent = 'Convirtiendo HTML a PDF...';
+      if(barEl) barEl.style.width = '50%';
+
+      // Convertir HTML a PDF para almacenamiento
       const container = document.createElement('div');
       container.innerHTML = htmlText;
       container.style.cssText = 'position:absolute;left:-9999px;top:0;width:210mm;';
@@ -823,34 +833,79 @@ async function iniciarAnalisisPDF(input){
       }).from(container).outputPdf('arraybuffer');
 
       document.body.removeChild(container);
-      arrayBuffer = pdfBlob;
+
+      // Guardar el PDF convertido
+      _splitterData.pdfBytes = pdfBlob.slice ? pdfBlob.slice(0) : new Uint8Array(pdfBlob).buffer;
+
+      if(progresoEl) progresoEl.textContent = 'Clasificando documento...';
+      if(barEl) barEl.style.width = '80%';
+
+      // Crear página virtual con el texto del HTML
+      const textoLower = textoPlano.toLowerCase();
+      const fechaDetectada = extraerFechaDelTexto(textoPlano);
+
+      const pagina = {
+        num: 1,
+        texto: textoLower,
+        textoSuperior: textoLower.substring(0, Math.ceil(textoLower.length * 0.2)),
+        tipoDetectado: null,
+        confianza: 0,
+        tipoAsignado: null,
+        fechaDetectada,
+        esInicio: true
+      };
+
+      _splitterData.paginas = [pagina];
+
+      // Clasificar usando el texto completo
+      const { tipo, confianza } = clasificarGrupo([pagina]);
+      pagina.tipoDetectado = tipo;
+      pagina.confianza = confianza;
+      pagina.tipoAsignado = tipo;
+
+      const regla = DETECTOR_REGLAS.find(r => r.tipo === tipo);
+      _splitterData.grupos = [{
+        tipo: tipo || 'no_identificado',
+        nombre: regla ? regla.nombre : 'No identificado',
+        paginaDesde: 1,
+        paginaHasta: 1,
+        confianza,
+        fechaDetectada
+      }];
+
+      if(barEl) barEl.style.width = '100%';
+
+      // Mostrar resultados
+      mostrarResultadosSplitter();
+
     } else {
-      arrayBuffer = await file.arrayBuffer();
+      // ── FLUJO PDF: extraer texto con pdf.js ──
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Guardar una COPIA del ArrayBuffer (pdf.js puede detach el original)
+      _splitterData.pdfBytes = arrayBuffer.slice(0);
+
+      // Extraer texto de cada pagina (con OCR si es necesario)
+      const paginas = await extraerTextoPaginas(arrayBuffer, (pag, total, extra) => {
+        const progresoEl = document.getElementById('splitter-progreso');
+        const barEl = document.getElementById('splitter-progress-bar');
+        if(total > 0){
+          const pct = Math.round((pag / total) * 100);
+          progresoEl.textContent = `Leyendo página ${pag} de ${total}${extra || ''}`;
+          if(barEl) barEl.style.width = pct + '%';
+        } else {
+          progresoEl.textContent = extra || 'Inicializando...';
+        }
+      });
+
+      _splitterData.paginas = paginas;
+
+      // Sistema de 2 pasadas: detectar límites + clasificar grupos
+      _splitterData.grupos = detectarYAgrupar(paginas);
+
+      // Mostrar resultados
+      mostrarResultadosSplitter();
     }
-
-    // Guardar una COPIA del ArrayBuffer (pdf.js puede detach el original)
-    _splitterData.pdfBytes = arrayBuffer.slice(0);
-
-    // Extraer texto de cada pagina (con OCR si es necesario)
-    const paginas = await extraerTextoPaginas(arrayBuffer, (pag, total, extra) => {
-      const progresoEl = document.getElementById('splitter-progreso');
-      const barEl = document.getElementById('splitter-progress-bar');
-      if(total > 0){
-        const pct = Math.round((pag / total) * 100);
-        progresoEl.textContent = `Leyendo página ${pag} de ${total}${extra || ''}`;
-        if(barEl) barEl.style.width = pct + '%';
-      } else {
-        progresoEl.textContent = extra || 'Inicializando...';
-      }
-    });
-
-    _splitterData.paginas = paginas;
-
-    // Sistema de 2 pasadas: detectar límites + clasificar grupos
-    _splitterData.grupos = detectarYAgrupar(paginas);
-
-    // Mostrar resultados
-    mostrarResultadosSplitter();
 
   } catch(e){
     console.error('Error analizando PDF:', e);
