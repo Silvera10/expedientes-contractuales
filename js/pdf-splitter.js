@@ -912,39 +912,41 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Generando PDF...';
       if(barEl) barEl.style.width = '80%';
 
-      // Crear PDF con la imagen capturada
+      // Crear PDF cortando el canvas en páginas
       const pageW = 612; // Letter width in points
       const pageH = 792; // Letter height in points
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const margin = 30;
+      const contentW = pageW - margin * 2;
+      const contentH = pageH - margin * 2;
 
-      // Calcular cuántas páginas necesitamos
-      const imgAspect = canvas.height / canvas.width;
-      const contentW = pageW - 40; // margins
-      const contentH = pageH - 40;
-      const totalImgH = contentW * imgAspect;
-      const numPages = Math.ceil(totalImgH / contentH);
+      // Calcular dimensiones: cuántos píxeles del canvas caben en una página
+      const scale = contentW / canvas.width; // puntos PDF por píxel de canvas
+      const pxPerPage = Math.floor(contentH / scale); // píxeles de canvas por página
+      const numPages = Math.ceil(canvas.height / pxPerPage);
 
       const pdfDoc = await PDFLib.PDFDocument.create();
 
-      // Embed la imagen completa
-      const imgBytes = await fetch(imgData).then(r => r.arrayBuffer());
-      const jpgImage = await pdfDoc.embedJpg(imgBytes);
-
       for(let p = 0; p < numPages; p++){
+        const srcY = p * pxPerPage;
+        const srcH = Math.min(pxPerPage, canvas.height - srcY);
+
+        // Cortar porción del canvas para esta página
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = srcH;
+        const ctx = pageCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+
+        // Convertir a JPEG y embeber
+        const jpgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+        const jpgBytes = await fetch(jpgData).then(r => r.arrayBuffer());
+        const jpgImage = await pdfDoc.embedJpg(jpgBytes);
+
         const page = pdfDoc.addPage([pageW, pageH]);
-        // Calcular qué porción de la imagen va en esta página
-        const srcY = (p * contentH / totalImgH) * canvas.height;
-        const srcH = (contentH / totalImgH) * canvas.height;
-
-        // Dibujar la imagen completa pero desplazada
-        const scale = contentW / canvas.width * 2; // *2 porque scale:2 en html2canvas
-        const drawH = totalImgH;
-        const drawY = -p * contentH + 20; // offset vertical
-
-        // Clip drawing area
+        const drawH = srcH * scale;
         page.drawImage(jpgImage, {
-          x: 20,
-          y: drawY,
+          x: margin,
+          y: pageH - margin - drawH,
           width: contentW,
           height: drawH
         });
