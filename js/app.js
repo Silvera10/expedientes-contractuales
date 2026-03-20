@@ -33,6 +33,7 @@ async function initApp(){
 
     // 5. Cargar expedientes
     await DB.loadExpedientes();
+    cargarFiltroInstituciones();
     renderListaExpedientes();
 
     SB.updateSyncUI('ok');
@@ -117,9 +118,60 @@ async function doLogout(){
 /* ══════════════════════════════════════════
    CRUD EXPEDIENTES
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   CATÁLOGO DE INSTITUCIONES
+══════════════════════════════════════════ */
+function getInstituciones(){
+  const instituciones = new Set();
+  DB._expedientes.forEach(e => {
+    if(e.institucion) instituciones.add(e.institucion);
+  });
+  return [...instituciones].sort();
+}
+
+function cargarFiltroInstituciones(){
+  const select = document.getElementById('filtro-institucion');
+  if(!select) return;
+  const instituciones = getInstituciones();
+  const valorActual = select.value;
+  select.innerHTML = '<option value="">Todas las instituciones</option>' +
+    instituciones.map(i => `<option value="${i}"${i === valorActual ? ' selected' : ''}>${i}</option>`).join('');
+}
+
+function cargarSelectInstituciones(){
+  const select = document.getElementById('exp-institucion-select');
+  if(!select) return;
+  const instituciones = getInstituciones();
+  select.innerHTML = '<option value="">— Seleccione —</option>' +
+    instituciones.map(i => `<option value="${i}">${i}</option>`).join('') +
+    '<option value="__nueva__">+ Agregar nueva institución...</option>';
+}
+
+function onInstitucionSelect(){
+  const select = document.getElementById('exp-institucion-select');
+  const input = document.getElementById('exp-institucion');
+  if(select.value === '__nueva__'){
+    input.style.display = '';
+    input.value = '';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = select.value;
+  }
+}
+
+function filtrarPorInstitucion(){
+  const filtro = document.getElementById('filtro-institucion').value;
+  DB._filtroInstitucion = filtro;
+  renderListaExpedientes();
+}
+
 function nuevoExpediente(){
   document.getElementById('exp-id').value = '';
   document.getElementById('exp-institucion').value = '';
+  cargarSelectInstituciones();
+  document.getElementById('exp-institucion-select').value = '';
+  document.getElementById('exp-institucion').style.display = 'none';
   document.getElementById('exp-numero').value = '';
   document.getElementById('exp-anio').value = new Date().getFullYear();
   document.getElementById('exp-contratista').value = '';
@@ -145,7 +197,18 @@ function editarExpediente(id){
   const exp = DB.getExpediente(id);
   if(!exp) return;
   document.getElementById('exp-id').value = exp.id;
-  document.getElementById('exp-institucion').value = exp.institucion || '';
+  cargarSelectInstituciones();
+  const selectInst = document.getElementById('exp-institucion-select');
+  const inputInst = document.getElementById('exp-institucion');
+  if(exp.institucion && [...selectInst.options].some(o => o.value === exp.institucion)){
+    selectInst.value = exp.institucion;
+    inputInst.value = exp.institucion;
+    inputInst.style.display = 'none';
+  } else {
+    selectInst.value = '__nueva__';
+    inputInst.value = exp.institucion || '';
+    inputInst.style.display = '';
+  }
   document.getElementById('exp-numero').value = exp.contrato_numero || '';
   document.getElementById('exp-anio').value = exp.anio || '';
   document.getElementById('exp-contratista').value = exp.contratista || '';
@@ -164,7 +227,10 @@ function editarExpediente(id){
 }
 
 async function guardarExpediente(){
-  const institucion = document.getElementById('exp-institucion').value.trim();
+  const selectInst = document.getElementById('exp-institucion-select');
+  const institucion = (selectInst.value === '__nueva__' || selectInst.value === '')
+    ? document.getElementById('exp-institucion').value.trim()
+    : selectInst.value;
   const numero = document.getElementById('exp-numero').value.trim();
   const anio = document.getElementById('exp-anio').value.trim();
   const contratista = document.getElementById('exp-contratista').value.trim();

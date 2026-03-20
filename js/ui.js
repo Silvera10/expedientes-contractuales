@@ -193,7 +193,11 @@ function toggleAuthForm(form){
 ══════════════════════════════════════════ */
 function renderListaExpedientes(){
   const el = document.getElementById('lista-expedientes');
-  const exps = DB._expedientes;
+  const filtro = DB._filtroInstitucion || '';
+  const exps = filtro ? DB._expedientes.filter(e => e.institucion === filtro) : DB._expedientes;
+
+  // Actualizar filtro de instituciones
+  if(typeof cargarFiltroInstituciones === 'function') cargarFiltroInstituciones();
 
   if(!exps.length){
     el.innerHTML = '<div class="text-center py-4"><i class="bi bi-folder2-open text-muted" style="font-size:2rem"></i><p class="text-muted small mt-2">No hay expedientes.<br>Cree uno con el bot\u00f3n <strong>+</strong></p></div>';
