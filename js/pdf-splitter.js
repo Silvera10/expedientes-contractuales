@@ -985,45 +985,51 @@ async function iniciarAnalisisPDF(input){
 
       const pdfBytes = await pdfDoc.save();
       _splitterData.pdfBytes = pdfBytes.buffer;
-      console.log('HTML → PDF (html2canvas):', _splitterData.pdfBytes.byteLength, 'bytes');
+      const totalPaginasPDF = pdfDoc.getPageCount();
+      console.log('HTML → PDF (html2canvas):', _splitterData.pdfBytes.byteLength, 'bytes,', totalPaginasPDF, 'páginas');
 
       if(progresoEl) progresoEl.textContent = 'Clasificando documento...';
       if(barEl) barEl.style.width = '80%';
 
-      // Crear página virtual con el texto del HTML
+      // Crear páginas virtuales para cada página del PDF
       const textoLower = textoPlano.toLowerCase();
       const fechaDetectada = extraerFechaDelTexto(textoPlano);
+      // También intentar extraer fecha del nombre del archivo
+      const fechaDeNombre = !fechaDetectada ? extraerFechaDelTexto(file.name.replace(/[_\-]/g, ' ')) : null;
+      const fechaFinal = fechaDetectada || fechaDeNombre;
 
-      const pagina = {
-        num: 1,
-        texto: textoLower,
-        textoSuperior: textoLower.substring(0, Math.ceil(textoLower.length * 0.2)),
-        tipoDetectado: null,
-        confianza: 0,
-        tipoAsignado: null,
-        fechaDetectada,
-        esInicio: true
-      };
+      const paginasVirtuales = [];
+      for(let p = 0; p < totalPaginasPDF; p++){
+        paginasVirtuales.push({
+          num: p + 1,
+          texto: p === 0 ? textoLower : '', // solo la primera tiene texto
+          textoSuperior: p === 0 ? textoLower.substring(0, Math.ceil(textoLower.length * 0.2)) : '',
+          tipoDetectado: null,
+          confianza: 0,
+          tipoAsignado: null,
+          fechaDetectada: fechaFinal,
+          esInicio: p === 0
+        });
+      }
 
-      _splitterData.paginas = [pagina];
+      _splitterData.paginas = paginasVirtuales;
 
       // Clasificar usando el texto completo + nombre del archivo
       const nombreArchivo = file.name.toLowerCase().replace(/[_\-\.]/g, ' ');
-      // Agregar nombre del archivo al texto para clasificación
-      const paginaConNombre = { ...pagina, texto: nombreArchivo + ' ' + pagina.texto };
+      const paginaConNombre = { ...paginasVirtuales[0], texto: nombreArchivo + ' ' + textoLower };
       const { tipo, confianza } = clasificarGrupo([paginaConNombre]);
-      pagina.tipoDetectado = tipo;
-      pagina.confianza = confianza;
-      pagina.tipoAsignado = tipo;
+      paginasVirtuales[0].tipoDetectado = tipo;
+      paginasVirtuales[0].confianza = confianza;
+      paginasVirtuales.forEach(p => p.tipoAsignado = tipo);
 
       const regla = DETECTOR_REGLAS.find(r => r.tipo === tipo);
       _splitterData.grupos = [{
         tipo: tipo || 'no_identificado',
         nombre: regla ? regla.nombre : 'No identificado',
         paginaDesde: 1,
-        paginaHasta: 1,
+        paginaHasta: totalPaginasPDF,
         confianza,
-        fechaDetectada
+        fechaDetectada: fechaFinal
       }];
 
       if(barEl) barEl.style.width = '100%';
