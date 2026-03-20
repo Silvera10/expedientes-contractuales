@@ -106,12 +106,20 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
     color: rgb(1, 1, 1)
   });
 
-  const subtitulo = 'Ley 80 de 1993 - Contrataci\u00f3n P\u00fablica';
+  const subtitulo = 'Contrataci\u00f3n Especial hasta 20 SMLMV';
   page.drawText(subtitulo, {
     x: centerX - fontNormal.widthOfTextAtSize(subtitulo, 11) / 2,
-    y: height - 80,
+    y: height - 75,
     size: 11, font: fontNormal,
     color: rgb(0.9, 0.9, 0.9)
+  });
+
+  const subtitulo2 = 'Ley 715 de 2001 \u2013 Decreto 4791 de 2008';
+  page.drawText(subtitulo2, {
+    x: centerX - fontNormal.widthOfTextAtSize(subtitulo2, 9) / 2,
+    y: height - 90,
+    size: 9, font: fontNormal,
+    color: rgb(0.8, 0.8, 0.8)
   });
 
   // Marco central
