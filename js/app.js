@@ -160,6 +160,38 @@ function onInstitucionSelect(){
   }
 }
 
+async function descargarTodosExpedientes(){
+  const filtro = DB._filtroInstitucion || '';
+  const exps = filtro ? DB._expedientes.filter(e => e.institucion === filtro) : DB._expedientes;
+
+  if(!exps.length){
+    toast('No hay expedientes para descargar', 'warning');
+    return;
+  }
+
+  toast(`Generando ${exps.length} expediente(s)... Espere por favor`, 'info');
+
+  let descargados = 0;
+  for(const exp of exps){
+    try {
+      const docs = await DB.loadDocumentos(exp.id);
+      if(!docs.length) continue;
+      await generarPDFExpediente(exp, docs);
+      descargados++;
+      // Pequeña pausa entre descargas para no saturar el navegador
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e){
+      console.warn('Error generando expediente:', exp.contrato_numero, e);
+    }
+  }
+
+  if(descargados > 0){
+    toast(`${descargados} expediente(s) descargados`, 'success');
+  } else {
+    toast('Ningún expediente tiene documentos para descargar', 'warning');
+  }
+}
+
 function filtrarPorInstitucion(){
   const filtro = document.getElementById('filtro-institucion').value;
   DB._filtroInstitucion = filtro;
