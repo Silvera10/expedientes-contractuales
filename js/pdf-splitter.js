@@ -899,51 +899,61 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Renderizando HTML...';
       if(barEl) barEl.style.width = '40%';
 
-      // Limpiar HTML: quitar botones de impresión y @media print
-      const htmlLimpio = htmlText
-        .replace(/<button[^>]*class="[^"]*print-btn[^"]*"[^>]*>.*?<\/button>/gi, '')
-        .replace(/<[^>]*class="[^"]*no-print[^"]*"[^>]*>.*?<\/[^>]+>/gi, '');
-
-      // Renderizar en iframe con srcdoc (aislamiento completo de estilos)
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:absolute;left:0;top:0;width:816px;border:none;opacity:0.01;z-index:-1;pointer-events:none;';
-      iframe.srcdoc = htmlLimpio;
-      document.body.appendChild(iframe);
-
-      // Esperar a que el iframe cargue completamente
-      await new Promise((resolve) => {
-        iframe.onload = () => setTimeout(resolve, 800);
-        setTimeout(resolve, 3000); // timeout de seguridad
+      // Renderizar HTML en un div visible detrás del modal
+      // html2canvas NECESITA que el contenido sea visible y renderizado
+      const renderDiv = document.createElement('div');
+      renderDiv.id = 'html-pdf-render';
+      // Visible pero detrás del modal (z-index del modal backdrop = 1040)
+      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:816px;z-index:1;background:#fff;overflow:visible;';
+      // Inyectar HTML completo: extraer body y styles
+      const parser = new DOMParser();
+      const htmlDoc = parser.parseFromString(htmlText, 'text/html');
+      // Copiar todos los estilos inline
+      let allStyles = '';
+      htmlDoc.querySelectorAll('style').forEach(s => {
+        // Reescribir body → #html-pdf-render para aislar
+        let css = s.textContent;
+        css = css.replace(/@page[^{]*\{[^}]*\}/g, ''); // quitar @page
+        css = css.replace(/@media\s+print\s*\{[\s\S]*?\}\s*\}/g, ''); // quitar @media print
+        allStyles += css + '\n';
       });
+      // Inyectar con reset y estilos originales
+      renderDiv.innerHTML = `
+        <style>
+          #html-pdf-render { font-family: Arial, sans-serif; font-size: 11pt; color: #000; padding: 1.5cm 2cm; box-sizing: border-box; }
+          #html-pdf-render * { box-sizing: border-box; }
+          ${allStyles}
+        </style>
+        ${htmlDoc.body.innerHTML}
+      `;
+      // Quitar botones de impresión
+      renderDiv.querySelectorAll('.no-print, .print-btn, button[onclick*="print"]').forEach(el => el.remove());
+      document.body.appendChild(renderDiv);
 
-      // Ajustar altura al contenido
-      const iframeBody = iframe.contentDocument.body;
-      const contentHeight = Math.max(
-        iframeBody.scrollHeight,
-        iframe.contentDocument.documentElement.scrollHeight
-      );
-      iframe.style.height = contentHeight + 'px';
-      console.log('iframe content:', iframe.offsetWidth, 'x', contentHeight, 'px');
+      // Esperar renderizado completo
+      await new Promise(r => setTimeout(r, 1200));
 
-      await new Promise(r => setTimeout(r, 500));
+      const contentHeight = renderDiv.scrollHeight;
+      console.log('Render div:', renderDiv.offsetWidth, 'x', contentHeight, 'px');
 
       if(progresoEl) progresoEl.textContent = 'Capturando documento...';
       if(barEl) barEl.style.width = '60%';
 
-      // Capturar con html2canvas desde el iframe
-      const canvas = await html2canvas(iframeBody, {
+      // Capturar con html2canvas (el div es visible, debe funcionar)
+      const canvas = await html2canvas(renderDiv, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: -window.scrollY,
         width: 816,
-        height: contentHeight,
-        windowWidth: 816
+        height: contentHeight
       });
 
       console.log('Canvas:', canvas.width, 'x', canvas.height, 'px');
 
-      // Limpiar iframe
-      document.body.removeChild(iframe);
+      // Limpiar
+      document.body.removeChild(renderDiv);
 
       if(progresoEl) progresoEl.textContent = 'Generando PDF...';
       if(barEl) barEl.style.width = '80%';
