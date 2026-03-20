@@ -804,6 +804,48 @@ function detectarYAgrupar(paginas){
 /* ══════════════════════════════════════════
    INICIAR ANALISIS (llamado desde el input file)
 ══════════════════════════════════════════ */
+/* ── Manejar selección de múltiples archivos ── */
+async function iniciarAnalisisMultiple(input){
+  const files = Array.from(input.files);
+  if(!files.length) return;
+
+  // Si es un solo archivo, procesar directo
+  if(files.length === 1){
+    await iniciarAnalisisPDF(input);
+    return;
+  }
+
+  // Múltiples archivos: procesar uno por uno automáticamente
+  _splitterData.colaArchivos = files;
+  _splitterData.colaIndex = 0;
+  _splitterData.docsGuardados = _splitterData.docsGuardados || 0;
+  await procesarSiguienteArchivoCola();
+}
+
+async function procesarSiguienteArchivoCola(){
+  const files = _splitterData.colaArchivos;
+  const idx = _splitterData.colaIndex;
+
+  if(!files || idx >= files.length){
+    // Todos procesados
+    mostrarPasoCargarMas();
+    return;
+  }
+
+  const file = files[idx];
+  const progresoEl = document.getElementById('splitter-progreso');
+  if(progresoEl) progresoEl.textContent = `Procesando archivo ${idx + 1} de ${files.length}: ${file.name}`;
+
+  // Crear un input virtual con este archivo
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const virtualInput = document.createElement('input');
+  virtualInput.type = 'file';
+  virtualInput.files = dt.files;
+
+  await iniciarAnalisisPDF(virtualInput);
+}
+
 async function iniciarAnalisisPDF(input){
   const file = input.files[0];
   if(!file) return;
@@ -833,9 +875,11 @@ async function iniciarAnalisisPDF(input){
 
       const htmlText = await file.text();
 
-      // Extraer texto plano del HTML
+      // Extraer texto plano del HTML (sin CSS ni scripts)
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = htmlText;
+      // Eliminar <style>, <script>, <link> antes de extraer texto
+      tempDiv.querySelectorAll('style, script, link').forEach(el => el.remove());
       // Sanitizar: solo permitir caracteres que WinAnsi puede codificar
       const textoRaw = (tempDiv.textContent || tempDiv.innerText || '').trim();
       const textoPlano = sanitizarWinAnsi(textoRaw);
