@@ -885,42 +885,60 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Renderizando HTML...';
       if(barEl) barEl.style.width = '40%';
 
-      // Renderizar HTML en un iframe oculto para aislar estilos
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:absolute;left:0;top:0;width:816px;height:1200px;opacity:0;pointer-events:none;z-index:-1;';
-      document.body.appendChild(iframe);
+      // Renderizar HTML en un div visible (necesario para html2canvas)
+      // Usar contenedor con estilos reseteados para aislar del documento principal
+      const renderContainer = document.createElement('div');
+      renderContainer.id = 'html-render-container';
+      renderContainer.style.cssText = 'position:absolute;left:0;top:0;width:816px;background:#fff;z-index:9;overflow:hidden;';
 
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(htmlText);
-      iframeDoc.close();
+      // Extraer estilos del HTML y contenido del body
+      const parser = new DOMParser();
+      const htmlDoc = parser.parseFromString(htmlText, 'text/html');
 
-      // Esperar a que se renderice completamente (imágenes, fuentes, etc.)
-      await new Promise(r => setTimeout(r, 800));
+      // Crear un contenedor con estilos aislados
+      const styleTag = document.createElement('style');
+      // Reset estilos heredados del documento principal
+      styleTag.textContent = '#html-render-container, #html-render-container * { all: revert; } #html-render-container { font-family: Arial, sans-serif; font-size: 11pt; color: #000; background: #fff; padding: 2cm; box-sizing: border-box; width: 816px; } ';
+      // Copiar estilos del HTML original
+      htmlDoc.querySelectorAll('style').forEach(s => {
+        styleTag.textContent += s.textContent.replace(/body/g, '#html-render-container').replace(/@page[^{]*\{[^}]*\}/g, '').replace(/@media\s+print[^{]*\{[\s\S]*?\}\s*\}/g, '');
+      });
+      renderContainer.appendChild(styleTag);
 
-      // Ajustar altura del iframe al contenido real
-      const bodyH = iframeDoc.body.scrollHeight || iframeDoc.documentElement.scrollHeight;
-      iframe.style.height = bodyH + 'px';
-      await new Promise(r => setTimeout(r, 300));
+      // Copiar contenido del body
+      const bodyContent = document.createElement('div');
+      bodyContent.innerHTML = htmlDoc.body.innerHTML;
+      // Eliminar botones de impresión
+      bodyContent.querySelectorAll('.no-print, .print-btn, button').forEach(el => el.remove());
+      renderContainer.appendChild(bodyContent);
+
+      document.body.appendChild(renderContainer);
+
+      // Esperar renderizado completo
+      await new Promise(r => setTimeout(r, 1000));
+
+      // Verificar dimensiones
+      const contentHeight = renderContainer.scrollHeight;
+      console.log('Render container:', renderContainer.offsetWidth, 'x', contentHeight, 'px');
 
       if(progresoEl) progresoEl.textContent = 'Capturando documento...';
       if(barEl) barEl.style.width = '60%';
 
-      // Capturar con html2canvas dentro del iframe
-      const canvas = await html2canvas(iframeDoc.body, {
+      // Capturar con html2canvas
+      const canvas = await html2canvas(renderContainer, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
         width: 816,
-        height: bodyH,
-        windowWidth: 816,
-        windowHeight: bodyH
+        height: contentHeight
       });
 
       console.log('Canvas:', canvas.width, 'x', canvas.height, 'px');
 
-      // Limpiar iframe
-      document.body.removeChild(iframe);
+      // Limpiar
+      document.body.removeChild(renderContainer);
 
       if(progresoEl) progresoEl.textContent = 'Generando PDF...';
       if(barEl) barEl.style.width = '80%';
