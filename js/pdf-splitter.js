@@ -549,6 +549,41 @@ function extraerFechaDelTexto(texto){
 }
 
 /* ══════════════════════════════════════════
+   PATRONES DE ENTIDADES GUBERNAMENTALES
+   Estos aparecen frecuentemente en tablas de
+   requisitos dentro de invitaciones/estudios previos.
+   Se requiere filtro de contexto para evitar
+   falsos positivos.
+══════════════════════════════════════════ */
+const ENTITY_ONLY_PATTERNS = [
+  /polic[ií]a\s+nacional/i,
+  /procuradur[ií]a\s+general/i,
+  /contralor[ií]a\s+general/i,
+  /c[aá]mara\s+de\s+comercio/i,
+  /registradur[ií]a/i,
+  /direcci[oó]n\s+de\s+impuestos/i,
+  /registro\s+[uú]nico\s+tributario/i,
+  /registro\s+nacional\s+de\s+medidas\s+correctivas/i,
+  /consulta\s+de\s+inhabilidades/i,
+  /consulta\s+(en\s+l[ií]nea\s+de\s+)?antecedentes/i,
+  /redeam|redam/i,
+  /rep[uú]blica\s+de\s+colombia/i,
+];
+
+/* Palabras que indican que la página es parte de un documento
+   contractual más grande (invitación, estudio previo, etc.) y que
+   las menciones de entidades son solo requisitos, no documentos aparte */
+const CONTEXT_CONTRACTUAL_KEYWORDS = [
+  'requisitos habilitantes', 'documentos requeridos', 'documentos exigidos',
+  'documentos habilitantes', 'presupuesto oficial', 'criterio de selección',
+  'criterio de seleccion', 'fundamento legal', 'cronograma del proceso',
+  'forma de pago', 'plazo de ejecución', 'plazo de ejecucion',
+  'obligaciones del contratista', 'obligaciones del contratante',
+  'cláusula', 'clausula', 'régimen especial', 'regimen especial',
+  'tabla de requisitos', 'documentación requerida', 'documentacion requerida'
+];
+
+/* ══════════════════════════════════════════
    PASADA 1: DETECTAR LÍMITES DE DOCUMENTOS
    Analiza el encabezado de cada página para
    determinar si es inicio de documento nuevo
@@ -566,19 +601,44 @@ function detectarLimites(paginas){
 
     // Revisar si el encabezado (top 20%) contiene un patrón de inicio
     const textoTop = pag.textoSuperior || '';
+    const textoFull = pag.texto || '';
     let esInicio = false;
+    let esPatronEntidad = false;
 
     for(const patron of DOCUMENT_START_PATTERNS){
       if(patron.test(textoTop)){
         esInicio = true;
+        // Verificar si el patrón que coincidió es de entidad gubernamental
+        esPatronEntidad = ENTITY_ONLY_PATTERNS.some(ep => ep.test(textoTop));
         break;
+      }
+    }
+
+    // FILTRO ANTI-FALSOS POSITIVOS: si el patrón es de entidad gubernamental,
+    // verificar que NO estemos dentro de un documento contractual que simplemente
+    // menciona esas entidades en una tabla de requisitos
+    if(esInicio && esPatronEntidad){
+      const enContextoContractual = CONTEXT_CONTRACTUAL_KEYWORDS.some(kw => textoFull.includes(kw));
+      if(enContextoContractual){
+        // La página menciona una entidad PERO está en contexto de un doc contractual
+        // (invitación, estudio previo, contrato) → NO es inicio de doc separado
+        esInicio = false;
+      }
+
+      // También verificar si la página anterior es del mismo documento multi-página
+      if(esInicio && i > 0){
+        const prevTexto = paginas[i-1].texto || '';
+        const prevEsContractual = CONTEXT_CONTRACTUAL_KEYWORDS.some(kw => prevTexto.includes(kw));
+        if(prevEsContractual){
+          // La página anterior es contractual, esta probablemente es continuación
+          esInicio = false;
+        }
       }
     }
 
     // Páginas con poco texto total (firmas, sellos, páginas casi vacías)
     // NUNCA son inicio de documento nuevo — son continuación
-    const textoTotal = pag.texto || '';
-    if(!esInicio && textoTotal.length < 300){
+    if(!esInicio && textoFull.length < 300){
       // Página corta sin patrón de inicio = continuación segura
       pag.esInicio = false;
       continue;
@@ -590,8 +650,13 @@ function detectarLimites(paginas){
       const topAnterior = paginas[i-1].textoSuperior || '';
       if(topAnterior.length > 20){
         const similitud = calcularSimilitud(textoTop, topAnterior);
-        if(similitud < 0.15){
-          esInicio = true;
+        if(similitud < 0.12){
+          // Solo dividir por baja similitud si NO estamos en contexto contractual
+          const enContexto = CONTEXT_CONTRACTUAL_KEYWORDS.some(kw => textoFull.includes(kw));
+          const prevEnContexto = CONTEXT_CONTRACTUAL_KEYWORDS.some(kw => (paginas[i-1].texto || '').includes(kw));
+          if(!enContexto && !prevEnContexto){
+            esInicio = true;
+          }
         }
       }
     }
