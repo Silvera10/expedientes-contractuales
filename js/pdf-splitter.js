@@ -820,13 +820,43 @@ function detectarYAgrupar(paginas){
 ══════════════════════════════════════════ */
 /* ── Abrir selector de archivos programáticamente ── */
 function abrirSelectorArchivos(multiple){
+  // Crear input y agregarlo al DOM (Safari requiere esto para multiple)
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.pdf,.html,.htm';
-  if(multiple) input.multiple = true;
-  input.addEventListener('change', function(){ iniciarAnalisisMultiple(this); });
-  input.click();
+  input.style.cssText = 'position:absolute;left:-9999px;opacity:0;';
+  if(multiple) input.setAttribute('multiple', 'multiple');
+  input.addEventListener('change', function(){
+    iniciarAnalisisMultiple(this);
+    document.body.removeChild(input);
+  });
+  document.body.appendChild(input);
+  setTimeout(function(){ input.click(); }, 100);
 }
+
+/* ── Drag & Drop para archivos ── */
+function inicializarDropZone(){
+  const zona = document.getElementById('splitter-paso1');
+  if(!zona || zona._dropInit) return;
+  zona._dropInit = true;
+  zona.addEventListener('dragover', function(e){ e.preventDefault(); zona.style.background='#e8f5e9'; });
+  zona.addEventListener('dragleave', function(e){ e.preventDefault(); zona.style.background=''; });
+  zona.addEventListener('drop', function(e){
+    e.preventDefault();
+    zona.style.background = '';
+    const files = Array.from(e.dataTransfer.files).filter(function(f){
+      return /\.(pdf|html?)$/i.test(f.name);
+    });
+    if(!files.length){ alert('Solo se aceptan archivos PDF y HTML'); return; }
+    const fakeInput = { files: files };
+    iniciarAnalisisMultiple(fakeInput);
+  });
+}
+// Inicializar drop zone cuando se abra el modal
+document.addEventListener('DOMContentLoaded', function(){
+  var modal = document.getElementById('modalSplitter');
+  if(modal) modal.addEventListener('shown.bs.modal', inicializarDropZone);
+});
 
 /* ── Manejar selección de múltiples archivos ── */
 async function iniciarAnalisisMultiple(input){

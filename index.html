@@ -239,10 +239,10 @@
         <input type="hidden" id="splitter-exp-id">
 
         <!-- Paso 1: Subir PDF -->
-        <div id="splitter-paso1">
+        <div id="splitter-paso1" style="border:3px dashed #ccc;border-radius:12px;margin:10px;transition:background 0.3s">
           <div class="text-center py-4">
             <i class="bi bi-file-earmark-pdf" style="font-size:3rem;color:#dc3545"></i>
-            <h5 class="mt-2">Suba el documento del expediente</h5>
+            <h5 class="mt-2">Suba los documentos del expediente</h5>
             <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> &mdash; La app detectar&aacute; autom&aacute;ticamente qu&eacute; documento es</p>
             <div class="d-flex justify-content-center gap-3 mt-2">
               <button type="button" class="btn btn-success btn-lg" onclick="abrirSelectorArchivos(true)">
@@ -252,6 +252,7 @@
                 <i class="bi bi-file-earmark-plus me-2"></i>Subir uno solo
               </button>
             </div>
+            <p class="text-muted small mt-3 mb-0"><i class="bi bi-hand-index me-1"></i>O <strong>arrastre y suelte</strong> los archivos aqu&iacute;</p>
           </div>
         </div>
 
@@ -305,7 +306,7 @@
 <script src="js/supabase.js?v=15"></script>
 <script src="js/db.js?v=15"></script>
 <script src="js/ui.js?v=15"></script>
-<script src="js/pdf-splitter.js?v=18"></script>
+<script src="js/pdf-splitter.js?v=19"></script>
 <script src="js/pdf-engine.js?v=15"></script>
 <script src="js/app.js?v=15"></script>
 </body>
