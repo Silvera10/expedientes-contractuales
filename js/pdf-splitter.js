@@ -818,6 +818,16 @@ function detectarYAgrupar(paginas){
 /* ══════════════════════════════════════════
    INICIAR ANALISIS (llamado desde el input file)
 ══════════════════════════════════════════ */
+/* ── Abrir selector de archivos programáticamente ── */
+function abrirSelectorArchivos(multiple){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.html,.htm';
+  if(multiple) input.multiple = true;
+  input.addEventListener('change', function(){ iniciarAnalisisMultiple(this); });
+  input.click();
+}
+
 /* ── Manejar selección de múltiples archivos ── */
 async function iniciarAnalisisMultiple(input){
   const files = Array.from(input.files);

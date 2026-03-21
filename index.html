@@ -245,14 +245,12 @@
             <h5 class="mt-2">Suba el documento del expediente</h5>
             <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> &mdash; La app detectar&aacute; autom&aacute;ticamente qu&eacute; documento es</p>
             <div class="d-flex justify-content-center gap-3 mt-2">
-              <label class="btn btn-success btn-lg">
+              <button type="button" class="btn btn-success btn-lg" onclick="abrirSelectorArchivos(true)">
                 <i class="bi bi-files me-2"></i>Subir varios archivos
-                <input type="file" accept=".pdf,.html,.htm" multiple style="display:none" onchange="iniciarAnalisisMultiple(this)">
-              </label>
-              <label class="btn btn-outline-primary btn-lg">
+              </button>
+              <button type="button" class="btn btn-outline-primary btn-lg" onclick="abrirSelectorArchivos(false)">
                 <i class="bi bi-file-earmark-plus me-2"></i>Subir uno solo
-                <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisMultiple(this)">
-              </label>
+              </button>
             </div>
           </div>
         </div>
@@ -307,7 +305,7 @@
 <script src="js/supabase.js?v=15"></script>
 <script src="js/db.js?v=15"></script>
 <script src="js/ui.js?v=15"></script>
-<script src="js/pdf-splitter.js?v=17"></script>
+<script src="js/pdf-splitter.js?v=18"></script>
 <script src="js/pdf-engine.js?v=15"></script>
 <script src="js/app.js?v=15"></script>
 </body>
