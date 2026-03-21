@@ -627,11 +627,40 @@ async function descargarBackupZIP(){
     const fecha = new Date().toISOString().slice(0,10);
     const nombre = 'Backup_Expedientes_' + fecha + '.zip';
 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = nombre;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    // Intentar usar "Guardar como" para elegir carpeta (File System Access API)
+    if(window.showSaveFilePicker){
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: nombre,
+          types: [{
+            description: 'Archivo ZIP',
+            accept: { 'application/zip': ['.zip'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } catch(e){
+        // Usuario cancelo el dialogo, descargar normal
+        if(e.name !== 'AbortError'){
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = nombre;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } else {
+          toast('Backup cancelado', 'warning');
+          return;
+        }
+      }
+    } else {
+      // Navegador sin soporte, descarga normal
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nombre;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
 
     // Guardar fecha del ultimo backup
     await DB._put('meta', 'ultimo_backup', Date.now());
