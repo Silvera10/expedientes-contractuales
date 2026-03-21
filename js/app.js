@@ -36,6 +36,9 @@ async function initApp(){
     cargarFiltroInstituciones();
     renderListaExpedientes();
 
+    // 6. Verificar si necesita backup
+    verificarAlertaBackup();
+
     SB.updateSyncUI('ok');
   } catch(e){
     console.error('initApp error:', e);
@@ -562,5 +565,185 @@ async function generarExpedientePDF(expId){
   } catch(e){
     console.error('Error generando PDF:', e);
     toast('Error al generar PDF: ' + e.message, 'danger');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   BACKUP / RESTORE — Copia de seguridad ZIP
+══════════════════════════════════════════════════════════ */
+
+async function descargarBackupZIP(){
+  if(typeof JSZip === 'undefined'){
+    toast('Error: libreria JSZip no cargada', 'danger');
+    return;
+  }
+
+  toast('Generando copia de seguridad... Esto puede tardar unos segundos.', 'info');
+
+  try {
+    const zip = new JSZip();
+
+    // 1. Exportar todos los expedientes
+    const expedientes = DB._expedientes || [];
+    zip.file('expedientes.json', JSON.stringify(expedientes, null, 2));
+
+    // 2. Exportar todos los documentos
+    const allDocKeys = await DB._getAllKeys('documentos');
+    const allDocs = [];
+    for(const k of allDocKeys){
+      const doc = await DB._get('documentos', k);
+      if(doc) allDocs.push(doc);
+    }
+    zip.file('documentos.json', JSON.stringify(allDocs, null, 2));
+
+    // 3. Exportar archivos PDF
+    const allArchivoKeys = await DB._getAllKeys('archivos');
+    let archivosExportados = 0;
+    for(const path of allArchivoKeys){
+      const ab = await DB._get('archivos', path);
+      if(ab){
+        zip.file('archivos/' + path, ab);
+        archivosExportados++;
+      }
+    }
+
+    // 4. Metadata del backup
+    const meta = {
+      fecha: new Date().toISOString(),
+      version: '1.0',
+      totalExpedientes: expedientes.length,
+      totalDocumentos: allDocs.length,
+      totalArchivos: archivosExportados
+    };
+    zip.file('backup_info.json', JSON.stringify(meta, null, 2));
+
+    // 5. Generar y descargar
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    const fecha = new Date().toISOString().slice(0,10);
+    const nombre = 'Backup_Expedientes_' + fecha + '.zip';
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    // Guardar fecha del ultimo backup
+    await DB._put('meta', 'ultimo_backup', Date.now());
+    verificarAlertaBackup();
+
+    toast('Copia de seguridad descargada: ' + nombre + ' (' + expedientes.length + ' expedientes, ' + archivosExportados + ' archivos)');
+
+  } catch(e){
+    console.error('Error generando backup:', e);
+    toast('Error al generar backup: ' + e.message, 'danger');
+  }
+}
+
+async function restaurarBackupZIP(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  if(!confirm('IMPORTANTE: Restaurar un backup reemplazara los datos actuales.\n\nLos expedientes y documentos que ya existan se actualizaran.\n\nDesea continuar?')){
+    input.value = '';
+    return;
+  }
+
+  toast('Restaurando copia de seguridad...', 'info');
+
+  try {
+    const zip = await JSZip.loadAsync(file);
+
+    // 1. Verificar que es un backup valido
+    const infoFile = zip.file('backup_info.json');
+    if(!infoFile){
+      toast('El archivo ZIP no es un backup valido de Expedientes', 'danger');
+      input.value = '';
+      return;
+    }
+    const info = JSON.parse(await infoFile.async('text'));
+
+    // 2. Restaurar expedientes
+    const expFile = zip.file('expedientes.json');
+    if(expFile){
+      const expedientes = JSON.parse(await expFile.async('text'));
+      for(const exp of expedientes){
+        await DB._put('expedientes', exp.id, exp);
+        if(SB.isActive()) await SB.saveExpediente(exp);
+      }
+    }
+
+    // 3. Restaurar documentos
+    const docFile = zip.file('documentos.json');
+    if(docFile){
+      const documentos = JSON.parse(await docFile.async('text'));
+      for(const doc of documentos){
+        await DB._put('documentos', doc.id, doc);
+        if(SB.isActive()) await SB.saveDocumento(doc);
+      }
+    }
+
+    // 4. Restaurar archivos PDF
+    let archivosRestaurados = 0;
+    const archivoEntries = zip.folder('archivos');
+    if(archivoEntries){
+      const files = [];
+      archivoEntries.forEach((relativePath, zipEntry) => {
+        if(!zipEntry.dir) files.push({ path: relativePath, entry: zipEntry });
+      });
+      for(const f of files){
+        const ab = await f.entry.async('arraybuffer');
+        await DB.saveArchivo(f.path, ab);
+        if(SB.isActive()){
+          const blob = new Blob([ab], { type: 'application/pdf' });
+          await SB.uploadPDF(f.path, blob);
+        }
+        archivosRestaurados++;
+      }
+    }
+
+    // 5. Recargar app
+    await DB.loadExpedientes();
+    cargarFiltroInstituciones();
+    renderListaExpedientes();
+
+    toast('Backup restaurado: ' + (info.totalExpedientes || 0) + ' expedientes, ' + archivosRestaurados + ' archivos');
+
+  } catch(e){
+    console.error('Error restaurando backup:', e);
+    toast('Error al restaurar: ' + e.message, 'danger');
+  }
+
+  input.value = '';
+}
+
+/* ── Alerta de backup pendiente ── */
+async function verificarAlertaBackup(){
+  try {
+    const ultimo = await DB._get('meta', 'ultimo_backup');
+    const alertEl = document.getElementById('backup-alert');
+    if(!alertEl) return;
+
+    if(!ultimo){
+      // Nunca ha hecho backup
+      alertEl.style.display = '';
+      alertEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Sin backup';
+      return;
+    }
+
+    const diasSinBackup = Math.floor((Date.now() - ultimo) / (1000 * 60 * 60 * 24));
+    if(diasSinBackup >= 7){
+      alertEl.style.display = '';
+      alertEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + diasSinBackup + 'd sin backup';
+    } else {
+      alertEl.style.display = 'none';
+    }
+  } catch(e){
+    console.warn('verificarAlertaBackup:', e);
   }
 }

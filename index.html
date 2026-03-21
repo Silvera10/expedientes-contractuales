@@ -79,6 +79,18 @@
         <span class="fw-bold">Expedientes Contractuales</span>
       </span>
       <div class="d-flex align-items-center gap-2">
+        <span id="backup-alert" class="badge bg-warning text-dark" style="display:none;cursor:pointer;font-size:10px" onclick="descargarBackupZIP()" title="Hacer copia de seguridad">
+          <i class="bi bi-exclamation-triangle me-1"></i>Backup
+        </span>
+        <div class="btn-group">
+          <button class="btn btn-outline-light btn-sm py-0 px-2" onclick="descargarBackupZIP()" title="Descargar copia de seguridad (ZIP)">
+            <i class="bi bi-cloud-download"></i>
+          </button>
+          <label class="btn btn-outline-light btn-sm py-0 px-2" title="Restaurar copia de seguridad">
+            <i class="bi bi-cloud-upload"></i>
+            <input type="file" accept=".zip" style="display:none" onchange="restaurarBackupZIP(this)">
+          </label>
+        </div>
         <span id="sync-status" class="badge bg-secondary" title="Estado de sincronizaci&oacute;n">
           <i class="bi bi-cloud-slash"></i>
         </span>
@@ -302,12 +314,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script src="js/supabase.js?v=15"></script>
 <script src="js/db.js?v=15"></script>
 <script src="js/ui.js?v=22"></script>
 <script src="js/pdf-splitter.js?v=22"></script>
 <script src="js/pdf-engine.js?v=15"></script>
-<script src="js/app.js?v=15"></script>
+<script src="js/app.js?v=23"></script>
 </body>
 </html>
