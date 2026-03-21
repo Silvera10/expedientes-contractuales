@@ -1243,6 +1243,11 @@ function mostrarResultadosSplitter(){
 
   // Renderizar thumbnails después de que el HTML esté en el DOM
   setTimeout(() => renderThumbnails(), 200);
+
+  // Si hay cola de archivos, auto-confirmar después de un momento
+  if(_splitterData.colaArchivos && _splitterData.colaIndex < _splitterData.colaArchivos.length){
+    setTimeout(() => confirmarSeparacion(), 500);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -1391,8 +1396,17 @@ async function confirmarSeparacion(){
 
     toast(`${grupos.length} documentos asignados. Total esta sesión: ${_splitterData.docsGuardados}`);
 
-    // Volver al paso 1 para cargar más documentos
-    mostrarPasoCargarMas();
+    // Si hay más archivos en la cola, procesar el siguiente automáticamente
+    if(_splitterData.colaArchivos && _splitterData.colaIndex < _splitterData.colaArchivos.length - 1){
+      _splitterData.colaIndex++;
+      toast(`Procesando archivo ${_splitterData.colaIndex + 1} de ${_splitterData.colaArchivos.length}...`, 'info');
+      await procesarSiguienteArchivoCola();
+    } else {
+      // No hay más archivos en cola, mostrar opciones
+      _splitterData.colaArchivos = null;
+      _splitterData.colaIndex = 0;
+      mostrarPasoCargarMas();
+    }
 
   } catch(e){
     console.error('Error separando PDF:', e);
