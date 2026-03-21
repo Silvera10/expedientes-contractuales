@@ -235,13 +235,27 @@ async function renderDetalleExpediente(expId){
 
   // Cargar documentos subidos
   const docsSubidos = await DB.loadDocumentos(expId);
+  // Tipos que permiten múltiples documentos
+  const TIPOS_MULTIPLES = ['invitacion', 'cotizaciones', 'carta_propuesta'];
   const subidosMap = {};
-  docsSubidos.forEach(d => { subidosMap[d.tipo] = d; });
+  const subidosMultiMap = {}; // tipo → [doc1, doc2, ...]
+  docsSubidos.forEach(d => {
+    if(TIPOS_MULTIPLES.includes(d.tipo)){
+      if(!subidosMultiMap[d.tipo]) subidosMultiMap[d.tipo] = [];
+      subidosMultiMap[d.tipo].push(d);
+      // También poner el primero en subidosMap para compatibilidad
+      if(!subidosMap[d.tipo]) subidosMap[d.tipo] = d;
+    } else {
+      subidosMap[d.tipo] = d;
+    }
+  });
 
   const esAnterior = (exp.datos && exp.datos.tipo_vigencia === 'anterior');
   const docsCatalogo = esAnterior ? [...DOC_TIPOS, ...DOC_TIPOS_ADICION] : DOC_TIPOS;
   const totalRequeridos = docsCatalogo.length;
-  const totalSubidos = docsSubidos.filter(d => docsCatalogo.find(t => t.id === d.tipo)).length;
+  // Contar tipos únicos subidos (no contar duplicados de tipos múltiples)
+  const tiposSubidos = new Set(docsSubidos.filter(d => docsCatalogo.find(t => t.id === d.tipo)).map(d => d.tipo));
+  const totalSubidos = tiposSubidos.size;
   const pct = Math.round((totalSubidos / totalRequeridos) * 100);
   const bloqueado = exp.estado === 'bloqueado';
 
@@ -333,8 +347,21 @@ async function renderDetalleExpediente(expId){
       <div class="row g-2">`;
 
     docs.forEach(doc => {
-      const subido = subidosMap[doc.id];
-      html += renderDocSlot(doc, subido, exp.id, bloqueado, exp);
+      if(TIPOS_MULTIPLES.includes(doc.id) && subidosMultiMap[doc.id] && subidosMultiMap[doc.id].length > 0){
+        // Mostrar múltiples documentos numerados
+        subidosMultiMap[doc.id].forEach((subido, i) => {
+          const docConNumero = Object.assign({}, doc, { nombre: `${doc.nombre} ${i + 1}` });
+          html += renderDocSlot(docConNumero, subido, exp.id, bloqueado, exp);
+        });
+        // Slot vacío para agregar más
+        if(!bloqueado){
+          const docMas = Object.assign({}, doc, { nombre: `${doc.nombre} ${subidosMultiMap[doc.id].length + 1}` });
+          html += renderDocSlot(docMas, null, exp.id, bloqueado, exp);
+        }
+      } else {
+        const subido = subidosMap[doc.id];
+        html += renderDocSlot(doc, subido, exp.id, bloqueado, exp);
+      }
     });
 
     html += `</div></div>`;
@@ -357,8 +384,19 @@ async function renderDetalleExpediente(expId){
         <div class="row g-2">`;
 
       docs.forEach(doc => {
-        const subido = subidosMap[doc.id];
-        html += renderDocSlot(doc, subido, exp.id, bloqueado, exp);
+        if(TIPOS_MULTIPLES.includes(doc.id) && subidosMultiMap[doc.id] && subidosMultiMap[doc.id].length > 0){
+          subidosMultiMap[doc.id].forEach((subido, i) => {
+            const docConNumero = Object.assign({}, doc, { nombre: `${doc.nombre} ${i + 1}` });
+            html += renderDocSlot(docConNumero, subido, exp.id, bloqueado, exp);
+          });
+          if(!bloqueado){
+            const docMas = Object.assign({}, doc, { nombre: `${doc.nombre} ${subidosMultiMap[doc.id].length + 1}` });
+            html += renderDocSlot(docMas, null, exp.id, bloqueado, exp);
+          }
+        } else {
+          const subido = subidosMap[doc.id];
+          html += renderDocSlot(doc, subido, exp.id, bloqueado, exp);
+        }
       });
 
       html += `</div></div>`;

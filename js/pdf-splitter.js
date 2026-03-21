@@ -1370,8 +1370,14 @@ async function confirmarSeparacion(){
         await SB.uploadPDF(storagePath, blob);
       }
 
-      // Guardar metadata
-      const docId = `${expId}_${grupo.tipo}`;
+      // Tipos que permiten múltiples documentos
+      const TIPOS_MULTIPLES = ['invitacion', 'cotizaciones', 'carta_propuesta'];
+      const esMultiple = TIPOS_MULTIPLES.includes(grupo.tipo);
+
+      // Para tipos múltiples, agregar timestamp al ID para no sobreescribir
+      const docId = esMultiple
+        ? `${expId}_${grupo.tipo}_${Date.now()}`
+        : `${expId}_${grupo.tipo}`;
       const doc = {
         id: docId,
         expediente_id: expId,
