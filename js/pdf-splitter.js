@@ -1417,10 +1417,12 @@ function mostrarPasoCargarMas(){
       <h5 class="mt-2 text-success">${_splitterData.docsGuardados} documento(s) asignados</h5>
       <p class="text-muted small">¿Desea cargar más documentos para este expediente?</p>
       <div class="d-flex justify-content-center gap-3 mt-3">
-        <label class="btn btn-success btn-lg">
-          <i class="bi bi-upload me-2"></i>Cargar otro archivo
-          <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisPDF(this)">
-        </label>
+        <button type="button" class="btn btn-success btn-lg" onclick="abrirSelectorArchivos(true)">
+          <i class="bi bi-files me-2"></i>Subir m\u00e1s archivos
+        </button>
+        <button type="button" class="btn btn-outline-primary btn-lg" onclick="abrirSelectorArchivos(false)">
+          <i class="bi bi-file-earmark-plus me-2"></i>Subir uno solo
+        </button>
         <button class="btn btn-outline-secondary btn-lg" onclick="finalizarSplitter()">
           <i class="bi bi-check-lg me-2"></i>Finalizar
         </button>
@@ -1440,17 +1442,24 @@ function finalizarSplitter(){
 /* ── Restaurar el HTML original del paso 1 ── */
 function restaurarPaso1Original(){
   const paso1 = document.getElementById('splitter-paso1');
+  paso1.style.cssText = 'border:3px dashed #ccc;border-radius:12px;margin:10px;transition:background 0.3s';
   paso1.innerHTML = `
     <div class="text-center py-4">
       <i class="bi bi-file-earmark-pdf" style="font-size:3rem;color:#dc3545"></i>
-      <h5 class="mt-2">Suba el documento del expediente</h5>
-      <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> — La app detectará automáticamente qué documento es</p>
-      <label class="btn btn-success btn-lg mt-2">
-        <i class="bi bi-upload me-2"></i>Seleccionar archivo
-        <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisPDF(this)">
-      </label>
+      <h5 class="mt-2">Suba los documentos del expediente</h5>
+      <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> — La app detectar\u00e1 autom\u00e1ticamente qu\u00e9 documento es</p>
+      <div class="d-flex justify-content-center gap-3 mt-2">
+        <button type="button" class="btn btn-success btn-lg" onclick="abrirSelectorArchivos(true)">
+          <i class="bi bi-files me-2"></i>Subir varios archivos
+        </button>
+        <button type="button" class="btn btn-outline-primary btn-lg" onclick="abrirSelectorArchivos(false)">
+          <i class="bi bi-file-earmark-plus me-2"></i>Subir uno solo
+        </button>
+      </div>
+      <p class="text-muted small mt-3 mb-0"><i class="bi bi-hand-index me-1"></i>O <strong>arrastre y suelte</strong> los archivos aqu\u00ed</p>
     </div>
   `;
+  inicializarDropZone();
 }
 
 /* ══════════════════════════════════════════
