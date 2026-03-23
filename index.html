@@ -161,10 +161,15 @@
         <input type="hidden" id="exp-id">
         <div class="mb-3">
           <label class="form-label small fw-bold">Instituci&oacute;n Educativa <span class="text-danger">*</span></label>
-          <select id="exp-institucion-select" class="form-select" onchange="onInstitucionSelect()">
-            <option value="">— Seleccione —</option>
-            <option value="__nueva__">+ Agregar nueva instituci&oacute;n...</option>
-          </select>
+          <div class="d-flex gap-1">
+            <select id="exp-institucion-select" class="form-select" onchange="onInstitucionSelect()">
+              <option value="">— Seleccione —</option>
+              <option value="__nueva__">+ Agregar nueva instituci&oacute;n...</option>
+            </select>
+            <button type="button" id="btn-editar-institucion" class="btn btn-outline-secondary btn-sm px-2" style="display:none" onclick="editarInstitucion()" title="Editar datos de la instituci&oacute;n">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </div>
           <div id="campos-nueva-institucion" style="display:none" class="mt-2 p-2 border rounded bg-light">
             <div class="mb-2">
               <input type="text" id="inst-nombre" class="form-control form-control-sm" placeholder="Nombre de la instituci&oacute;n *">
@@ -346,6 +351,6 @@
 <script src="js/ui.js?v=32"></script>
 <script src="js/pdf-splitter.js?v=27"></script>
 <script src="js/pdf-engine.js?v=34"></script>
-<script src="js/app.js?v=40"></script>
+<script src="js/app.js?v=41"></script>
 </body>
 </html>

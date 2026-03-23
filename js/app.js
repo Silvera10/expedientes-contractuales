@@ -179,6 +179,7 @@ function cargarSelectInstituciones(){
 function onInstitucionSelect(){
   const select = document.getElementById('exp-institucion-select');
   const camposNueva = document.getElementById('campos-nueva-institucion');
+  const btnEditar = document.getElementById('btn-editar-institucion');
   if(select.value === '__nueva__'){
     camposNueva.style.display = '';
     document.getElementById('inst-nombre').value = '';
@@ -187,9 +188,62 @@ function onInstitucionSelect(){
     document.getElementById('inst-rector').value = '';
     document.getElementById('inst-cedula-rector').value = '';
     document.getElementById('inst-nombre').focus();
+    if(btnEditar) btnEditar.style.display = 'none';
+  } else if(select.value && select.value !== ''){
+    camposNueva.style.display = 'none';
+    if(btnEditar) btnEditar.style.display = '';
   } else {
     camposNueva.style.display = 'none';
+    if(btnEditar) btnEditar.style.display = 'none';
   }
+}
+
+function editarInstitucion(){
+  const select = document.getElementById('exp-institucion-select');
+  const nombre = select.value;
+  if(!nombre || nombre === '__nueva__') return;
+
+  const inst = getInstitucionData(nombre);
+  if(!inst) return;
+
+  // Mostrar campos con datos actuales
+  const camposNueva = document.getElementById('campos-nueva-institucion');
+  camposNueva.style.display = '';
+  document.getElementById('inst-nombre').value = inst.nombre || '';
+  document.getElementById('inst-nit').value = inst.nit || '';
+  document.getElementById('inst-municipio').value = inst.municipio || '';
+  document.getElementById('inst-rector').value = inst.rector || '';
+  document.getElementById('inst-cedula-rector').value = inst.cedulaRector || '';
+
+  // Marcar que estamos editando
+  select.value = '__nueva__';
+  select.dataset.editando = nombre; // guardar nombre original para renombrar
+}
+
+async function guardarInstitucionEditada(nombreOriginal, datosNuevos){
+  const inst = _instituciones.find(i => i.nombre.toLowerCase() === nombreOriginal.toLowerCase());
+  if(!inst) return;
+
+  const nombreViejo = inst.nombre;
+  const nombreNuevo = datosNuevos.nombre;
+
+  // Actualizar datos de la institución
+  Object.assign(inst, datosNuevos);
+
+  // Si cambió el nombre, actualizar todos los expedientes que usen el nombre viejo
+  if(nombreViejo !== nombreNuevo){
+    for(const exp of DB._expedientes){
+      if(exp.institucion === nombreViejo){
+        exp.institucion = nombreNuevo;
+        await DB.saveExpediente(exp);
+      }
+    }
+  }
+
+  await guardarInstituciones();
+  cargarFiltroInstituciones();
+  cargarSelectInstituciones();
+  renderListaExpedientes();
 }
 
 async function descargarTodosExpedientes(){
@@ -461,7 +515,7 @@ async function guardarExpediente(){
   let institucion = '';
 
   if(selectInst.value === '__nueva__'){
-    // Nueva institución: guardar en catálogo
+    // Nueva institución o editando existente
     institucion = document.getElementById('inst-nombre').value.trim();
     if(!institucion){
       toast('Ingrese el nombre de la instituci\u00f3n', 'danger');
@@ -474,13 +528,20 @@ async function guardarExpediente(){
       rector: document.getElementById('inst-rector').value.trim(),
       cedulaRector: document.getElementById('inst-cedula-rector').value.trim()
     };
-    // Verificar que no exista
-    const existente = _instituciones.find(i => i.nombre.toLowerCase() === institucion.toLowerCase());
-    if(existente){
-      // Actualizar datos
-      Object.assign(existente, nuevaInst);
+
+    // Si estamos editando una existente (renombrar)
+    const editando = selectInst.dataset.editando;
+    if(editando){
+      await guardarInstitucionEditada(editando, nuevaInst);
+      delete selectInst.dataset.editando;
     } else {
-      _instituciones.push(nuevaInst);
+      // Verificar que no exista
+      const existente = _instituciones.find(i => i.nombre.toLowerCase() === institucion.toLowerCase());
+      if(existente){
+        Object.assign(existente, nuevaInst);
+      } else {
+        _instituciones.push(nuevaInst);
+      }
     }
     await guardarInstituciones();
   } else if(selectInst.value && selectInst.value !== ''){
