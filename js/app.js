@@ -865,24 +865,22 @@ async function foliarPDFCompleto(expId, inputEl){
     // 2. Generar ÍNDICE simple (folio 2)
     await generarIndiceFoliar(pdfFinal, exp, file.name, totalPaginasDoc, totalFolios, fontBold, fontNormal);
 
-    // 3. Copiar todas las páginas del PDF original
-    // Intentar copiar normalmente, si falla por anotaciones, copiar sin ellas
-    try {
-      const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
-      for(const page of copiedPages){
-        pdfFinal.addPage(page);
-      }
-    } catch(copyErr) {
-      console.warn('Error copiando con anotaciones, intentando sin ellas:', copyErr.message);
-      // Quitar anotaciones problemáticas y reintentar
-      const srcPages = srcPdf.getPages();
-      for(const sp of srcPages){
-        try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
-      }
-      const copiedPages2 = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
-      for(const page of copiedPages2){
-        pdfFinal.addPage(page);
-      }
+    // 3. Limpiar anotaciones del PDF fuente ANTES de copiar
+    const srcPages = srcPdf.getPages();
+    for(const sp of srcPages){
+      try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+    }
+
+    // Copiar todas las páginas del PDF original
+    const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
+    for(const page of copiedPages){
+      pdfFinal.addPage(page);
+    }
+
+    // Limpiar anotaciones de las páginas copiadas también
+    const finalPages = pdfFinal.getPages();
+    for(const fp of finalPages){
+      try { fp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
     }
 
     // 4. Estampar folio en TODAS las páginas
