@@ -311,6 +311,10 @@ async function generarInformeAnual(){
       if(!foliadoBytes) continue;
 
       const srcPdf = await PDFLib.PDFDocument.load(foliadoBytes, { ignoreEncryption: true });
+      try {
+        const srcPages2 = srcPdf.getPages();
+        for(const sp of srcPages2){ try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){} }
+      } catch(e){}
       const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
       for(const page of copiedPages){
         pdfFinal.addPage(page);
@@ -862,9 +866,23 @@ async function foliarPDFCompleto(expId, inputEl){
     await generarIndiceFoliar(pdfFinal, exp, file.name, totalPaginasDoc, totalFolios, fontBold, fontNormal);
 
     // 3. Copiar todas las páginas del PDF original
-    const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
-    for(const page of copiedPages){
-      pdfFinal.addPage(page);
+    // Intentar copiar normalmente, si falla por anotaciones, copiar sin ellas
+    try {
+      const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
+      for(const page of copiedPages){
+        pdfFinal.addPage(page);
+      }
+    } catch(copyErr) {
+      console.warn('Error copiando con anotaciones, intentando sin ellas:', copyErr.message);
+      // Quitar anotaciones problemáticas y reintentar
+      const srcPages = srcPdf.getPages();
+      for(const sp of srcPages){
+        try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+      }
+      const copiedPages2 = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
+      for(const page of copiedPages2){
+        pdfFinal.addPage(page);
+      }
     }
 
     // 4. Estampar folio en TODAS las páginas
@@ -1030,6 +1048,14 @@ async function foliarYOrganizarPDF(expId, inputEl){
 
     // Índice detallado (folio 2)
     await generarIndiceOrganizado(pdfFinal, exp, grupos, totalFolios, fontBold, fontNormal);
+
+    // Quitar anotaciones problemáticas antes de copiar
+    try {
+      const srcPages = srcPdf.getPages();
+      for(const sp of srcPages){
+        try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+      }
+    } catch(e){ console.warn('No se pudieron limpiar anotaciones:', e); }
 
     // Copiar páginas en el nuevo orden
     for(const grupo of grupos){
