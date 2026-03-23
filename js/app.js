@@ -547,13 +547,22 @@ async function actualizarEstadoExpediente(expId){
 /* ══════════════════════════════════════════
    GENERAR EXPEDIENTE PDF (llama a pdf-engine)
 ══════════════════════════════════════════ */
+let _generandoPDF = false;
 async function generarExpedientePDF(expId){
+  // Protección contra doble clic
+  if(_generandoPDF){
+    toast('Ya se está generando un PDF, espere...', 'warning');
+    return;
+  }
+  _generandoPDF = true;
+
   const exp = DB.getExpediente(expId);
-  if(!exp){ toast('Expediente no encontrado', 'danger'); return; }
+  if(!exp){ toast('Expediente no encontrado', 'danger'); _generandoPDF = false; return; }
 
   const docs = await DB.loadDocumentos(expId);
   if(!docs.length){
     toast('No hay documentos cargados', 'warning');
+    _generandoPDF = false;
     return;
   }
 
@@ -565,6 +574,8 @@ async function generarExpedientePDF(expId){
   } catch(e){
     console.error('Error generando PDF:', e);
     toast('Error al generar PDF: ' + e.message, 'danger');
+  } finally {
+    _generandoPDF = false;
   }
 }
 
