@@ -617,7 +617,7 @@ async function foliarPDFCompleto(expId, inputEl){
     await generarPortada(pdfFinal, exp, totalFolios, fontBold, fontNormal);
 
     // 2. Generar ÍNDICE simple (folio 2)
-    await generarIndiceFoliar(pdfFinal, file.name, totalPaginasDoc, fontBold, fontNormal);
+    await generarIndiceFoliar(pdfFinal, exp, file.name, totalPaginasDoc, totalFolios, fontBold, fontNormal);
 
     // 3. Copiar todas las páginas del PDF original
     const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
@@ -647,74 +647,97 @@ async function foliarPDFCompleto(expId, inputEl){
 }
 
 /* Índice simple para PDF foliado completo */
-async function generarIndiceFoliar(pdfDoc, nombreArchivo, totalPaginas, fontBold, fontNormal){
+async function generarIndiceFoliar(pdfDoc, exp, nombreArchivo, totalPaginas, totalFolios, fontBold, fontNormal){
   const page = pdfDoc.addPage(PDFLib.PageSizes.Letter);
   const { width, height } = page.getSize();
+  const azul = PDFLib.rgb(0.102, 0.227, 0.361);
+  const gris = PDFLib.rgb(0.3, 0.3, 0.3);
+  const dorado = PDFLib.rgb(0.831, 0.627, 0.090);
 
   // Título
   const titulo = '\u00cdNDICE DEL EXPEDIENTE';
   page.drawText(titulo, {
     x: width / 2 - fontBold.widthOfTextAtSize(titulo, 16) / 2,
     y: height - 60,
-    size: 16, font: fontBold,
-    color: PDFLib.rgb(0.102, 0.227, 0.361)
+    size: 16, font: fontBold, color: azul
+  });
+
+  // Subtítulo con datos del expediente
+  const subtitulo = sanitizarWinAnsi(`Contrato N. ${exp.contrato_numero || ''} de ${exp.anio || ''} - ${exp.contratista || ''}`);
+  const subCorto = subtitulo.length > 70 ? subtitulo.substring(0, 70) + '...' : subtitulo;
+  page.drawText(subCorto, {
+    x: width / 2 - fontNormal.widthOfTextAtSize(subCorto, 10) / 2,
+    y: height - 78,
+    size: 10, font: fontNormal, color: gris
   });
 
   // Línea dorada
   page.drawLine({
-    start: { x: 50, y: height - 70 },
-    end: { x: width - 50, y: height - 70 },
-    color: PDFLib.rgb(0.831, 0.627, 0.090),
-    thickness: 2
+    start: { x: 50, y: height - 88 },
+    end: { x: width - 50, y: height - 88 },
+    color: dorado, thickness: 2
   });
 
-  // Cabecera
-  let y = height - 100;
-  page.drawText('N\u00b0', { x: 55, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
-  page.drawText('DESCRIPCI\u00d3N', { x: 90, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
-  page.drawText('P\u00c1GINAS', { x: 400, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
-  page.drawText('FOLIO', { x: 480, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
+  // Resumen de foliación
+  let y = height - 115;
+  page.drawRectangle({
+    x: 50, y: y - 8,
+    width: width - 100, height: 28,
+    color: PDFLib.rgb(0.94, 0.96, 0.98),
+    borderColor: azul, borderWidth: 0.5
+  });
+
+  const resumen = sanitizarWinAnsi(`TOTAL FOLIOS: ${totalFolios}  |  Caratula: Folio 1  |  Indice: Folio 2  |  Documentos: Folios 3 al ${totalFolios}`);
+  page.drawText(resumen, {
+    x: 60, y: y,
+    size: 9, font: fontBold, color: azul
+  });
+
+  // Cabecera tabla
+  y -= 40;
+  page.drawText('N.', { x: 55, y, size: 10, font: fontBold, color: gris });
+  page.drawText('DESCRIPCI\u00d3N', { x: 80, y, size: 10, font: fontBold, color: gris });
+  page.drawText('P\u00c1GINAS', { x: 380, y, size: 10, font: fontBold, color: gris });
+  page.drawText('FOLIO INICIO', { x: 445, y, size: 10, font: fontBold, color: gris });
 
   y -= 5;
-  page.drawLine({
-    start: { x: 50, y },
-    end: { x: width - 50, y },
-    color: PDFLib.rgb(0.8, 0.8, 0.8),
-    thickness: 0.5
-  });
+  page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, color: PDFLib.rgb(0.8, 0.8, 0.8), thickness: 0.5 });
 
-  // Fila única: el documento completo
-  y -= 20;
-  page.drawRectangle({
-    x: 50, y: y - 4,
-    width: width - 100, height: 18,
-    color: PDFLib.rgb(0.96, 0.97, 0.98)
-  });
+  // Fila 1: Carátula
+  y -= 18;
+  page.drawText('01', { x: 58, y, size: 9, font: fontNormal, color: gris });
+  page.drawText('Caratula del Expediente', { x: 80, y, size: 9, font: fontNormal, color: gris });
+  page.drawText('1', { x: 400, y, size: 9, font: fontNormal, color: gris });
+  page.drawText('1', { x: 470, y, size: 9, font: fontBold, color: azul });
 
-  page.drawText('01', { x: 58, y, size: 10, font: fontBold, color: PDFLib.rgb(0.102, 0.227, 0.361) });
+  // Fila 2: Índice
+  y -= 18;
+  page.drawRectangle({ x: 50, y: y - 4, width: width - 100, height: 18, color: PDFLib.rgb(0.96, 0.97, 0.98) });
+  page.drawText('02', { x: 58, y, size: 9, font: fontNormal, color: gris });
+  page.drawText('Indice del Expediente', { x: 80, y, size: 9, font: fontNormal, color: gris });
+  page.drawText('1', { x: 400, y, size: 9, font: fontNormal, color: gris });
+  page.drawText('2', { x: 470, y, size: 9, font: fontBold, color: azul });
 
-  // Nombre del archivo (truncar si es muy largo)
+  // Fila 3: Documento principal
+  y -= 18;
   const nombreLimpio = sanitizarWinAnsi(nombreArchivo.replace(/\.pdf$/i, '').replace(/[_\-]/g, ' '));
-  const nombreCorto = nombreLimpio.length > 50 ? nombreLimpio.substring(0, 50) + '...' : nombreLimpio;
-  page.drawText(nombreCorto, { x: 90, y, size: 10, font: fontNormal, color: PDFLib.rgb(0.2, 0.2, 0.2) });
-
-  page.drawText(String(totalPaginas), { x: 415, y, size: 10, font: fontNormal, color: PDFLib.rgb(0.4, 0.4, 0.4) });
-  page.drawText('3', { x: 488, y, size: 10, font: fontBold, color: PDFLib.rgb(0.102, 0.227, 0.361) });
+  const nombreDesc = nombreLimpio === 'download'
+    ? sanitizarWinAnsi(`Expediente Contractual Cto ${exp.contrato_numero || ''} de ${exp.anio || ''}`)
+    : nombreLimpio;
+  const nombreCorto = nombreDesc.length > 45 ? nombreDesc.substring(0, 45) + '...' : nombreDesc;
+  page.drawText('03', { x: 58, y, size: 9, font: fontBold, color: azul });
+  page.drawText(nombreCorto, { x: 80, y, size: 9, font: fontBold, color: PDFLib.rgb(0.1, 0.1, 0.1) });
+  page.drawText(String(totalPaginas), { x: 400, y, size: 9, font: fontBold, color: PDFLib.rgb(0.1, 0.1, 0.1) });
+  page.drawText('3', { x: 470, y, size: 9, font: fontBold, color: azul });
 
   // Total
-  y -= 30;
-  page.drawLine({
-    start: { x: 50, y: y + 8 },
-    end: { x: width - 50, y: y + 8 },
-    color: PDFLib.rgb(0.831, 0.627, 0.090),
-    thickness: 1
-  });
+  y -= 25;
+  page.drawLine({ start: { x: 50, y: y + 8 }, end: { x: width - 50, y: y + 8 }, color: dorado, thickness: 1 });
 
-  const totalText = `Total: ${totalPaginas} p\u00e1ginas | Folios: 1 al ${totalPaginas + 2}`;
+  const totalText = sanitizarWinAnsi(`Total: ${totalFolios} folios (${totalPaginas} paginas de documentos + caratula + indice)`);
   page.drawText(totalText, {
-    x: 90, y: y - 8,
-    size: 10, font: fontBold,
-    color: PDFLib.rgb(0.3, 0.3, 0.3)
+    x: 80, y: y - 8,
+    size: 10, font: fontBold, color: gris
   });
 }
 
