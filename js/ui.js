@@ -325,8 +325,12 @@ async function renderDetalleExpediente(expId){
 
   // Botones de accion
   html += `<div class="d-flex gap-2 mb-3 flex-wrap">
+    <label class="btn btn-primary btn-sm fw-bold mb-0" title="Sube un PDF ya armado y le agrega car\u00e1tula + \u00edndice + foliaci\u00f3n">
+      <i class="bi bi-file-earmark-plus me-2"></i>Foliar PDF Completo
+      <input type="file" accept=".pdf" style="display:none" onchange="foliarPDFCompleto('${exp.id}', this)">
+    </label>
     ${!bloqueado ? `<button class="btn btn-success btn-sm fw-bold" onclick="abrirSplitter('${exp.id}')">
-      <i class="bi bi-scissors me-2"></i>Subir PDF Completo (auto-detectar)
+      <i class="bi bi-scissors me-2"></i>Subir por Documentos (auto-detectar)
     </button>` : ''}
     <button class="btn btn-generar" onclick="generarExpedientePDF('${exp.id}')" ${totalSubidos === 0 ? 'disabled' : ''}>
       <i class="bi bi-file-earmark-pdf me-2"></i>Generar Expediente PDF Foliado

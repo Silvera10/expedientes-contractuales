@@ -580,6 +580,145 @@ async function generarExpedientePDF(expId){
 }
 
 /* ══════════════════════════════════════════════════════════
+   FOLIAR PDF COMPLETO — Sube un PDF y agrega carátula + índice + foliación
+══════════════════════════════════════════════════════════ */
+async function foliarPDFCompleto(expId, inputEl){
+  const file = inputEl.files[0];
+  inputEl.value = '';
+  if(!file) return;
+
+  if(_generandoPDF){
+    toast('Ya se est\u00e1 procesando un PDF, espere...', 'warning');
+    return;
+  }
+  _generandoPDF = true;
+
+  const exp = DB.getExpediente(expId);
+  if(!exp){
+    toast('Expediente no encontrado', 'danger');
+    _generandoPDF = false;
+    return;
+  }
+
+  toast('Procesando PDF... Agregando car\u00e1tula, \u00edndice y foliaci\u00f3n...', 'info');
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const totalPaginasDoc = srcPdf.getPageCount();
+    const totalFolios = totalPaginasDoc + 2; // +2 por carátula e índice
+
+    // Crear PDF final
+    const pdfFinal = await PDFLib.PDFDocument.create();
+    const fontBold = await pdfFinal.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    const fontNormal = await pdfFinal.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    // 1. Generar CARÁTULA (folio 1)
+    await generarPortada(pdfFinal, exp, totalFolios, fontBold, fontNormal);
+
+    // 2. Generar ÍNDICE simple (folio 2)
+    await generarIndiceFoliar(pdfFinal, file.name, totalPaginasDoc, fontBold, fontNormal);
+
+    // 3. Copiar todas las páginas del PDF original
+    const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
+    for(const page of copiedPages){
+      pdfFinal.addPage(page);
+    }
+
+    // 4. Estampar folio en TODAS las páginas
+    const allPages = pdfFinal.getPages();
+    for(let i = 0; i < allPages.length; i++){
+      estamparFolio(allPages[i], i + 1, totalFolios, fontBold);
+    }
+
+    // 5. Descargar
+    const pdfBytes = await pdfFinal.save();
+    const nombreArchivo = `Expediente_Cto_${exp.contrato_numero}_${exp.anio}.pdf`;
+    descargarPDF(pdfBytes, nombreArchivo);
+
+    toast(`Expediente foliado generado: ${totalFolios} folios (car\u00e1tula + \u00edndice + ${totalPaginasDoc} p\u00e1ginas)`);
+
+  } catch(e){
+    console.error('Error foliando PDF:', e);
+    toast('Error al foliar PDF: ' + e.message, 'danger');
+  } finally {
+    _generandoPDF = false;
+  }
+}
+
+/* Índice simple para PDF foliado completo */
+async function generarIndiceFoliar(pdfDoc, nombreArchivo, totalPaginas, fontBold, fontNormal){
+  const page = pdfDoc.addPage(PDFLib.PageSizes.Letter);
+  const { width, height } = page.getSize();
+
+  // Título
+  const titulo = '\u00cdNDICE DEL EXPEDIENTE';
+  page.drawText(titulo, {
+    x: width / 2 - fontBold.widthOfTextAtSize(titulo, 16) / 2,
+    y: height - 60,
+    size: 16, font: fontBold,
+    color: PDFLib.rgb(0.102, 0.227, 0.361)
+  });
+
+  // Línea dorada
+  page.drawLine({
+    start: { x: 50, y: height - 70 },
+    end: { x: width - 50, y: height - 70 },
+    color: PDFLib.rgb(0.831, 0.627, 0.090),
+    thickness: 2
+  });
+
+  // Cabecera
+  let y = height - 100;
+  page.drawText('N\u00b0', { x: 55, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
+  page.drawText('DESCRIPCI\u00d3N', { x: 90, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
+  page.drawText('P\u00c1GINAS', { x: 400, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
+  page.drawText('FOLIO', { x: 480, y, size: 10, font: fontBold, color: PDFLib.rgb(0.3, 0.3, 0.3) });
+
+  y -= 5;
+  page.drawLine({
+    start: { x: 50, y },
+    end: { x: width - 50, y },
+    color: PDFLib.rgb(0.8, 0.8, 0.8),
+    thickness: 0.5
+  });
+
+  // Fila única: el documento completo
+  y -= 20;
+  page.drawRectangle({
+    x: 50, y: y - 4,
+    width: width - 100, height: 18,
+    color: PDFLib.rgb(0.96, 0.97, 0.98)
+  });
+
+  page.drawText('01', { x: 58, y, size: 10, font: fontBold, color: PDFLib.rgb(0.102, 0.227, 0.361) });
+
+  // Nombre del archivo (truncar si es muy largo)
+  const nombreLimpio = sanitizarWinAnsi(nombreArchivo.replace(/\.pdf$/i, '').replace(/[_\-]/g, ' '));
+  const nombreCorto = nombreLimpio.length > 50 ? nombreLimpio.substring(0, 50) + '...' : nombreLimpio;
+  page.drawText(nombreCorto, { x: 90, y, size: 10, font: fontNormal, color: PDFLib.rgb(0.2, 0.2, 0.2) });
+
+  page.drawText(String(totalPaginas), { x: 415, y, size: 10, font: fontNormal, color: PDFLib.rgb(0.4, 0.4, 0.4) });
+  page.drawText('3', { x: 488, y, size: 10, font: fontBold, color: PDFLib.rgb(0.102, 0.227, 0.361) });
+
+  // Total
+  y -= 30;
+  page.drawLine({
+    start: { x: 50, y: y + 8 },
+    end: { x: width - 50, y: y + 8 },
+    color: PDFLib.rgb(0.831, 0.627, 0.090),
+    thickness: 1
+  });
+
+  const totalText = `Total: ${totalPaginas} p\u00e1ginas | Folios: 1 al ${totalPaginas + 2}`;
+  page.drawText(totalText, {
+    x: 90, y: y - 8,
+    size: 10, font: fontBold,
+    color: PDFLib.rgb(0.3, 0.3, 0.3)
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
    BACKUP / RESTORE — Copia de seguridad ZIP
 ══════════════════════════════════════════════════════════ */
 
