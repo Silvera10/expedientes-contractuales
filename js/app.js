@@ -685,20 +685,24 @@ async function foliarYOrganizarPDF(expId, inputEl){
     }
 
     // 2. Clasificar cada página individualmente
+    console.log('=== ANÁLISIS POR PÁGINA ===');
     for(const pag of paginasTexto){
       const result = clasificarGrupo([pag]);
       pag.tipo = result.tipo;
       pag.confianza = result.confianza;
+      // Log: primeros 80 chars del texto + tipo detectado
+      const preview = pag.texto.substring(0, 80).replace(/\s+/g, ' ');
+      console.log(`Pág ${pag.num}: [${pag.tipo || '?'}] conf=${pag.confianza} chars=${pag.chars} "${preview}..."`);
     }
 
-    // 3. Agrupar páginas consecutivas: solo cortar cuando hay tipo DIFERENTE con confianza alta
+    // 3. Agrupar páginas consecutivas: solo cortar cuando hay tipo DIFERENTE
     const grupos = [];
     let grupoActual = null;
-    const CONFIANZA_MINIMA = 5; // mínimo para considerar "detectado con confianza"
+    const CONFIANZA_MINIMA = 3; // bajado de 5 a 3 para detectar más documentos
 
     for(const pag of paginasTexto){
       const tieneDeteccionClara = pag.tipo && pag.confianza >= CONFIANZA_MINIMA;
-      const esPaginaFirmas = pag.chars < 100; // muy poco texto = probablemente firmas
+      const esPaginaFirmas = pag.chars < 150; // poco texto = firmas/sellos
 
       if(!grupoActual){
         // Primera página: crear grupo
@@ -707,8 +711,8 @@ async function foliarYOrganizarPDF(expId, inputEl){
           confianza: pag.confianza || 0,
           paginas: [pag.num]
         };
-      } else if(tieneDeteccionClara && pag.tipo !== grupoActual.tipo){
-        // Tipo diferente con confianza alta → nuevo grupo
+      } else if(tieneDeteccionClara && !esPaginaFirmas && pag.tipo !== grupoActual.tipo){
+        // Tipo diferente con confianza + no es página de firmas → nuevo grupo
         grupos.push(grupoActual);
         grupoActual = {
           tipo: pag.tipo,
