@@ -336,7 +336,7 @@ async function renderDetalleExpediente(expId){
     ${!bloqueado ? `<button class="btn btn-success btn-sm fw-bold" onclick="abrirSplitter('${exp.id}')">
       <i class="bi bi-scissors me-2"></i>Subir por Documentos (auto-detectar)
     </button>` : ''}
-    <button class="btn btn-generar" onclick="generarExpedientePDF('${exp.id}')" ${totalSubidos === 0 ? 'disabled' : ''}>
+    <button class="btn btn-generar" onclick="generarExpedientePDF('${exp.id}')" ${docsSubidos.length === 0 ? 'disabled' : ''}>
       <i class="bi bi-file-earmark-pdf me-2"></i>Generar Expediente PDF Foliado
     </button>
     ${!bloqueado ? `<button class="btn btn-outline-secondary btn-sm" onclick="agregarDocExtra('${exp.id}')">
