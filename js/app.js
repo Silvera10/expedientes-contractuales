@@ -433,21 +433,72 @@ function mostrarInfoInstitucion(nombre){
 function editarInstitucion(nombre){
   const inst = getInstitucionData(nombre);
   if(!inst) return;
-  const nuevoNit = prompt('NIT de la instituci\u00f3n:', inst.nit || '');
-  if(nuevoNit === null) return;
-  const nuevoMunicipio = prompt('Municipio / Departamento:', inst.municipio || '');
-  if(nuevoMunicipio === null) return;
-  const nuevoRector = prompt('Nombre del Rector(a):', inst.rector || '');
-  if(nuevoRector === null) return;
-  const nuevaCedula = prompt('C\u00e9dula del Rector(a):', inst.cedulaRector || '');
-  if(nuevaCedula === null) return;
-  inst.nit = nuevoNit;
-  inst.municipio = nuevoMunicipio;
-  inst.rector = nuevoRector;
-  inst.cedulaRector = nuevaCedula;
-  guardarInstituciones();
-  mostrarInfoInstitucion(nombre);
-  toast('Datos de la instituci\u00f3n actualizados');
+  const panel = document.getElementById('info-institucion');
+  if(!panel) return;
+
+  panel.innerHTML = `
+    <div class="px-2 py-2" style="background:#fff3cd;border-bottom:1px solid #ffc107;font-size:11px">
+      <div class="fw-bold text-warning mb-2"><i class="bi bi-pencil me-1"></i>Editar Institucion</div>
+      <div class="mb-1">
+        <input type="text" id="edit-inst-nombre" class="form-control form-control-sm" value="${inst.nombre}" placeholder="Nombre *" style="font-size:11px">
+      </div>
+      <div class="row mb-1">
+        <div class="col-6"><input type="text" id="edit-inst-nit" class="form-control form-control-sm" value="${inst.nit || ''}" placeholder="NIT" style="font-size:11px"></div>
+        <div class="col-6"><input type="text" id="edit-inst-municipio" class="form-control form-control-sm" value="${inst.municipio || ''}" placeholder="Municipio" style="font-size:11px"></div>
+      </div>
+      <div class="row mb-1">
+        <div class="col-6"><input type="text" id="edit-inst-rector" class="form-control form-control-sm" value="${inst.rector || ''}" placeholder="Rector(a)" style="font-size:11px"></div>
+        <div class="col-6"><input type="text" id="edit-inst-cedula" class="form-control form-control-sm" value="${inst.cedulaRector || ''}" placeholder="Cedula Rector" style="font-size:11px"></div>
+      </div>
+      <div class="d-flex gap-1 mt-2">
+        <button class="btn btn-success btn-sm py-0 px-2" style="font-size:10px" onclick="guardarEdicionInstitucion('${inst.nombre.replace(/'/g, "\\'")}')"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+        <button class="btn btn-secondary btn-sm py-0 px-2" style="font-size:10px" onclick="mostrarInfoInstitucion('${inst.nombre.replace(/'/g, "\\'")}')"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+      </div>
+    </div>`;
+}
+
+async function guardarEdicionInstitucion(nombreOriginal){
+  const nuevoNombre = document.getElementById('edit-inst-nombre').value.trim();
+  if(!nuevoNombre){
+    toast('El nombre es obligatorio', 'danger');
+    return;
+  }
+
+  const datosNuevos = {
+    nombre: nuevoNombre,
+    nit: document.getElementById('edit-inst-nit').value.trim(),
+    municipio: document.getElementById('edit-inst-municipio').value.trim(),
+    rector: document.getElementById('edit-inst-rector').value.trim(),
+    cedulaRector: document.getElementById('edit-inst-cedula').value.trim()
+  };
+
+  const inst = _instituciones.find(i => i.nombre.toLowerCase() === nombreOriginal.toLowerCase());
+  if(!inst){
+    toast('Institucion no encontrada', 'danger');
+    return;
+  }
+
+  const nombreViejo = inst.nombre;
+  Object.assign(inst, datosNuevos);
+
+  // Si cambio el nombre, actualizar expedientes
+  if(nombreViejo !== nuevoNombre){
+    for(const exp of DB._expedientes){
+      if(exp.institucion === nombreViejo){
+        exp.institucion = nuevoNombre;
+        await DB.saveExpediente(exp);
+      }
+    }
+    // Actualizar filtro
+    DB._filtroInstitucion = nuevoNombre;
+    document.getElementById('filtro-institucion').value = nuevoNombre;
+  }
+
+  await guardarInstituciones();
+  cargarFiltroInstituciones();
+  mostrarInfoInstitucion(nuevoNombre);
+  renderListaExpedientes();
+  toast('Datos de la institucion actualizados');
 }
 
 function nuevoExpediente(){
