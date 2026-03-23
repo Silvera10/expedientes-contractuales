@@ -677,8 +677,6 @@ async function foliarYOrganizarPDF(expId, inputEl){
     const totalPags = pdfJs.numPages;
     const paginasTexto = [];
 
-    toast(`Extrayendo texto de ${totalPags} p\u00e1ginas...`, 'info');
-
     for(let i = 1; i <= totalPags; i++){
       const page = await pdfJs.getPage(i);
       const content = await page.getTextContent();
@@ -688,40 +686,10 @@ async function foliarYOrganizarPDF(expId, inputEl){
 
     // Detectar si es PDF escaneado (sin texto)
     const paginasSinTexto = paginasTexto.filter(p => p.chars < 20).length;
-    const esEscaneado = paginasSinTexto > totalPags * 0.5; // más del 50% sin texto
-
-    if(esEscaneado){
-      toast(`PDF escaneado detectado. Aplicando OCR a ${paginasSinTexto} p\u00e1ginas... (3-5 seg por p\u00e1gina)`, 'info');
-
-      // Renderizar cada página sin texto como imagen y aplicar OCR
-      for(const pag of paginasTexto){
-        if(pag.chars >= 20) continue; // ya tiene texto, no necesita OCR
-
-        toast(`OCR p\u00e1gina ${pag.num} de ${totalPags}...`, 'info');
-
-        const page = await pdfJs.getPage(pag.num);
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport }).promise;
-
-        // OCR con Tesseract
-        try {
-          const result = await Tesseract.recognize(canvas, 'spa', {
-            logger: function(){}
-          });
-          const ocrTexto = (result.data.text || '').toLowerCase();
-          pag.texto = ocrTexto;
-          pag.chars = ocrTexto.trim().length;
-          pag.ocr = true;
-        } catch(ocrErr){
-          console.warn(`OCR error p\u00e1g ${pag.num}:`, ocrErr);
-        }
-      }
-
-      toast('OCR completado. Clasificando documentos...', 'info');
+    if(paginasSinTexto > totalPags * 0.5){
+      toast('Este PDF es escaneado (im\u00e1genes). Use "Foliar PDF Completo" en su lugar \u2014 ese bot\u00f3n no necesita leer texto.', 'warning');
+      _generandoPDF = false;
+      return;
     }
 
     // 2. Clasificar cada página individualmente
@@ -731,7 +699,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
       pag.tipo = result.tipo;
       pag.confianza = result.confianza;
       const preview = pag.texto.substring(0, 80).replace(/\s+/g, ' ');
-      console.log(`P\u00e1g ${pag.num}: [${pag.tipo || '?'}] conf=${pag.confianza} chars=${pag.chars}${pag.ocr ? ' (OCR)' : ''} "${preview}..."`);
+      console.log(`P\u00e1g ${pag.num}: [${pag.tipo || '?'}] conf=${pag.confianza} chars=${pag.chars} "${preview}..."`);
     }
 
     // 3. Agrupar páginas consecutivas: solo cortar cuando hay tipo DIFERENTE
