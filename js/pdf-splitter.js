@@ -939,63 +939,128 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Renderizando HTML...';
       if(barEl) barEl.style.width = '40%';
 
-      // Renderizar HTML en un div visible detrás del modal
-      // html2canvas NECESITA que el contenido sea visible y renderizado
+      // Renderizar HTML en un iframe visible para mejor aislamiento
       const renderDiv = document.createElement('div');
       renderDiv.id = 'html-pdf-render';
       // Visible pero detrás del modal (z-index del modal backdrop = 1040)
-      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:816px;z-index:1;background:#fff;overflow:hidden;';
-      // Inyectar HTML completo: extraer body y styles
+      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:816px;z-index:1;background:#fff;overflow:visible;';
+
+      // Inyectar HTML completo con mejor procesamiento
       const parser = new DOMParser();
       const htmlDoc = parser.parseFromString(htmlText, 'text/html');
-      // Copiar todos los estilos inline, reescribiendo body → #html-pdf-render
+
+      // Copiar links de fuentes externas (Google Fonts, etc.)
+      let fontLinks = '';
+      htmlDoc.querySelectorAll('link[rel="stylesheet"], link[href*="font"]').forEach(link => {
+        fontLinks += link.outerHTML + '\n';
+      });
+
+      // Copiar todos los estilos inline con ajustes
       let allStyles = '';
       htmlDoc.querySelectorAll('style').forEach(s => {
         let css = s.textContent;
         css = css.replace(/@page[^{]*\{[^}]*\}/g, ''); // quitar @page
         css = css.replace(/@media\s+print\s*\{[\s\S]*?\}\s*\}/g, ''); // quitar @media print
-        // Reescribir selectores 'body' para que apliquen al div de render
-        css = css.replace(/\bbody\b/g, '#html-pdf-render');
+        // Reescribir selectores 'body' y 'html' para que apliquen al div de render
+        css = css.replace(/\bhtml\b(?=\s*[{,])/g, '#html-pdf-render');
+        css = css.replace(/\bbody\b(?=\s*[{,])/g, '#html-pdf-render');
         allStyles += css + '\n';
       });
-      // Inyectar con reset y estilos originales
+
+      // Obtener el body HTML y limpiar elementos no deseados
+      const bodyContent = htmlDoc.body.innerHTML;
+
+      // Inyectar con estilos base mínimos (los del documento tienen prioridad)
       renderDiv.innerHTML = `
+        ${fontLinks}
         <style>
+          /* Base mínima - NO sobreescribir estilos del documento */
           #html-pdf-render {
-            font-family: Arial, sans-serif; font-size: 11pt; color: #000;
-            padding: 40px 50px; box-sizing: border-box;
-            word-wrap: break-word; overflow-wrap: break-word;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            color: #000;
+            padding: 30px 40px;
+            box-sizing: border-box;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.4;
           }
-          #html-pdf-render * { box-sizing: border-box; max-width: 100%; }
-          #html-pdf-render table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-          #html-pdf-render td, #html-pdf-render th { word-wrap: break-word; overflow-wrap: break-word; padding: 4px 6px; }
+          #html-pdf-render * { box-sizing: border-box; }
+          /* Tablas: respetar anchos originales pero ajustar al contenedor */
+          #html-pdf-render table {
+            max-width: 100%;
+            border-collapse: collapse;
+          }
+          #html-pdf-render td, #html-pdf-render th {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
+          }
           #html-pdf-render img { max-width: 100%; height: auto; }
+          /* Asegurar que el texto largo no desborde */
+          #html-pdf-render p, #html-pdf-render div, #html-pdf-render span {
+            max-width: 100%;
+          }
+          /* Firmas y campos de texto centrados */
+          #html-pdf-render .firma, #html-pdf-render [class*="firma"],
+          #html-pdf-render [class*="sign"] {
+            page-break-inside: avoid;
+          }
+        </style>
+        <style>
+          /* Estilos originales del documento (tienen prioridad) */
           ${allStyles}
         </style>
-        ${htmlDoc.body.innerHTML}
+        ${bodyContent}
       `;
-      // Quitar botones de impresión
-      renderDiv.querySelectorAll('.no-print, .print-btn, button[onclick*="print"]').forEach(el => el.remove());
+
+      // Quitar elementos no deseados
+      renderDiv.querySelectorAll('.no-print, .print-btn, button[onclick*="print"], script').forEach(el => el.remove());
+
+      // Ajustar tablas con ancho fijo mayor al contenedor
+      renderDiv.querySelectorAll('table').forEach(tbl => {
+        const w = tbl.getAttribute('width');
+        if(w && parseInt(w) > 736) {
+          tbl.style.width = '100%';
+          tbl.removeAttribute('width');
+        }
+      });
+
+      // Ajustar elementos con ancho inline mayor al contenedor
+      renderDiv.querySelectorAll('[style*="width"]').forEach(el => {
+        const match = el.style.width && parseInt(el.style.width);
+        if(match > 736) el.style.width = '100%';
+      });
+
       document.body.appendChild(renderDiv);
 
-      // Esperar renderizado completo
-      await new Promise(r => setTimeout(r, 1200));
+      // Esperar renderizado completo (fuentes + imágenes)
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Forzar que las fuentes estén cargadas
+      if(document.fonts && document.fonts.ready) await document.fonts.ready;
 
       const contentHeight = renderDiv.scrollHeight;
-      console.log('Render div:', renderDiv.offsetWidth, 'x', contentHeight, 'px');
+      const contentWidth = renderDiv.scrollWidth;
+      console.log('Render div:', contentWidth, 'x', contentHeight, 'px');
 
       if(progresoEl) progresoEl.textContent = 'Capturando documento...';
       if(barEl) barEl.style.width = '60%';
 
-      // Capturar con html2canvas (el div es visible, debe funcionar)
+      // Capturar con html2canvas
       const canvas = await html2canvas(renderDiv, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
         scrollX: 0,
-        scrollY: -window.scrollY,
+        scrollY: 0,
         width: 816,
-        height: contentHeight
+        height: contentHeight,
+        windowWidth: 816,
+        windowHeight: contentHeight,
+        x: 0,
+        y: 0
       });
 
       console.log('Canvas:', canvas.width, 'x', canvas.height, 'px');
@@ -1006,16 +1071,17 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Generando PDF...';
       if(barEl) barEl.style.width = '80%';
 
-      // Crear PDF cortando el canvas en páginas
+      // Crear PDF cortando el canvas en páginas (tamaño Carta)
       const pageW = 612; // Letter width in points
       const pageH = 792; // Letter height in points
-      const margin = 30;
-      const contentW = pageW - margin * 2;
-      const contentH = pageH - margin * 2;
+      const marginX = 20; // margen horizontal mínimo
+      const marginY = 25; // margen vertical
+      const contentW = pageW - marginX * 2;
+      const contentH = pageH - marginY * 2;
 
       // Calcular dimensiones: cuántos píxeles del canvas caben en una página
-      const scale = contentW / canvas.width; // puntos PDF por píxel de canvas
-      const pxPerPage = Math.floor(contentH / scale); // píxeles de canvas por página
+      const pdfScale = contentW / canvas.width; // puntos PDF por píxel de canvas
+      const pxPerPage = Math.floor(contentH / pdfScale); // píxeles de canvas por página
       const numPages = Math.ceil(canvas.height / pxPerPage);
 
       const pdfDoc = await PDFLib.PDFDocument.create();
@@ -1029,18 +1095,20 @@ async function iniciarAnalisisPDF(input){
         pageCanvas.width = canvas.width;
         pageCanvas.height = srcH;
         const ctx = pageCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, srcH);
         ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
 
-        // Convertir a JPEG y embeber
-        const jpgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+        // Convertir a JPEG alta calidad y embeber
+        const jpgData = pageCanvas.toDataURL('image/jpeg', 0.95);
         const jpgBytes = await fetch(jpgData).then(r => r.arrayBuffer());
         const jpgImage = await pdfDoc.embedJpg(jpgBytes);
 
         const page = pdfDoc.addPage([pageW, pageH]);
-        const drawH = srcH * scale;
+        const drawH = srcH * pdfScale;
         page.drawImage(jpgImage, {
-          x: margin,
-          y: pageH - margin - drawH,
+          x: marginX,
+          y: pageH - marginY - drawH,
           width: contentW,
           height: drawH
         });
