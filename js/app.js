@@ -646,6 +646,229 @@ async function foliarPDFCompleto(expId, inputEl){
   }
 }
 
+/* ══════════════════════════════════════════════════════════
+   FOLIAR Y ORGANIZAR — Detecta documentos, reordena y folia
+══════════════════════════════════════════════════════════ */
+async function foliarYOrganizarPDF(expId, inputEl){
+  const file = inputEl.files[0];
+  inputEl.value = '';
+  if(!file) return;
+
+  if(_generandoPDF){
+    toast('Ya se est\u00e1 procesando un PDF, espere...', 'warning');
+    return;
+  }
+  _generandoPDF = true;
+
+  const exp = DB.getExpediente(expId);
+  if(!exp){
+    toast('Expediente no encontrado', 'danger');
+    _generandoPDF = false;
+    return;
+  }
+
+  toast('Analizando PDF... Detectando documentos y organizando...', 'info');
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+
+    // 1. Extraer texto de cada página con pdf.js
+    const pdfJs = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+    const totalPags = pdfJs.numPages;
+    const paginasTexto = [];
+
+    for(let i = 1; i <= totalPags; i++){
+      const page = await pdfJs.getPage(i);
+      const content = await page.getTextContent();
+      const texto = content.items.map(item => item.str).join(' ').toLowerCase();
+      paginasTexto.push({ num: i, texto, chars: texto.length });
+    }
+
+    // 2. Clasificar cada página individualmente
+    for(const pag of paginasTexto){
+      const result = clasificarGrupo([pag]);
+      pag.tipo = result.tipo;
+      pag.confianza = result.confianza;
+    }
+
+    // 3. Agrupar páginas consecutivas: solo cortar cuando hay tipo DIFERENTE con confianza alta
+    const grupos = [];
+    let grupoActual = null;
+    const CONFIANZA_MINIMA = 5; // mínimo para considerar "detectado con confianza"
+
+    for(const pag of paginasTexto){
+      const tieneDeteccionClara = pag.tipo && pag.confianza >= CONFIANZA_MINIMA;
+      const esPaginaFirmas = pag.chars < 100; // muy poco texto = probablemente firmas
+
+      if(!grupoActual){
+        // Primera página: crear grupo
+        grupoActual = {
+          tipo: pag.tipo || 'no_identificado',
+          confianza: pag.confianza || 0,
+          paginas: [pag.num]
+        };
+      } else if(tieneDeteccionClara && pag.tipo !== grupoActual.tipo){
+        // Tipo diferente con confianza alta → nuevo grupo
+        grupos.push(grupoActual);
+        grupoActual = {
+          tipo: pag.tipo,
+          confianza: pag.confianza,
+          paginas: [pag.num]
+        };
+      } else {
+        // Misma tipo, sin tipo, poco texto, o baja confianza → sigue en el mismo grupo
+        grupoActual.paginas.push(pag.num);
+      }
+    }
+    if(grupoActual) grupos.push(grupoActual);
+
+    // 4. Asignar orden a cada grupo según DOC_TIPOS
+    const todosLosTipos = [...DOC_TIPOS, ...DOC_TIPOS_ADICION];
+    for(const grupo of grupos){
+      const tipoDef = todosLosTipos.find(d => d.id === grupo.tipo);
+      grupo.orden = tipoDef ? tipoDef.orden : 99;
+      grupo.nombre = tipoDef ? tipoDef.nombre : 'Documento sin clasificar';
+      grupo.codigo = tipoDef ? (tipoDef.codigo || '') : '';
+    }
+
+    // 5. Reordenar grupos por orden FOSE
+    grupos.sort((a, b) => a.orden - b.orden);
+
+    console.log('Grupos detectados:', grupos.map(g => `${g.codigo} ${g.nombre} (${g.paginas.length} págs, conf: ${g.confianza})`));
+
+    // 6. Construir PDF reordenado
+    const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer.slice(0), { ignoreEncryption: true });
+    const totalFolios = totalPags + 2; // +2 carátula e índice
+
+    const pdfFinal = await PDFLib.PDFDocument.create();
+    const fontBold = await pdfFinal.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    const fontNormal = await pdfFinal.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    // Carátula (folio 1)
+    await generarPortada(pdfFinal, exp, totalFolios, fontBold, fontNormal);
+
+    // Índice detallado (folio 2)
+    await generarIndiceOrganizado(pdfFinal, exp, grupos, totalFolios, fontBold, fontNormal);
+
+    // Copiar páginas en el nuevo orden
+    for(const grupo of grupos){
+      const indices = grupo.paginas.map(p => p - 1); // pdf-lib usa 0-based
+      const copiedPages = await pdfFinal.copyPages(srcPdf, indices);
+      for(const page of copiedPages){
+        pdfFinal.addPage(page);
+      }
+    }
+
+    // Estampar folio en todas las páginas
+    const allPages = pdfFinal.getPages();
+    for(let i = 0; i < allPages.length; i++){
+      estamparFolio(allPages[i], i + 1, totalFolios, fontBold);
+    }
+
+    // Descargar
+    const pdfBytes = await pdfFinal.save();
+    const nombreArchivo = `Expediente_Cto_${exp.contrato_numero}_${exp.anio}_Organizado.pdf`;
+    descargarPDF(pdfBytes, nombreArchivo);
+
+    toast(`Expediente organizado: ${grupos.length} documentos detectados, ${totalFolios} folios`);
+
+  } catch(e){
+    console.error('Error organizando PDF:', e);
+    toast('Error al organizar PDF: ' + e.message, 'danger');
+  } finally {
+    _generandoPDF = false;
+  }
+}
+
+/* Índice detallado para PDF organizado */
+async function generarIndiceOrganizado(pdfDoc, exp, grupos, totalFolios, fontBold, fontNormal){
+  const page = pdfDoc.addPage(PDFLib.PageSizes.Letter);
+  const { width, height } = page.getSize();
+  const azul = PDFLib.rgb(0.102, 0.227, 0.361);
+  const gris = PDFLib.rgb(0.3, 0.3, 0.3);
+  const dorado = PDFLib.rgb(0.831, 0.627, 0.090);
+
+  // Título
+  const titulo = '\u00cdNDICE DEL EXPEDIENTE';
+  page.drawText(titulo, {
+    x: width / 2 - fontBold.widthOfTextAtSize(titulo, 16) / 2,
+    y: height - 55,
+    size: 16, font: fontBold, color: azul
+  });
+
+  const subtitulo = sanitizarWinAnsi(`Contrato N. ${exp.contrato_numero || ''} de ${exp.anio || ''} - ${exp.contratista || ''}`);
+  const subCorto = subtitulo.length > 70 ? subtitulo.substring(0, 70) + '...' : subtitulo;
+  page.drawText(subCorto, {
+    x: width / 2 - fontNormal.widthOfTextAtSize(subCorto, 10) / 2,
+    y: height - 72,
+    size: 10, font: fontNormal, color: gris
+  });
+
+  page.drawLine({
+    start: { x: 50, y: height - 80 },
+    end: { x: width - 50, y: height - 80 },
+    color: dorado, thickness: 2
+  });
+
+  // Cabecera
+  let y = height - 100;
+  page.drawText('N.', { x: 55, y, size: 9, font: fontBold, color: gris });
+  page.drawText('COD.', { x: 75, y, size: 9, font: fontBold, color: gris });
+  page.drawText('DOCUMENTO', { x: 120, y, size: 9, font: fontBold, color: gris });
+  page.drawText('PAGS.', { x: 400, y, size: 9, font: fontBold, color: gris });
+  page.drawText('FOLIO', { x: 460, y, size: 9, font: fontBold, color: gris });
+
+  y -= 5;
+  page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, color: PDFLib.rgb(0.8, 0.8, 0.8), thickness: 0.5 });
+
+  // Filas
+  let folioActual = 3; // empieza en folio 3 (después de carátula e índice)
+  grupos.forEach((grupo, idx) => {
+    y -= 17;
+    if(y < 60) return; // protección contra overflow
+
+    // Fondo alterno
+    if(idx % 2 === 0){
+      page.drawRectangle({
+        x: 50, y: y - 4,
+        width: width - 100, height: 17,
+        color: PDFLib.rgb(0.96, 0.97, 0.98)
+      });
+    }
+
+    const num = String(idx + 1).padStart(2, '0');
+    page.drawText(num, { x: 58, y, size: 9, font: fontBold, color: azul });
+
+    // Código FOSE
+    if(grupo.codigo){
+      page.drawText(grupo.codigo, { x: 75, y, size: 8, font: fontBold, color: PDFLib.rgb(0.4, 0.4, 0.4) });
+    }
+
+    // Nombre
+    const nombreSafe = sanitizarWinAnsi(grupo.nombre);
+    const nombreCorto = nombreSafe.length > 40 ? nombreSafe.substring(0, 40) + '...' : nombreSafe;
+    page.drawText(nombreCorto, { x: 120, y, size: 9, font: fontNormal, color: PDFLib.rgb(0.1, 0.1, 0.1) });
+
+    // Páginas
+    page.drawText(String(grupo.paginas.length), { x: 410, y, size: 9, font: fontNormal, color: gris });
+
+    // Folio inicio
+    page.drawText(String(folioActual), { x: 468, y, size: 9, font: fontBold, color: azul });
+
+    folioActual += grupo.paginas.length;
+  });
+
+  // Total
+  y -= 22;
+  page.drawLine({ start: { x: 50, y: y + 8 }, end: { x: width - 50, y: y + 8 }, color: dorado, thickness: 1 });
+
+  const totalText = sanitizarWinAnsi(`Total: ${grupos.length} documentos | ${totalFolios} folios`);
+  page.drawText(totalText, {
+    x: 120, y: y - 5,
+    size: 10, font: fontBold, color: gris
+  });
+}
+
 /* Índice simple para PDF foliado completo */
 async function generarIndiceFoliar(pdfDoc, exp, nombreArchivo, totalPaginas, totalFolios, fontBold, fontNormal){
   const page = pdfDoc.addPage(PDFLib.PageSizes.Letter);

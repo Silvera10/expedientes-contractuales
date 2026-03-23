@@ -329,6 +329,10 @@ async function renderDetalleExpediente(expId){
       <i class="bi bi-file-earmark-plus me-2"></i>Foliar PDF Completo
       <input type="file" accept=".pdf" style="display:none" onchange="foliarPDFCompleto('${exp.id}', this)">
     </label>
+    <label class="btn btn-warning btn-sm fw-bold mb-0" title="Sube un PDF, organiza los documentos en orden correcto y folia">
+      <i class="bi bi-sort-down me-2"></i>Foliar y Organizar
+      <input type="file" accept=".pdf" style="display:none" onchange="foliarYOrganizarPDF('${exp.id}', this)">
+    </label>
     ${!bloqueado ? `<button class="btn btn-success btn-sm fw-bold" onclick="abrirSplitter('${exp.id}')">
       <i class="bi bi-scissors me-2"></i>Subir por Documentos (auto-detectar)
     </button>` : ''}
