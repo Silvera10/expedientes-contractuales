@@ -133,19 +133,29 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
     color: rgb(0.98, 0.98, 0.98)
   });
 
-  // Datos del expediente
+  // Datos del expediente + institución
+  const instData = (typeof getInstitucionData === 'function') ? getInstitucionData(exp.institucion) : null;
   const esAnterior = (exp.datos && exp.datos.tipo_vigencia === 'anterior');
-  let y = marcoY + marcoH - 50;
+  let y = marcoY + marcoH - 40;
   const datos = [
     { label: 'INSTITUCI\u00d3N EDUCATIVA', valor: (exp.institucion || '').toUpperCase() },
-    { label: 'CONTRATO N\u00b0', valor: `${exp.contrato_numero || 'S/N'} DE ${exp.anio || ''}` },
-    { label: 'CONTRATISTA', valor: (exp.contratista || '').toUpperCase() },
-    { label: 'NIT / C\u00c9DULA', valor: exp.nit || 'N/A' },
-    { label: 'VALOR', valor: exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : 'N/A' },
-    { label: 'OBJETO', valor: exp.objeto || 'N/A' },
   ];
+  if(instData && instData.nit){
+    datos.push({ label: 'NIT INSTITUCI\u00d3N', valor: instData.nit });
+  }
+  if(instData && instData.municipio){
+    datos.push({ label: 'MUNICIPIO', valor: instData.municipio.toUpperCase() });
+  }
+  if(instData && instData.rector){
+    datos.push({ label: 'RECTOR(A) - ORDENADOR DEL GASTO', valor: instData.rector.toUpperCase() + (instData.cedulaRector ? ' - C.C. ' + instData.cedulaRector : '') });
+  }
+  datos.push({ label: 'CONTRATO N\u00b0', valor: `${exp.contrato_numero || 'S/N'} DE ${exp.anio || ''}` });
+  datos.push({ label: 'CONTRATISTA', valor: (exp.contratista || '').toUpperCase() });
+  datos.push({ label: 'NIT / C\u00c9DULA CONTRATISTA', valor: exp.nit || 'N/A' });
+  datos.push({ label: 'VALOR', valor: exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : 'N/A' });
+  datos.push({ label: 'OBJETO', valor: exp.objeto || 'N/A' });
   if(esAnterior){
-    datos.push({ label: 'TIPO', valor: `ADICI\u00d3N \u2014 Vigencia original ${exp.datos.anio_original || '?'}, Pago vigencia ${exp.datos.anio_pago || '?'}` });
+    datos.push({ label: 'TIPO', valor: `ADICI\u00d3N - Vigencia original ${exp.datos.anio_original || '?'}, Pago vigencia ${exp.datos.anio_pago || '?'}` });
   }
   datos.push({ label: 'TOTAL FOLIOS', valor: String(totalFolios) });
 
@@ -159,12 +169,12 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
     // Valor
     const valorText = d.valor.length > 70 ? d.valor.substring(0, 70) + '...' : d.valor;
     page.drawText(valorText, {
-      x: marcoX + 25, y: y - 16,
-      size: 12, font: fontBold,
+      x: marcoX + 25, y: y - 14,
+      size: 11, font: fontBold,
       color: rgb(0.1, 0.1, 0.1)
     });
     // Linea separadora
-    y -= 48;
+    y -= 38;
     if(y > marcoY + 20){
       page.drawLine({
         start: { x: marcoX + 25, y: y + 10 },

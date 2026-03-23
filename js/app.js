@@ -31,8 +31,9 @@ async function initApp(){
     document.getElementById('auth-overlay').style.display = 'none';
     document.getElementById('app-container').style.display = '';
 
-    // 5. Cargar expedientes
+    // 5. Cargar expedientes e instituciones
     await DB.loadExpedientes();
+    await cargarInstituciones();
     cargarFiltroInstituciones();
     renderListaExpedientes();
 
@@ -124,42 +125,70 @@ async function doLogout(){
 /* ══════════════════════════════════════════
    CATÁLOGO DE INSTITUCIONES
 ══════════════════════════════════════════ */
-function getInstituciones(){
-  const instituciones = new Set();
+/* ── Catálogo de instituciones (guardado en IndexedDB meta) ── */
+let _instituciones = []; // cache en memoria
+
+async function cargarInstituciones(){
+  try {
+    const data = await DB._get('meta', 'instituciones');
+    _instituciones = data || [];
+  } catch(e){
+    _instituciones = [];
+  }
+  // Migrar instituciones antiguas (solo nombre) desde expedientes
+  const nombres = new Set(_instituciones.map(i => i.nombre.toLowerCase()));
   DB._expedientes.forEach(e => {
-    if(e.institucion) instituciones.add(e.institucion);
+    if(e.institucion && !nombres.has(e.institucion.toLowerCase())){
+      _instituciones.push({ nombre: e.institucion, nit: '', municipio: '', rector: '', cedulaRector: '' });
+      nombres.add(e.institucion.toLowerCase());
+    }
   });
-  return [...instituciones].sort();
+  await guardarInstituciones();
+}
+
+async function guardarInstituciones(){
+  await DB._put('meta', 'instituciones', _instituciones);
+}
+
+function getInstituciones(){
+  return _instituciones.map(i => i.nombre).sort();
+}
+
+function getInstitucionData(nombre){
+  return _instituciones.find(i => i.nombre.toLowerCase() === nombre.toLowerCase()) || null;
 }
 
 function cargarFiltroInstituciones(){
   const select = document.getElementById('filtro-institucion');
   if(!select) return;
-  const instituciones = getInstituciones();
+  const nombres = getInstituciones();
   const valorActual = select.value;
   select.innerHTML = '<option value="">Todas las instituciones</option>' +
-    instituciones.map(i => `<option value="${i}"${i === valorActual ? ' selected' : ''}>${i}</option>`).join('');
+    nombres.map(i => `<option value="${i}"${i === valorActual ? ' selected' : ''}>${i}</option>`).join('');
 }
 
 function cargarSelectInstituciones(){
   const select = document.getElementById('exp-institucion-select');
   if(!select) return;
-  const instituciones = getInstituciones();
+  const nombres = getInstituciones();
   select.innerHTML = '<option value="">— Seleccione —</option>' +
-    instituciones.map(i => `<option value="${i}">${i}</option>`).join('') +
-    '<option value="__nueva__">+ Agregar nueva institución...</option>';
+    nombres.map(i => `<option value="${i}">${i}</option>`).join('') +
+    '<option value="__nueva__">+ Agregar nueva instituci\u00f3n...</option>';
 }
 
 function onInstitucionSelect(){
   const select = document.getElementById('exp-institucion-select');
-  const input = document.getElementById('exp-institucion');
+  const camposNueva = document.getElementById('campos-nueva-institucion');
   if(select.value === '__nueva__'){
-    input.style.display = '';
-    input.value = '';
-    input.focus();
+    camposNueva.style.display = '';
+    document.getElementById('inst-nombre').value = '';
+    document.getElementById('inst-nit').value = '';
+    document.getElementById('inst-municipio').value = '';
+    document.getElementById('inst-rector').value = '';
+    document.getElementById('inst-cedula-rector').value = '';
+    document.getElementById('inst-nombre').focus();
   } else {
-    input.style.display = 'none';
-    input.value = select.value;
+    camposNueva.style.display = 'none';
   }
 }
 
@@ -263,9 +292,35 @@ function editarExpediente(id){
 
 async function guardarExpediente(){
   const selectInst = document.getElementById('exp-institucion-select');
-  const institucion = (selectInst.value === '__nueva__' || selectInst.value === '')
-    ? document.getElementById('exp-institucion').value.trim()
-    : selectInst.value;
+  let institucion = '';
+
+  if(selectInst.value === '__nueva__'){
+    // Nueva institución: guardar en catálogo
+    institucion = document.getElementById('inst-nombre').value.trim();
+    if(!institucion){
+      toast('Ingrese el nombre de la instituci\u00f3n', 'danger');
+      return;
+    }
+    const nuevaInst = {
+      nombre: institucion,
+      nit: document.getElementById('inst-nit').value.trim(),
+      municipio: document.getElementById('inst-municipio').value.trim(),
+      rector: document.getElementById('inst-rector').value.trim(),
+      cedulaRector: document.getElementById('inst-cedula-rector').value.trim()
+    };
+    // Verificar que no exista
+    const existente = _instituciones.find(i => i.nombre.toLowerCase() === institucion.toLowerCase());
+    if(existente){
+      // Actualizar datos
+      Object.assign(existente, nuevaInst);
+    } else {
+      _instituciones.push(nuevaInst);
+    }
+    await guardarInstituciones();
+  } else if(selectInst.value && selectInst.value !== ''){
+    institucion = selectInst.value;
+  }
+
   const numero = document.getElementById('exp-numero').value.trim();
   const anio = document.getElementById('exp-anio').value.trim();
   const contratista = document.getElementById('exp-contratista').value.trim();
