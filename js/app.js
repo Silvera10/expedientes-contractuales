@@ -341,7 +341,55 @@ async function generarInformeAnual(){
 function filtrarPorInstitucion(){
   const filtro = document.getElementById('filtro-institucion').value;
   DB._filtroInstitucion = filtro;
+  mostrarInfoInstitucion(filtro);
   renderListaExpedientes();
+}
+
+function mostrarInfoInstitucion(nombre){
+  const panel = document.getElementById('info-institucion');
+  if(!panel) return;
+  if(!nombre){
+    panel.style.display = 'none';
+    return;
+  }
+  const inst = getInstitucionData(nombre);
+  if(!inst){
+    panel.style.display = 'none';
+    return;
+  }
+  const expCount = DB._expedientes.filter(e => e.institucion === nombre).length;
+  panel.style.display = '';
+  panel.innerHTML = `
+    <div class="px-2 py-2" style="background:#e8f4fd;border-bottom:1px solid #bee5eb;font-size:11px">
+      <div class="fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>${inst.nombre}</div>
+      ${inst.nit ? `<div><strong>NIT:</strong> ${inst.nit}</div>` : ''}
+      ${inst.municipio ? `<div><strong>Municipio:</strong> ${inst.municipio}</div>` : ''}
+      ${inst.rector ? `<div><strong>Rector(a):</strong> ${inst.rector}</div>` : ''}
+      ${inst.cedulaRector ? `<div><strong>C.C.:</strong> ${inst.cedulaRector}</div>` : ''}
+      <div class="mt-1"><strong>Expedientes:</strong> ${expCount}
+        <button class="btn btn-outline-secondary py-0 px-1 ms-2" style="font-size:9px" onclick="editarInstitucion('${inst.nombre.replace(/'/g, "\\'")}')" title="Editar datos"><i class="bi bi-pencil"></i> Editar</button>
+      </div>
+    </div>`;
+}
+
+function editarInstitucion(nombre){
+  const inst = getInstitucionData(nombre);
+  if(!inst) return;
+  const nuevoNit = prompt('NIT de la instituci\u00f3n:', inst.nit || '');
+  if(nuevoNit === null) return;
+  const nuevoMunicipio = prompt('Municipio / Departamento:', inst.municipio || '');
+  if(nuevoMunicipio === null) return;
+  const nuevoRector = prompt('Nombre del Rector(a):', inst.rector || '');
+  if(nuevoRector === null) return;
+  const nuevaCedula = prompt('C\u00e9dula del Rector(a):', inst.cedulaRector || '');
+  if(nuevaCedula === null) return;
+  inst.nit = nuevoNit;
+  inst.municipio = nuevoMunicipio;
+  inst.rector = nuevoRector;
+  inst.cedulaRector = nuevaCedula;
+  guardarInstituciones();
+  mostrarInfoInstitucion(nombre);
+  toast('Datos de la instituci\u00f3n actualizados');
 }
 
 function nuevoExpediente(){
