@@ -224,6 +224,120 @@ async function descargarTodosExpedientes(){
   }
 }
 
+/* ══════════════════════════════════════════════════════════
+   GENERAR INFORME POR TRIMESTRE — Todos los expedientes en un solo PDF
+══════════════════════════════════════════════════════════ */
+async function generarInformeAnual(){
+  const filtro = document.getElementById('filtro-institucion').value;
+  if(!filtro){
+    toast('Seleccione una instituci\u00f3n en el filtro primero', 'warning');
+    return;
+  }
+
+  // Preguntar trimestre
+  const trimestre = prompt('Ingrese el trimestre (1, 2, 3 o 4).\nDejar vac\u00edo para generar todos los del a\u00f1o:');
+  const anio = new Date().getFullYear();
+
+  let exps = DB._expedientes.filter(e => e.institucion === filtro);
+
+  if(trimestre && ['1','2','3','4'].includes(trimestre.trim())){
+    const t = parseInt(trimestre.trim());
+    const mesInicio = (t - 1) * 3; // 0,3,6,9
+    const mesFin = mesInicio + 2;   // 2,5,8,11
+    exps = exps.filter(e => {
+      const fecha = e.datos?.fecha_contrato || e.created_at;
+      if(!fecha) return false;
+      const mes = new Date(fecha).getMonth();
+      return mes >= mesInicio && mes <= mesFin;
+    });
+  }
+
+  if(!exps.length){
+    toast('No hay expedientes para el per\u00edodo seleccionado', 'warning');
+    return;
+  }
+
+  if(_generandoPDF){
+    toast('Ya se est\u00e1 generando un PDF, espere...', 'warning');
+    return;
+  }
+  _generandoPDF = true;
+
+  toast(`Generando informe con ${exps.length} expediente(s)... Esto puede tardar.`, 'info');
+
+  try {
+    const pdfFinal = await PDFLib.PDFDocument.create();
+    const fontBold = await pdfFinal.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    const fontNormal = await pdfFinal.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    // Portada general del informe
+    const portada = pdfFinal.addPage(PDFLib.PageSizes.Letter);
+    const { width, height } = portada.getSize();
+    const centerX = width / 2;
+
+    portada.drawRectangle({ x: 0, y: height - 120, width, height: 120, color: PDFLib.rgb(0.102, 0.227, 0.361) });
+    portada.drawRectangle({ x: 0, y: height - 124, width, height: 4, color: PDFLib.rgb(0.831, 0.627, 0.090) });
+
+    const tit = 'INFORME DE EXPEDIENTES CONTRACTUALES';
+    portada.drawText(tit, { x: centerX - fontBold.widthOfTextAtSize(tit, 18) / 2, y: height - 55, size: 18, font: fontBold, color: PDFLib.rgb(1,1,1) });
+
+    const periodo = trimestre ? `TRIMESTRE ${trimestre} DE ${anio}` : `A\u00d1O ${anio}`;
+    portada.drawText(periodo, { x: centerX - fontBold.widthOfTextAtSize(periodo, 14) / 2, y: height - 80, size: 14, font: fontNormal, color: PDFLib.rgb(0.9,0.9,0.9) });
+
+    const instData = getInstitucionData(filtro);
+    let yp = height - 180;
+    const infos = [
+      { l: 'INSTITUCI\u00d3N', v: filtro.toUpperCase() },
+    ];
+    if(instData?.nit) infos.push({ l: 'NIT', v: instData.nit });
+    if(instData?.municipio) infos.push({ l: 'MUNICIPIO', v: instData.municipio.toUpperCase() });
+    if(instData?.rector) infos.push({ l: 'RECTOR(A)', v: instData.rector.toUpperCase() });
+    infos.push({ l: 'TOTAL EXPEDIENTES', v: String(exps.length) });
+
+    for(const info of infos){
+      portada.drawText(sanitizarWinAnsi(info.l + ':'), { x: 80, y: yp, size: 9, font: fontBold, color: PDFLib.rgb(0.4,0.4,0.4) });
+      portada.drawText(sanitizarWinAnsi(info.v), { x: 80, y: yp - 16, size: 12, font: fontBold, color: PDFLib.rgb(0.1,0.1,0.1) });
+      yp -= 42;
+    }
+
+    // Agregar cada expediente foliado
+    let expedientesIncluidos = 0;
+    for(const exp of exps){
+      // Buscar PDF foliado guardado
+      const foliadoPath = await DB._get('meta', `foliado_${exp.id}`);
+      if(!foliadoPath) continue;
+
+      const foliadoBytes = await DB.getArchivo(foliadoPath);
+      if(!foliadoBytes) continue;
+
+      const srcPdf = await PDFLib.PDFDocument.load(foliadoBytes, { ignoreEncryption: true });
+      const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
+      for(const page of copiedPages){
+        pdfFinal.addPage(page);
+      }
+      expedientesIncluidos++;
+    }
+
+    if(expedientesIncluidos === 0){
+      toast('Ninguno de los expedientes tiene PDF foliado guardado. Use "Foliar PDF Completo" primero en cada expediente.', 'warning');
+      _generandoPDF = false;
+      return;
+    }
+
+    const pdfBytes = await pdfFinal.save();
+    const nombreArchivo = `Informe_${filtro.replace(/\s+/g, '_')}_${trimestre ? 'T' + trimestre : ''}${anio}.pdf`;
+    descargarPDF(pdfBytes, sanitizarWinAnsi(nombreArchivo));
+
+    toast(`Informe generado: ${expedientesIncluidos} expedientes en un solo PDF`);
+
+  } catch(e){
+    console.error('Error generando informe:', e);
+    toast('Error al generar informe: ' + e.message, 'danger');
+  } finally {
+    _generandoPDF = false;
+  }
+}
+
 function filtrarPorInstitucion(){
   const filtro = document.getElementById('filtro-institucion').value;
   DB._filtroInstitucion = filtro;
@@ -686,12 +800,40 @@ async function foliarPDFCompleto(expId, inputEl){
       estamparFolio(allPages[i], i + 1, totalFolios, fontBold);
     }
 
-    // 5. Descargar
+    // 5. Guardar PDF original en el expediente
+    const storagePath = `${expId}/expediente_completo_${Date.now()}.pdf`;
+    await DB.saveArchivo(storagePath, arrayBuffer);
+
+    // Guardar metadata del documento
+    const docId = `${expId}_expediente_completo`;
+    const doc = {
+      id: docId,
+      expediente_id: expId,
+      tipo: 'expediente_completo',
+      orden: 0,
+      nombre_archivo: file.name,
+      storage_path: storagePath,
+      paginas: totalPaginasDoc,
+      fecha_expedicion: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString()
+    };
+    await DB.saveDocumento(doc);
+
+    // 6. Guardar PDF foliado final
     const pdfBytes = await pdfFinal.save();
+    const foliadoPath = `${expId}/expediente_foliado_${Date.now()}.pdf`;
+    await DB.saveArchivo(foliadoPath, pdfBytes.buffer);
+    await DB._put('meta', `foliado_${expId}`, foliadoPath);
+
+    // 7. Descargar
     const nombreArchivo = `Expediente_Cto_${exp.contrato_numero}_${exp.anio}.pdf`;
     descargarPDF(pdfBytes, nombreArchivo);
 
-    toast(`Expediente foliado generado: ${totalFolios} folios (car\u00e1tula + \u00edndice + ${totalPaginasDoc} p\u00e1ginas)`);
+    // Actualizar vista
+    await actualizarEstadoExpediente(expId);
+    renderDetalleExpediente(expId);
+
+    toast(`Expediente foliado: ${totalFolios} folios. Guardado en el expediente.`);
 
   } catch(e){
     console.error('Error foliando PDF:', e);

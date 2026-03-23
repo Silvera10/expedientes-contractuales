@@ -122,6 +122,9 @@
             <button class="btn btn-outline-success btn-sm py-0 px-2 flex-shrink-0" onclick="descargarTodosExpedientes()" title="Descargar todos los expedientes">
               <i class="bi bi-download"></i>
             </button>
+            <button class="btn btn-outline-primary btn-sm py-0 px-2 flex-shrink-0" onclick="generarInformeAnual()" title="Generar informe anual (todos los expedientes de la instituci&oacute;n seleccionada en un solo PDF)">
+              <i class="bi bi-journal-bookmark"></i>
+            </button>
           </div>
           <div id="lista-expedientes" class="list-group list-group-flush" style="max-height:calc(100vh - 220px);overflow-y:auto">
             <p class="text-muted text-center py-4 small">Cargando...</p>
@@ -342,6 +345,6 @@
 <script src="js/ui.js?v=30"></script>
 <script src="js/pdf-splitter.js?v=27"></script>
 <script src="js/pdf-engine.js?v=34"></script>
-<script src="js/app.js?v=34"></script>
+<script src="js/app.js?v=35"></script>
 </body>
 </html>
