@@ -943,7 +943,7 @@ async function iniciarAnalisisPDF(input){
       const renderDiv = document.createElement('div');
       renderDiv.id = 'html-pdf-render';
       // Visible pero detrás del modal (z-index del modal backdrop = 1040)
-      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:816px;z-index:1;background:#fff;overflow:visible;';
+      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:980px;z-index:1;background:#fff;overflow:visible;';
 
       // Inyectar HTML completo con mejor procesamiento
       const parser = new DOMParser();
@@ -1047,7 +1047,8 @@ async function iniciarAnalisisPDF(input){
       if(progresoEl) progresoEl.textContent = 'Capturando documento...';
       if(barEl) barEl.style.width = '60%';
 
-      // Capturar con html2canvas
+      // Capturar con html2canvas (ancho real del div)
+      const captureWidth = renderDiv.offsetWidth || 980;
       const canvas = await html2canvas(renderDiv, {
         scale: 2,
         useCORS: true,
@@ -1055,9 +1056,9 @@ async function iniciarAnalisisPDF(input){
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        width: 816,
+        width: captureWidth,
         height: contentHeight,
-        windowWidth: 816,
+        windowWidth: captureWidth,
         windowHeight: contentHeight,
         x: 0,
         y: 0
@@ -1074,30 +1075,63 @@ async function iniciarAnalisisPDF(input){
       // Crear PDF cortando el canvas en páginas (tamaño Carta)
       const pageW = 612; // Letter width in points
       const pageH = 792; // Letter height in points
-      const marginX = 20; // margen horizontal mínimo
-      const marginY = 25; // margen vertical
+      const marginX = 18; // margen horizontal mínimo
+      const marginY = 22; // margen vertical
       const contentW = pageW - marginX * 2;
       const contentH = pageH - marginY * 2;
 
-      // Calcular dimensiones: cuántos píxeles del canvas caben en una página
-      const pdfScale = contentW / canvas.width; // puntos PDF por píxel de canvas
-      const pxPerPage = Math.floor(contentH / pdfScale); // píxeles de canvas por página
-      const numPages = Math.ceil(canvas.height / pxPerPage);
+      // Calcular dimensiones
+      const pdfScale = contentW / canvas.width;
+      const pxPerPage = Math.floor(contentH / pdfScale);
+
+      // Función para encontrar mejor punto de corte (buscar línea en blanco)
+      function findBestBreak(canvasEl, idealY, tolerance){
+        const searchRange = Math.min(tolerance, 80); // buscar ±80px
+        const ctx = canvasEl.getContext('2d');
+        const w = canvasEl.width;
+        // Buscar hacia arriba desde el punto ideal
+        for(let offset = 0; offset <= searchRange; offset++){
+          const y = idealY - offset;
+          if(y < 0) break;
+          const row = ctx.getImageData(0, y, w, 1).data;
+          let isBlank = true;
+          // Revisar cada 10 píxeles (más rápido)
+          for(let x = 0; x < w * 4; x += 40){
+            if(row[x] < 245 || row[x+1] < 245 || row[x+2] < 245){
+              isBlank = false;
+              break;
+            }
+          }
+          if(isBlank) return y;
+        }
+        return idealY; // si no encuentra, cortar en el punto ideal
+      }
 
       const pdfDoc = await PDFLib.PDFDocument.create();
+      let currentY = 0;
 
-      for(let p = 0; p < numPages; p++){
-        const srcY = p * pxPerPage;
-        const srcH = Math.min(pxPerPage, canvas.height - srcY);
+      while(currentY < canvas.height){
+        const remaining = canvas.height - currentY;
+        let sliceH;
+
+        if(remaining <= pxPerPage){
+          sliceH = remaining;
+        } else {
+          // Buscar mejor punto de corte cerca del ideal
+          const idealEnd = currentY + pxPerPage;
+          const bestBreak = findBestBreak(canvas, idealEnd, 80);
+          sliceH = bestBreak - currentY;
+          if(sliceH < pxPerPage * 0.6) sliceH = pxPerPage; // evitar páginas muy cortas
+        }
 
         // Cortar porción del canvas para esta página
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = canvas.width;
-        pageCanvas.height = srcH;
+        pageCanvas.height = sliceH;
         const ctx = pageCanvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, srcH);
-        ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+        ctx.fillRect(0, 0, canvas.width, sliceH);
+        ctx.drawImage(canvas, 0, currentY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
 
         // Convertir a JPEG alta calidad y embeber
         const jpgData = pageCanvas.toDataURL('image/jpeg', 0.95);
@@ -1105,13 +1139,15 @@ async function iniciarAnalisisPDF(input){
         const jpgImage = await pdfDoc.embedJpg(jpgBytes);
 
         const page = pdfDoc.addPage([pageW, pageH]);
-        const drawH = srcH * pdfScale;
+        const drawH = sliceH * pdfScale;
         page.drawImage(jpgImage, {
           x: marginX,
           y: pageH - marginY - drawH,
           width: contentW,
           height: drawH
         });
+
+        currentY += sliceH;
       }
 
       const pdfBytes = await pdfDoc.save();
