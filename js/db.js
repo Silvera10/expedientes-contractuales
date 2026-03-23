@@ -158,6 +158,10 @@ const DB = {
     return docs.sort((a,b) => (a.orden||0) - (b.orden||0));
   },
 
+  async getDocumento(docId){
+    return await this._get('documentos', docId);
+  },
+
   async saveDocumento(doc){
     await this._put('documentos', doc.id, doc);
     if(SB.isActive()) await SB.saveDocumento(doc);

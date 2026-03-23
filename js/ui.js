@@ -472,7 +472,8 @@ function renderDocSlot(docTipo, subido, expId, bloqueado, exp){
        <div class="doc-meta text-danger"><i class="bi bi-x-circle me-1"></i>Sin cargar</div>${vigenciaInfo}`;
 
   const acciones = bloqueado ? '' : (subido
-    ? `<button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="quitarDocumento('${subido.id}','${expId}')" title="Quitar"><i class="bi bi-x-lg"></i></button>
+    ? `<button class="btn btn-outline-success btn-sm py-0 px-1" onclick="descargarDocumento('${subido.id}')" title="Descargar"><i class="bi bi-download"></i></button>
+       <button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="quitarDocumento('${subido.id}','${expId}')" title="Quitar"><i class="bi bi-x-lg"></i></button>
        <button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="reemplazarDocumento('${docTipo.id}','${expId}')" title="Reemplazar"><i class="bi bi-arrow-repeat"></i></button>`
     : `<label class="btn btn-outline-success btn-sm py-0 px-1 mb-0" title="Subir PDF">
          <i class="bi bi-upload"></i>
@@ -491,7 +492,8 @@ function renderDocSlot(docTipo, subido, expId, bloqueado, exp){
 /* ── Render slot de documento extra ── */
 function renderDocSlotExtra(doc, expId, bloqueado){
   const acciones = bloqueado ? ''
-    : `<button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="quitarDocumento('${doc.id}','${expId}')" title="Quitar"><i class="bi bi-x-lg"></i></button>`;
+    : `<button class="btn btn-outline-success btn-sm py-0 px-1" onclick="descargarDocumento('${doc.id}')" title="Descargar"><i class="bi bi-download"></i></button>
+       <button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="quitarDocumento('${doc.id}','${expId}')" title="Quitar"><i class="bi bi-x-lg"></i></button>`;
 
   return `<div class="col-md-6 col-lg-4">
     <div class="doc-slot uploaded d-flex align-items-center gap-2">

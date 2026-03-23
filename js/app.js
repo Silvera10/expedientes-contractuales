@@ -622,6 +622,31 @@ async function actualizarFechaDoc(docId, expId, fecha){
   renderDetalleExpediente(expId);
 }
 
+async function descargarDocumento(docId){
+  try {
+    const doc = await DB.getDocumento(docId);
+    if(!doc || !doc.storage_path){
+      toast('No se encontró el archivo', 'danger');
+      return;
+    }
+    const bytes = await DB.loadArchivo(doc.storage_path);
+    if(!bytes){
+      toast('Archivo no encontrado en almacenamiento', 'danger');
+      return;
+    }
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.nombre_archivo || 'documento.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e){
+    console.error('Error descargando documento:', e);
+    toast('Error al descargar: ' + e.message, 'danger');
+  }
+}
+
 async function quitarDocumento(docId, expId){
   if(!confirm('\u00bfQuitar este documento del expediente?')) return;
   await DB.deleteDocumento(docId);
