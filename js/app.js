@@ -629,7 +629,7 @@ async function descargarDocumento(docId){
       toast('No se encontró el archivo', 'danger');
       return;
     }
-    const bytes = await DB.loadArchivo(doc.storage_path);
+    const bytes = await DB.getArchivo(doc.storage_path);
     if(!bytes){
       toast('Archivo no encontrado en almacenamiento', 'danger');
       return;
