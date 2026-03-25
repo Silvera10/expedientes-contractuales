@@ -941,12 +941,12 @@ async function generarExpedientePDF(expId){
    FOLIAR PDF COMPLETO — Sube un PDF y agrega carátula + índice + foliación
 ══════════════════════════════════════════════════════════ */
 async function foliarPDFCompleto(expId, inputEl){
-  const file = inputEl.files[0];
+  const files = Array.from(inputEl.files);
   inputEl.value = '';
-  if(!file) return;
+  if(!files.length) return;
 
   if(_generandoPDF){
-    toast('Ya se est\u00e1 procesando un PDF, espere...', 'warning');
+    toast('Ya se esta procesando un PDF, espere...', 'warning');
     return;
   }
   _generandoPDF = true;
@@ -958,11 +958,29 @@ async function foliarPDFCompleto(expId, inputEl){
     return;
   }
 
-  toast('Procesando PDF... Agregando car\u00e1tula, \u00edndice y foliaci\u00f3n...', 'info');
+  toast(files.length > 1
+    ? `Combinando ${files.length} archivos y foliando...`
+    : 'Procesando PDF... Agregando caratula, indice y foliacion...', 'info');
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    // Combinar multiples PDFs en uno si hay varios archivos
+    let srcPdf;
+    if(files.length === 1){
+      const arrayBuffer = await files[0].arrayBuffer();
+      srcPdf = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    } else {
+      srcPdf = await PDFLib.PDFDocument.create();
+      for(const f of files){
+        const buf = await f.arrayBuffer();
+        const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+        // Limpiar anotaciones antes de copiar
+        for(const sp of tempPdf.getPages()){
+          try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+        }
+        const copied = await srcPdf.copyPages(tempPdf, tempPdf.getPageIndices());
+        copied.forEach(p => srcPdf.addPage(p));
+      }
+    }
     const totalPaginasDoc = srcPdf.getPageCount();
     const totalFolios = totalPaginasDoc + 2; // +2 por carátula e índice
 
@@ -1001,18 +1019,20 @@ async function foliarPDFCompleto(expId, inputEl){
       estamparFolio(allPages[i], i + 1, totalFolios, fontBold);
     }
 
-    // 5. Guardar PDF original en el expediente
+    // 5. Guardar PDF combinado en el expediente
+    const pdfCombinadoBytes = await srcPdf.save();
     const storagePath = `${expId}/expediente_completo_${Date.now()}.pdf`;
-    await DB.saveArchivo(storagePath, arrayBuffer);
+    await DB.saveArchivo(storagePath, pdfCombinadoBytes.buffer);
 
     // Guardar metadata del documento
+    const nombreArchivo = files.length === 1 ? files[0].name : `${files.length}_archivos_combinados.pdf`;
     const docId = `${expId}_expediente_completo`;
     const doc = {
       id: docId,
       expediente_id: expId,
       tipo: 'expediente_completo',
       orden: 0,
-      nombre_archivo: file.name,
+      nombre_archivo: nombreArchivo,
       storage_path: storagePath,
       paginas: totalPaginasDoc,
       fecha_expedicion: new Date().toISOString().split('T')[0],
@@ -1048,12 +1068,12 @@ async function foliarPDFCompleto(expId, inputEl){
    FOLIAR Y ORGANIZAR — Detecta documentos, reordena y folia
 ══════════════════════════════════════════════════════════ */
 async function foliarYOrganizarPDF(expId, inputEl){
-  const file = inputEl.files[0];
+  const files = Array.from(inputEl.files);
   inputEl.value = '';
-  if(!file) return;
+  if(!files.length) return;
 
   if(_generandoPDF){
-    toast('Ya se est\u00e1 procesando un PDF, espere...', 'warning');
+    toast('Ya se esta procesando un PDF, espere...', 'warning');
     return;
   }
   _generandoPDF = true;
@@ -1065,10 +1085,29 @@ async function foliarYOrganizarPDF(expId, inputEl){
     return;
   }
 
-  toast('Analizando PDF... Detectando documentos y organizando...', 'info');
+  toast(files.length > 1
+    ? `Combinando ${files.length} archivos, analizando y organizando...`
+    : 'Analizando PDF... Detectando documentos y organizando...', 'info');
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
+    // Combinar multiples PDFs si hay varios archivos
+    let arrayBuffer;
+    if(files.length === 1){
+      arrayBuffer = await files[0].arrayBuffer();
+    } else {
+      const combinado = await PDFLib.PDFDocument.create();
+      for(const f of files){
+        const buf = await f.arrayBuffer();
+        const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+        for(const sp of tempPdf.getPages()){
+          try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+        }
+        const copied = await combinado.copyPages(tempPdf, tempPdf.getPageIndices());
+        copied.forEach(p => combinado.addPage(p));
+      }
+      const combinadoBytes = await combinado.save();
+      arrayBuffer = combinadoBytes.buffer;
+    }
 
     // 1. Extraer texto de cada página con pdf.js
     const pdfJs = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
