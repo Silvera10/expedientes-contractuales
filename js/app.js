@@ -1170,63 +1170,39 @@ async function foliarYOrganizarPDF(expId, inputEl){
     }
     if(grupoActual) grupos.push(grupoActual);
 
-    // 4. Asignar orden a cada grupo según DOC_TIPOS
+    // 4. Asignar orden y nombre a cada grupo según DOC_TIPOS
     const todosLosTipos = [...DOC_TIPOS, ...DOC_TIPOS_ADICION];
     for(const grupo of grupos){
       const tipoDef = todosLosTipos.find(d => d.id === grupo.tipo);
       grupo.orden = tipoDef ? tipoDef.orden : 99;
       grupo.nombre = tipoDef ? tipoDef.nombre : 'Documento sin clasificar';
       grupo.codigo = tipoDef ? (tipoDef.codigo || '') : '';
+      grupo.paginaDesde = grupo.paginas[0];
+      grupo.paginaHasta = grupo.paginas[grupo.paginas.length - 1];
     }
-
-    // 5. Reordenar grupos por orden FOSE
-    grupos.sort((a, b) => a.orden - b.orden);
 
     console.log('Grupos detectados:', grupos.map(g => `${g.codigo} ${g.nombre} (${g.paginas.length} págs, conf: ${g.confianza})`));
 
-    // 6. Construir PDF reordenado
-    const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer.slice(0), { ignoreEncryption: true });
-    const totalFolios = totalPags + 2; // +2 carátula e índice
+    // 5. Mostrar resultados en el modal del splitter para que el usuario revise
+    _splitterData.expId = expId;
+    _splitterData.pdfBytes = arrayBuffer;
+    _splitterData.grupos = grupos;
+    _splitterData.paginas = paginasTexto.map(p => ({
+      texto: p.texto,
+      textoSuperior: '',
+      tipoAsignado: p.tipo
+    }));
+    _splitterData.modoOrganizar = true; // flag para saber que es organizar
 
-    const pdfFinal = await PDFLib.PDFDocument.create();
-    const fontBold = await pdfFinal.embedFont(PDFLib.StandardFonts.HelveticaBold);
-    const fontNormal = await pdfFinal.embedFont(PDFLib.StandardFonts.Helvetica);
+    // Abrir modal del splitter
+    const modalSplitter = new bootstrap.Modal(document.getElementById('modalSplitter'));
+    modalSplitter.show();
+    document.getElementById('splitter-exp-id').value = expId;
 
-    // Carátula (folio 1)
-    await generarPortada(pdfFinal, exp, totalFolios, fontBold, fontNormal);
+    // Mostrar resultados
+    mostrarResultadosSplitter();
 
-    // Índice detallado (folio 2)
-    await generarIndiceOrganizado(pdfFinal, exp, grupos, totalFolios, fontBold, fontNormal);
-
-    // Quitar anotaciones problemáticas antes de copiar
-    try {
-      const srcPages = srcPdf.getPages();
-      for(const sp of srcPages){
-        try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
-      }
-    } catch(e){ console.warn('No se pudieron limpiar anotaciones:', e); }
-
-    // Copiar páginas en el nuevo orden
-    for(const grupo of grupos){
-      const indices = grupo.paginas.map(p => p - 1); // pdf-lib usa 0-based
-      const copiedPages = await pdfFinal.copyPages(srcPdf, indices);
-      for(const page of copiedPages){
-        pdfFinal.addPage(page);
-      }
-    }
-
-    // Estampar folio en todas las páginas
-    const allPages = pdfFinal.getPages();
-    for(let i = 0; i < allPages.length; i++){
-      estamparFolio(allPages[i], i + 1, totalFolios, fontBold);
-    }
-
-    // Descargar
-    const pdfBytes = await pdfFinal.save();
-    const nombreArchivo = `Expediente_Cto_${exp.contrato_numero}_${exp.anio}_Organizado.pdf`;
-    descargarPDF(pdfBytes, nombreArchivo);
-
-    toast(`Expediente organizado: ${grupos.length} documentos detectados, ${totalFolios} folios`);
+    toast(`${grupos.length} documentos detectados en ${totalPags} p\u00e1ginas. Revise y corrija las asignaciones.`, 'info');
 
   } catch(e){
     console.error('Error organizando PDF:', e);

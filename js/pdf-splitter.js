@@ -1446,15 +1446,23 @@ async function confirmarSeparacion(){
     for(const grupo of grupos){
       // Extraer paginas de este grupo
       const newPdf = await PDFLib.PDFDocument.create();
-      const pageIndices = [];
-      for(let i = grupo.paginaDesde - 1; i < grupo.paginaHasta; i++){
-        pageIndices.push(i);
-      }
+      // Soportar tanto array de paginas como rango paginaDesde/paginaHasta
+      const pageIndices = grupo.paginas
+        ? grupo.paginas.map(p => p - 1)
+        : Array.from({length: grupo.paginaHasta - grupo.paginaDesde + 1}, (_, i) => grupo.paginaDesde - 1 + i);
+
+      // Limpiar anotaciones antes de copiar
+      try {
+        for(const idx of pageIndices){
+          try { srcPdf.getPages()[idx].node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+        }
+      } catch(e){}
+
       const copiedPages = await newPdf.copyPages(srcPdf, pageIndices);
       copiedPages.forEach(p => newPdf.addPage(p));
 
       const pdfBytes = await newPdf.save();
-      const paginas = grupo.paginaHasta - grupo.paginaDesde + 1;
+      const paginas = pageIndices.length;
 
       // Nombre organizado con número de orden
       const docTipoDef = DOC_TIPOS.find(d => d.id === grupo.tipo) || DOC_TIPOS_ADICION.find(d => d.id === grupo.tipo);
