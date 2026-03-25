@@ -1047,8 +1047,8 @@ async function foliarPDFCompleto(expId, inputEl){
     await DB._put('meta', `foliado_${expId}`, foliadoPath);
 
     // 7. Descargar
-    const nombreArchivo = `Expediente_Cto_${exp.contrato_numero}_${exp.anio}.pdf`;
-    descargarPDF(pdfBytes, nombreArchivo);
+    const nombreDescarga = `Expediente_Cto_${exp.contrato_numero}_${exp.anio}.pdf`;
+    descargarPDF(pdfBytes, nombreDescarga);
 
     // Actualizar vista
     await actualizarEstadoExpediente(expId);
