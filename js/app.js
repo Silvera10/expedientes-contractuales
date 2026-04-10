@@ -1032,7 +1032,7 @@ async function foliarPDFCompleto(expId, inputEl){
       expediente_id: expId,
       tipo: 'expediente_completo',
       orden: 0,
-      nombre_archivo: nombreArchivo,
+      nombre_archivo: `Expediente Completo (${nombreArchivo})`,
       storage_path: storagePath,
       paginas: totalPaginasDoc,
       fecha_expedicion: new Date().toISOString().split('T')[0],
@@ -1054,7 +1054,7 @@ async function foliarPDFCompleto(expId, inputEl){
     await actualizarEstadoExpediente(expId);
     renderDetalleExpediente(expId);
 
-    toast(`Expediente foliado: ${totalFolios} folios. Guardado en el expediente.`);
+    toast(`\u2713 Guardado en el expediente: ${totalFolios} folios (car\u00e1tula + \u00edndice + ${totalPaginasDoc} p\u00e1ginas). Tambi\u00e9n descargado.`, 'success');
 
   } catch(e){
     console.error('Error foliando PDF:', e);

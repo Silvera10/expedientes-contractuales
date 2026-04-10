@@ -256,7 +256,11 @@ async function renderDetalleExpediente(expId){
   // Contar tipos únicos subidos (no contar duplicados de tipos múltiples)
   const tiposSubidos = new Set(docsSubidos.filter(d => docsCatalogo.find(t => t.id === d.tipo)).map(d => d.tipo));
   const totalSubidos = tiposSubidos.size;
-  const pct = Math.round((totalSubidos / totalRequeridos) * 100);
+  // Detectar expediente_completo (cargado via Foliar PDF Completo)
+  const tieneExpedienteCompleto = docsSubidos.some(d => d.tipo === 'expediente_completo');
+  // Contar extras (que no son expediente_completo ni del catalogo)
+  const extrasCount = docsSubidos.filter(d => !docsCatalogo.find(t => t.id === d.tipo) && d.tipo !== 'expediente_completo').length;
+  const pct = tieneExpedienteCompleto ? 100 : Math.round((totalSubidos / totalRequeridos) * 100);
   const bloqueado = exp.estado === 'bloqueado';
 
   // Header del expediente
@@ -286,7 +290,12 @@ async function renderDetalleExpediente(expId){
         <!-- Barra de progreso -->
         <div class="mt-3">
           <div class="d-flex justify-content-between small mb-1">
-            <span><strong>${totalSubidos}</strong> de <strong>${totalRequeridos}</strong> documentos</span>
+            <span>
+              ${tieneExpedienteCompleto
+                ? '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Expediente completo cargado</span>'
+                : `<strong>${totalSubidos}</strong> de <strong>${totalRequeridos}</strong> documentos`}
+              ${extrasCount > 0 ? ` <span class="badge bg-info text-dark ms-1">+${extrasCount} adicional${extrasCount !== 1 ? 'es' : ''}</span>` : ''}
+            </span>
             <span class="fw-bold" style="color:${pct === 100 ? 'var(--verde)' : pct >= 50 ? 'var(--dorado)' : 'var(--rojo)'}">${pct}%</span>
           </div>
           <div class="progress-bar-exp">
@@ -296,8 +305,10 @@ async function renderDetalleExpediente(expId){
       </div>
     </div>`;
 
-  // Panel de auditoria
-  const alertas = generarAlertasAuditoria(docsCatalogo, subidosMap, exp);
+  // Panel de auditoria (solo si no hay expediente completo cargado)
+  const alertas = tieneExpedienteCompleto
+    ? { errores: [], advertencias: [], ok: 1 }
+    : generarAlertasAuditoria(docsCatalogo, subidosMap, exp);
   if(alertas.errores.length > 0 || alertas.advertencias.length > 0){
     html += `<div class="card shadow-sm mb-3 border-0">
       <div class="card-body p-2">
