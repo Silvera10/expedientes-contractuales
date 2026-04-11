@@ -1459,6 +1459,8 @@ async function confirmarSeparacion(){
   }
 
   const grupos = _splitterData.grupos.filter(g => g.tipo && g.tipo !== 'no_identificado');
+  // Guardar los sin clasificar para mostrarlos al usuario
+  _splitterData.sinClasificar = _splitterData.grupos.filter(g => !g.tipo || g.tipo === 'no_identificado');
   if(!grupos.length){
     toast('No hay documentos asignados para separar', 'warning');
     return;
@@ -1569,14 +1571,54 @@ function mostrarPasoCargarMas(){
   document.getElementById('splitter-paso3').style.display = 'none';
   document.getElementById('splitter-footer').style.display = 'none';
 
-  // Reemplazar contenido del paso 1 con mensaje de éxito + opciones
+  const sinClasificar = _splitterData.sinClasificar || [];
   const paso1 = document.getElementById('splitter-paso1');
+
+  // Generar HTML de sin clasificar con dropdown para asignar manualmente
+  let sinClasificarHtml = '';
+  if(sinClasificar.length > 0){
+    const opciones = [...DOC_TIPOS, ...DOC_TIPOS_ADICION].map(d =>
+      `<option value="${d.id}">${d.codigo ? d.codigo + ' — ' : ''}${d.nombre}</option>`
+    ).join('');
+
+    sinClasificarHtml = `
+      <div class="alert alert-warning mt-3 mx-3 py-2 text-start" style="max-width:600px;margin:0 auto">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <strong>${sinClasificar.length} documento${sinClasificar.length !== 1 ? 's' : ''} sin clasificar</strong>
+        </div>
+        <div class="small text-muted mb-2">Asigne manualmente cada uno:</div>
+        <div style="max-height:200px;overflow-y:auto">
+          ${sinClasificar.map((g, i) => {
+            const preview = g.paginas && g.paginas.length
+              ? `Pág${g.paginas.length > 1 ? 's' : ''} ${g.paginaDesde}${g.paginaHasta !== g.paginaDesde ? '-' + g.paginaHasta : ''}`
+              : '';
+            return `
+              <div class="mb-2 d-flex align-items-center gap-2">
+                <span class="badge bg-secondary">${preview}</span>
+                <select class="form-select form-select-sm" id="sin-clasif-${i}" style="font-size:11px;flex:1">
+                  <option value="">— Seleccione tipo —</option>
+                  ${opciones}
+                </select>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <button class="btn btn-warning btn-sm mt-2 w-100" onclick="asignarSinClasificar()">
+          <i class="bi bi-check-lg me-1"></i>Guardar asignaciones manuales
+        </button>
+      </div>
+    `;
+  }
+
   paso1.innerHTML = `
     <div class="text-center py-4">
       <i class="bi bi-check-circle-fill" style="font-size:3rem;color:#198754"></i>
       <h5 class="mt-2 text-success">${_splitterData.docsGuardados} documento(s) asignados</h5>
-      <p class="text-muted small">¿Desea cargar más documentos para este expediente?</p>
-      <div class="d-flex justify-content-center gap-3 mt-3">
+      ${sinClasificar.length > 0
+        ? `<p class="text-warning small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${sinClasificar.length} sin clasificar (revisa abajo)</p>`
+        : '<p class="text-muted small">¿Desea cargar más documentos para este expediente?</p>'}
+      <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
         <button type="button" class="btn btn-success btn-lg" onclick="abrirSelectorArchivos(true)">
           <i class="bi bi-files me-2"></i>Subir m\u00e1s archivos
         </button>
@@ -1587,8 +1629,107 @@ function mostrarPasoCargarMas(){
           <i class="bi bi-check-lg me-2"></i>Finalizar
         </button>
       </div>
+      ${sinClasificarHtml}
     </div>
   `;
+}
+
+/* ── Asignar manualmente los grupos sin clasificar ── */
+async function asignarSinClasificar(){
+  const sinClasificar = _splitterData.sinClasificar || [];
+  if(!sinClasificar.length) return;
+
+  const expId = _splitterData.expId;
+  if(!expId){
+    toast('No hay expediente seleccionado', 'danger');
+    return;
+  }
+
+  // Recolectar asignaciones del usuario
+  const gruposAsignados = [];
+  for(let i = 0; i < sinClasificar.length; i++){
+    const sel = document.getElementById(`sin-clasif-${i}`);
+    if(sel && sel.value){
+      const grupo = { ...sinClasificar[i], tipo: sel.value };
+      const tipoDef = [...DOC_TIPOS, ...DOC_TIPOS_ADICION].find(d => d.id === sel.value);
+      if(tipoDef){
+        grupo.nombre = tipoDef.nombre;
+        grupo.codigo = tipoDef.codigo || '';
+        grupo.orden = tipoDef.orden;
+      }
+      gruposAsignados.push(grupo);
+    }
+  }
+
+  if(!gruposAsignados.length){
+    toast('No seleccion\u00f3 ning\u00fan tipo', 'warning');
+    return;
+  }
+
+  toast(`Guardando ${gruposAsignados.length} documentos asignados manualmente...`, 'info');
+
+  try {
+    const copiaBytes = _splitterData.pdfBytes.slice(0);
+    const srcPdf = await PDFLib.PDFDocument.load(copiaBytes, { ignoreEncryption: true });
+
+    for(const grupo of gruposAsignados){
+      const newPdf = await PDFLib.PDFDocument.create();
+      const pageIndices = grupo.paginas
+        ? grupo.paginas.map(p => p - 1)
+        : Array.from({length: grupo.paginaHasta - grupo.paginaDesde + 1}, (_, i) => grupo.paginaDesde - 1 + i);
+
+      try {
+        for(const idx of pageIndices){
+          try { srcPdf.getPages()[idx].node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+        }
+      } catch(e){}
+
+      const copiedPages = await newPdf.copyPages(srcPdf, pageIndices);
+      copiedPages.forEach(p => newPdf.addPage(p));
+      const pdfBytes = await newPdf.save();
+      const paginas = pageIndices.length;
+
+      const docTipoDef = DOC_TIPOS.find(d => d.id === grupo.tipo) || DOC_TIPOS_ADICION.find(d => d.id === grupo.tipo);
+      const ordenNum = docTipoDef ? String(docTipoDef.orden).padStart(2,'0') : '99';
+      const nombreLimpio = (docTipoDef ? docTipoDef.nombre : grupo.nombre)
+        .replace(/[^a-zA-ZáéíóúñÁÉÍÓÚÑ0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 40);
+      const storagePath = `${expId}/${ordenNum}_${nombreLimpio}_${Date.now()}.pdf`;
+
+      await DB.saveArchivo(storagePath, pdfBytes.buffer);
+      if(SB.isActive()){
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        await SB.uploadPDF(storagePath, blob);
+      }
+
+      const docId = `${expId}_${grupo.tipo}_${Date.now()}`;
+      const doc = {
+        id: docId,
+        expediente_id: expId,
+        tipo: grupo.tipo,
+        orden: docTipoDef?.orden || 99,
+        nombre_archivo: `${ordenNum}_${nombreLimpio}.pdf`,
+        storage_path: storagePath,
+        paginas,
+        fecha_expedicion: grupo.fechaDetectada || null,
+        created_at: new Date().toISOString()
+      };
+      await DB.saveDocumento(doc);
+    }
+
+    _splitterData.docsGuardados += gruposAsignados.length;
+    _splitterData.sinClasificar = [];
+    await actualizarEstadoExpediente(expId);
+    renderDetalleExpediente(expId);
+    toast(`${gruposAsignados.length} documentos asignados manualmente`);
+
+    // Refrescar la vista
+    mostrarPasoCargarMas();
+  } catch(e){
+    console.error('Error asignando manual:', e);
+    toast('Error: ' + e.message, 'danger');
+  }
 }
 
 /* ── Finalizar y cerrar modal ── */
