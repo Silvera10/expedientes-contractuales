@@ -1331,12 +1331,96 @@ async function foliarYOrganizarPDF(expId, inputEl){
 
     if(files.length > 1){
       // Un grupo por cada archivo subido
+      // Mapa de palabras en nombres de archivo → tipo FOSE
+      // Se usa cuando el archivo NO tiene código FOSE explícito
+      const MAPA_NOMBRES = [
+        // Orden por especificidad: primero los más específicos
+        { pats: ['plan de compras', 'plan compras', 'certificacion plan'], tipo: 'cert_plan_compras' },
+        { pats: ['estudio previo', 'estudios previos'], tipo: 'estudio_previo' },
+        { pats: ['solicitud cdp', 'solicitud de cdp'], tipo: 'solicitud_cdp' },
+        { pats: ['cdp'], tipo: 'cdp' },
+        { pats: ['invitacion', 'invitación'], tipo: 'invitacion' },
+        { pats: ['cotizacion', 'cotización', 'cotizaciones'], tipo: 'cotizaciones' },
+        { pats: ['carta de participacion', 'carta de participación', 'carta propuesta', 'carta de propuesta'], tipo: 'carta_propuesta' },
+        { pats: ['evaluacion', 'evaluación', 'evaluacion oferta', 'evaluación oferta'], tipo: 'evaluacion_ofertas' },
+        { pats: ['aceptacion de oferta', 'aceptación de oferta'], tipo: 'aceptacion_oferta' },
+        { pats: ['referencia bancaria', 'cert bancaria', 'certificacion bancaria', 'certificación bancaria', 'cuenta bancaria'], tipo: 'cert_bancaria' },
+        { pats: ['rut'], tipo: 'rut' },
+        { pats: ['cedula', 'cédula'], tipo: 'cedula' },
+        { pats: ['policia nacional', 'policía nacional', 'antecedentes policia', 'antecedentes policía'], tipo: 'antec_policia' },
+        { pats: ['procuraduria', 'procuraduría'], tipo: 'antec_procuraduria' },
+        { pats: ['contraloria', 'contraloría'], tipo: 'antec_contraloria' },
+        { pats: ['rnmc', 'medidas correctivas'], tipo: 'medidas_correctivas' },
+        { pats: ['inhabilidades', 'consulta de inhabilidades'], tipo: 'inhabilidades' },
+        { pats: ['redeam', 'redam', 'redan', 'deudores alimentarios'], tipo: 'redeam' },
+        { pats: ['habeas data'], tipo: 'habeas_data' },
+        { pats: ['seguridad social', 'planilla', 'pila', 'eps', 'pension'], tipo: 'seguridad_social' },
+        { pats: ['camara de comercio', 'cámara de comercio'], tipo: 'camara_comercio' },
+        { pats: ['hoja de vida', 'hv persona natural'], tipo: 'hoja_vida' },
+        { pats: ['carta juramentada'], tipo: 'habeas_data' }, // carta juramentada suele ser habeas data
+        { pats: ['contrato firmado', 'contrato'], tipo: 'contrato' },
+        { pats: ['registro presupuestal', 'rp '], tipo: 'rp' },
+        { pats: ['acta de inicio'], tipo: 'acta_inicio' },
+        { pats: ['orden de compra', 'orden compra'], tipo: 'orden_compra' },
+        { pats: ['informe contratista', 'informe del contratista'], tipo: 'informe_contratista' },
+        { pats: ['informe supervisor', 'informe de supervision', 'informe de supervisión', 'informe del supervisor'], tipo: 'informe_supervisor' },
+        { pats: ['acta recibido', 'acta de recibido', 'acta de recibo'], tipo: 'acta_recibido' },
+        { pats: ['factura', 'cuenta de cobro'], tipo: 'factura_cobro' },
+        { pats: ['orden de pago', 'orden pago'], tipo: 'orden_pago' },
+        { pats: ['comprobante de egreso', 'egreso'], tipo: 'comprobante_egreso' },
+        { pats: ['acta de liquidacion', 'acta de liquidación', 'liquidacion', 'liquidación'], tipo: 'acta_liquidacion' }
+      ];
+
       for(const rango of rangosArchivo){
         const paginasDelArchivo = paginasTexto.filter(p => p.num >= rango.inicio && p.num <= rango.fin);
-        // Combinar el texto de todas las páginas del archivo para clasificación
-        const textoCombinado = paginasDelArchivo.map(p => p.texto).join(' ');
-        const pagParaClasificar = { texto: textoCombinado, textoSuperior: '' };
-        const { tipo, confianza } = clasificarGrupo([pagParaClasificar]);
+
+        // PASO 1: Intentar clasificar por CÓDIGO FOSE en el nombre (PRE-01, DOC-02, etc.)
+        let tipo = null;
+        let confianza = 0;
+
+        const nombreLower = (rango.nombre || '').toLowerCase();
+        const codigoMatch = nombreLower.match(/\b(pre|con|doc|eje|pag|ant|adi)-(\d{2})\b/i);
+        if(codigoMatch){
+          const codigoBuscado = (codigoMatch[1] + '-' + codigoMatch[2]).toUpperCase();
+          const tipoDef = [...DOC_TIPOS, ...DOC_TIPOS_ADICION].find(d => d.codigo === codigoBuscado);
+          if(tipoDef){
+            tipo = tipoDef.id;
+            confianza = 100;
+            console.log(`\u2713 "${rango.nombre}" \u2192 ${codigoBuscado} (c\u00f3digo FOSE)`);
+          }
+        }
+
+        // PASO 2: Buscar por palabras en el nombre del archivo
+        if(!tipo){
+          const nombreLimpio = nombreLower.replace(/[_\-\.]/g, ' ').replace(/\s+/g, ' ');
+          for(const entry of MAPA_NOMBRES){
+            if(entry.pats.some(p => nombreLimpio.includes(p))){
+              const tipoDef = [...DOC_TIPOS, ...DOC_TIPOS_ADICION].find(d => d.id === entry.tipo);
+              if(tipoDef){
+                tipo = entry.tipo;
+                confianza = 50;
+                console.log(`\u2713 "${rango.nombre}" \u2192 ${tipoDef.codigo} (nombre)`);
+                break;
+              }
+            }
+          }
+        }
+
+        // PASO 3: Si todavía no hay tipo, usar análisis de texto del contenido
+        if(!tipo || tipo === 'no_identificado'){
+          const textoCombinado = paginasDelArchivo.map(p => p.texto).join(' ');
+          const nombreLimpioParaTexto = nombreLower.replace(/[_\-\.]/g, ' ');
+          const textoConNombre = nombreLimpioParaTexto + ' ' + textoCombinado;
+          const pagParaClasificar = { texto: textoConNombre, textoSuperior: '' };
+          const res = clasificarGrupo([pagParaClasificar]);
+          if(res.tipo){
+            tipo = res.tipo;
+            confianza = res.confianza;
+            console.log(`\u2713 "${rango.nombre}" \u2192 ${tipo} (texto, conf=${confianza})`);
+          } else {
+            console.log(`\u2717 "${rango.nombre}" sin clasificar`);
+          }
+        }
 
         grupos.push({
           tipo: tipo || 'no_identificado',
