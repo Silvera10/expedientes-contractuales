@@ -149,8 +149,8 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'hoja_vida',
     nombre: 'Hoja de Vida del Contratista',
-    palabras: ['doc-12', 'hoja de vida', 'formato unico hoja de vida', 'formato único hoja de vida', 'dafp', 'departamento administrativo de la función pública', 'datos personales del aspirante', 'formación académica', 'formacion academica', 'experiencia laboral', 'idiomas', 'persona natural funcion publica', 'hv persona natural', 'curriculum vitae', 'curriculum vítae', 'resumen profesional', 'estudios realizados'],
-    peso: 3
+    palabras: ['doc-12', 'hoja de vida', 'formato unico hoja de vida', 'formato único hoja de vida', 'hoja de vida persona natural', 'formato unico hoja vida', 'leyes 190 de 1995', 'leyes 190 de 1.995', '489 y 443 de 1998', '489 y 443 de 1.998', 'tiempo total de experiencia', 'experiencia laboral en años y meses', 'experiencia laboral en anos y meses', 'servidor publico empleado del sector privado', 'servidor público empleado del sector privado', 'formación académica', 'formacion academica', 'curriculum vitae', 'curriculum vítae', 'requiere adicionar mas experiencia laboral', 'requiere adicionar más experiencia laboral'],
+    peso: 5
   },
   {
     tipo: 'cert_bancaria',
@@ -279,14 +279,14 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'cdp_adicion',
     nombre: 'CDP Adición (vigencia actual)',
-    palabras: ['adi-02', 'certificado de disponibilidad presupuestal', 'disponibilidad presupuestal', 'cdp no', 'cdp n°', 'cdp n.°', 'adición', 'adicion'],
-    peso: 2
+    palabras: ['adi-02', 'cdp adicion', 'cdp adición', 'cdp para adicion', 'cdp para adición', 'disponibilidad presupuestal adicion', 'disponibilidad presupuestal adición', 'cdp de la adicion', 'cdp de la adición'],
+    peso: 3
   },
   {
     tipo: 'rp_adicion',
     nombre: 'RP Adición (vigencia actual)',
-    palabras: ['adi-03', 'registro presupuestal', 'compromiso presupuestal', 'rp no', 'rp n°', 'rp n.°', 'adición', 'adicion'],
-    peso: 2
+    palabras: ['adi-03', 'rp adicion', 'rp adición', 'registro presupuestal adicion', 'registro presupuestal adición', 'compromiso presupuestal adicion', 'compromiso presupuestal adición', 'rp de la adicion', 'rp de la adición'],
+    peso: 3
   },
   {
     tipo: 'cert_cuenta_pagar',
