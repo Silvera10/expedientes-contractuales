@@ -37,6 +37,7 @@ const DOC_TIPOS = [
   { id:'habeas_data',        nombre:'Habeas Data',                      etapa:'sel', orden:18, icon:'bi-fingerprint',         color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'DOC-09' },
   { id:'seguridad_social',   nombre:'Seguridad Social (EPS+Pensi\u00f3n+ARL)', etapa:'sel', orden:19, icon:'bi-heart-pulse',      color:'#e83e8c', vigencia_dias:30,  regla:'mes_pago', codigo:'DOC-10' },
   { id:'camara_comercio',    nombre:'C\u00e1mara de Comercio',                etapa:'sel', orden:20, icon:'bi-shop',                color:'#6f42c1', vigencia_dias:30,  regla:'renovado', codigo:'DOC-11' },
+  { id:'hoja_vida',          nombre:'Hoja de Vida del Contratista',     etapa:'sel', orden:20.5, icon:'bi-person-lines-fill',  color:'#6f42c1', vigencia_dias:null, regla:null, codigo:'DOC-12' },
 
   // Fase 3: Contractual
   { id:'contrato',           nombre:'Contrato Firmado',                 etapa:'con', orden:21, icon:'bi-file-earmark-medical', color:'#198754', vigencia_dias:null, regla:null, codigo:'CON-01' },

@@ -95,7 +95,7 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'rut',
     nombre: 'RUT',
-    palabras: ['doc-01', 'registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'formulario del registro', 'responsabilidades tributarias', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial', 'formulario del rut', 'consulta del rut', 'impresión del rut'],
+    palabras: ['doc-01', 'registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'dian', 'formulario del registro', 'responsabilidades tributarias', 'rut', 'nit', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial'],
     peso: 3
   },
   {
@@ -658,18 +658,6 @@ function detectarLimites(paginas){
       }
     }
 
-    // FILTRO FOSE: si la página anterior tiene código FOSE y esta NO tiene uno diferente,
-    // es continuación del mismo documento
-    if(esInicio && i > 0){
-      const prevTexto = paginas[i-1].texto || '';
-      const foseEnPrev = prevTexto.match(/\b(PRE|DOC|CON|EJE|PAG|ANT|ADI)-\d{2}\b/i);
-      const foseEnEsta = textoTop.match(/\b(PRE|DOC|CON|EJE|PAG|ANT|ADI)-\d{2}\b/i);
-      if(foseEnPrev && !foseEnEsta){
-        // Página anterior tiene código FOSE, esta no → es continuación
-        esInicio = false;
-      }
-    }
-
     // FILTRO ANTI-FALSOS POSITIVOS: si el patrón es de entidad gubernamental,
     // verificar que NO estemos dentro de un documento contractual que simplemente
     // menciona esas entidades en una tabla de requisitos
@@ -748,9 +736,7 @@ function clasificarGrupo(paginasDelGrupo){
       const peso = (i === 0) ? 3.0 : 1.0; // Primera página pesa 3x
       for(const palabra of regla.palabras){
         if(texto.includes(palabra)){
-          // Códigos FOSE (eje-04, pre-01, etc.) tienen peso definitivo
-          const esFose = /^(pre|doc|con|eje|pag|ant|adi)-\d{2}$/i.test(palabra);
-          puntaje += esFose ? 50 : (regla.peso * peso);
+          puntaje += regla.peso * peso;
         }
       }
     }
@@ -824,88 +810,6 @@ function detectarYAgrupar(paginas){
 /* ══════════════════════════════════════════
    INICIAR ANALISIS (llamado desde el input file)
 ══════════════════════════════════════════ */
-/* ── Abrir selector de archivos programáticamente ── */
-function abrirSelectorArchivos(multiple){
-  // Crear input y agregarlo al DOM (Safari requiere esto para multiple)
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.pdf,.html,.htm';
-  input.style.cssText = 'position:absolute;left:-9999px;opacity:0;';
-  if(multiple) input.setAttribute('multiple', 'multiple');
-  input.addEventListener('change', function(){
-    iniciarAnalisisMultiple(this);
-    document.body.removeChild(input);
-  });
-  document.body.appendChild(input);
-  setTimeout(function(){ input.click(); }, 100);
-}
-
-/* ── Drag & Drop para archivos ── */
-function inicializarDropZone(){
-  const zona = document.getElementById('splitter-paso1');
-  if(!zona || zona._dropInit) return;
-  zona._dropInit = true;
-  zona.addEventListener('dragover', function(e){ e.preventDefault(); zona.style.background='#e8f5e9'; });
-  zona.addEventListener('dragleave', function(e){ e.preventDefault(); zona.style.background=''; });
-  zona.addEventListener('drop', function(e){
-    e.preventDefault();
-    zona.style.background = '';
-    const files = Array.from(e.dataTransfer.files).filter(function(f){
-      return /\.(pdf|html?)$/i.test(f.name);
-    });
-    if(!files.length){ alert('Solo se aceptan archivos PDF y HTML'); return; }
-    const fakeInput = { files: files };
-    iniciarAnalisisMultiple(fakeInput);
-  });
-}
-// Inicializar drop zone cuando se abra el modal
-document.addEventListener('DOMContentLoaded', function(){
-  var modal = document.getElementById('modalSplitter');
-  if(modal) modal.addEventListener('shown.bs.modal', inicializarDropZone);
-});
-
-/* ── Manejar selección de múltiples archivos ── */
-async function iniciarAnalisisMultiple(input){
-  const files = Array.from(input.files);
-  if(!files.length) return;
-
-  // Si es un solo archivo, procesar directo
-  if(files.length === 1){
-    await iniciarAnalisisPDF(input);
-    return;
-  }
-
-  // Múltiples archivos: procesar uno por uno automáticamente
-  _splitterData.colaArchivos = files;
-  _splitterData.colaIndex = 0;
-  _splitterData.docsGuardados = _splitterData.docsGuardados || 0;
-  await procesarSiguienteArchivoCola();
-}
-
-async function procesarSiguienteArchivoCola(){
-  const files = _splitterData.colaArchivos;
-  const idx = _splitterData.colaIndex;
-
-  if(!files || idx >= files.length){
-    // Todos procesados
-    mostrarPasoCargarMas();
-    return;
-  }
-
-  const file = files[idx];
-  const progresoEl = document.getElementById('splitter-progreso');
-  if(progresoEl) progresoEl.textContent = `Procesando archivo ${idx + 1} de ${files.length}: ${file.name}`;
-
-  // Crear un input virtual con este archivo
-  const dt = new DataTransfer();
-  dt.items.add(file);
-  const virtualInput = document.createElement('input');
-  virtualInput.type = 'file';
-  virtualInput.files = dt.files;
-
-  await iniciarAnalisisPDF(virtualInput);
-}
-
 async function iniciarAnalisisPDF(input){
   const file = input.files[0];
   if(!file) return;
@@ -935,274 +839,110 @@ async function iniciarAnalisisPDF(input){
 
       const htmlText = await file.text();
 
-      // Extraer texto plano del HTML (sin CSS ni scripts) para clasificación
+      // Extraer texto plano del HTML
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = htmlText;
-      const tempForText = tempDiv.cloneNode(true);
-      tempForText.querySelectorAll('style, script, link').forEach(el => el.remove());
-      const textoPlano = (tempForText.textContent || tempForText.innerText || '').trim();
+      // Sanitizar: solo permitir caracteres que WinAnsi puede codificar
+      const textoRaw = (tempDiv.textContent || tempDiv.innerText || '').trim();
+      const textoPlano = sanitizarWinAnsi(textoRaw);
 
-      if(progresoEl) progresoEl.textContent = 'Renderizando HTML...';
-      if(barEl) barEl.style.width = '40%';
+      if(progresoEl) progresoEl.textContent = 'Convirtiendo HTML a PDF...';
+      if(barEl) barEl.style.width = '50%';
 
-      // Renderizar HTML en un iframe visible para mejor aislamiento
-      const renderDiv = document.createElement('div');
-      renderDiv.id = 'html-pdf-render';
-      // Visible pero detrás del modal (z-index del modal backdrop = 1040)
-      renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:980px;z-index:1;background:#fff;overflow:visible;';
-
-      // Inyectar HTML completo con mejor procesamiento
-      const parser = new DOMParser();
-      const htmlDoc = parser.parseFromString(htmlText, 'text/html');
-
-      // Copiar links de fuentes externas (Google Fonts, etc.)
-      let fontLinks = '';
-      htmlDoc.querySelectorAll('link[rel="stylesheet"], link[href*="font"]').forEach(link => {
-        fontLinks += link.outerHTML + '\n';
-      });
-
-      // Copiar todos los estilos inline con ajustes
-      let allStyles = '';
-      htmlDoc.querySelectorAll('style').forEach(s => {
-        let css = s.textContent;
-        css = css.replace(/@page[^{]*\{[^}]*\}/g, ''); // quitar @page
-        css = css.replace(/@media\s+print\s*\{[\s\S]*?\}\s*\}/g, ''); // quitar @media print
-        // Reescribir selectores 'body' y 'html' para que apliquen al div de render
-        css = css.replace(/\bhtml\b(?=\s*[{,])/g, '#html-pdf-render');
-        css = css.replace(/\bbody\b(?=\s*[{,])/g, '#html-pdf-render');
-        allStyles += css + '\n';
-      });
-
-      // Obtener el body HTML y limpiar elementos no deseados
-      const bodyContent = htmlDoc.body.innerHTML;
-
-      // Inyectar con estilos base mínimos (los del documento tienen prioridad)
-      renderDiv.innerHTML = `
-        ${fontLinks}
-        <style>
-          /* Base mínima - NO sobreescribir estilos del documento */
-          #html-pdf-render {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 11pt;
-            color: #000;
-            padding: 30px 40px;
-            box-sizing: border-box;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            line-height: 1.4;
-          }
-          #html-pdf-render * { box-sizing: border-box; }
-          /* Tablas: respetar anchos originales pero ajustar al contenedor */
-          #html-pdf-render table {
-            max-width: 100%;
-            border-collapse: collapse;
-          }
-          #html-pdf-render td, #html-pdf-render th {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            vertical-align: top;
-          }
-          #html-pdf-render img { max-width: 100%; height: auto; }
-          /* Asegurar que el texto largo no desborde */
-          #html-pdf-render p, #html-pdf-render div, #html-pdf-render span {
-            max-width: 100%;
-          }
-          /* Firmas y campos de texto centrados */
-          #html-pdf-render .firma, #html-pdf-render [class*="firma"],
-          #html-pdf-render [class*="sign"] {
-            page-break-inside: avoid;
-          }
-        </style>
-        <style>
-          /* Estilos originales del documento (tienen prioridad) */
-          ${allStyles}
-        </style>
-        ${bodyContent}
-      `;
-
-      // Quitar elementos no deseados
-      renderDiv.querySelectorAll('.no-print, .print-btn, button[onclick*="print"], script').forEach(el => el.remove());
-
-      // Ajustar tablas con ancho fijo mayor al contenedor
-      renderDiv.querySelectorAll('table').forEach(tbl => {
-        const w = tbl.getAttribute('width');
-        if(w && parseInt(w) > 736) {
-          tbl.style.width = '100%';
-          tbl.removeAttribute('width');
-        }
-      });
-
-      // Ajustar elementos con ancho inline mayor al contenedor
-      renderDiv.querySelectorAll('[style*="width"]').forEach(el => {
-        const match = el.style.width && parseInt(el.style.width);
-        if(match > 736) el.style.width = '100%';
-      });
-
-      document.body.appendChild(renderDiv);
-
-      // Esperar renderizado completo (fuentes + imágenes)
-      await new Promise(r => setTimeout(r, 1500));
-
-      // Forzar que las fuentes estén cargadas
-      if(document.fonts && document.fonts.ready) await document.fonts.ready;
-
-      const contentHeight = renderDiv.scrollHeight;
-      const contentWidth = renderDiv.scrollWidth;
-      console.log('Render div:', contentWidth, 'x', contentHeight, 'px');
-
-      if(progresoEl) progresoEl.textContent = 'Capturando documento...';
-      if(barEl) barEl.style.width = '60%';
-
-      // Capturar con html2canvas (ancho real del div)
-      const captureWidth = renderDiv.offsetWidth || 980;
-      const canvas = await html2canvas(renderDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0,
-        width: captureWidth,
-        height: contentHeight,
-        windowWidth: captureWidth,
-        windowHeight: contentHeight,
-        x: 0,
-        y: 0
-      });
-
-      console.log('Canvas:', canvas.width, 'x', canvas.height, 'px');
-
-      // Limpiar
-      document.body.removeChild(renderDiv);
-
-      if(progresoEl) progresoEl.textContent = 'Generando PDF...';
-      if(barEl) barEl.style.width = '80%';
-
-      // Crear PDF cortando el canvas en páginas (tamaño Carta)
-      const pageW = 612; // Letter width in points
-      const pageH = 792; // Letter height in points
-      const marginX = 18; // margen horizontal mínimo
-      const marginY = 22; // margen vertical
-      const contentW = pageW - marginX * 2;
-      const contentH = pageH - marginY * 2;
-
-      // Calcular dimensiones
-      const pdfScale = contentW / canvas.width;
-      const pxPerPage = Math.floor(contentH / pdfScale);
-
-      // Función para encontrar mejor punto de corte (buscar línea en blanco)
-      function findBestBreak(canvasEl, idealY, tolerance){
-        const searchRange = Math.min(tolerance, 80); // buscar ±80px
-        const ctx = canvasEl.getContext('2d');
-        const w = canvasEl.width;
-        // Buscar hacia arriba desde el punto ideal
-        for(let offset = 0; offset <= searchRange; offset++){
-          const y = idealY - offset;
-          if(y < 0) break;
-          const row = ctx.getImageData(0, y, w, 1).data;
-          let isBlank = true;
-          // Revisar cada 10 píxeles (más rápido)
-          for(let x = 0; x < w * 4; x += 40){
-            if(row[x] < 245 || row[x+1] < 245 || row[x+2] < 245){
-              isBlank = false;
-              break;
-            }
-          }
-          if(isBlank) return y;
-        }
-        return idealY; // si no encuentra, cortar en el punto ideal
-      }
-
+      // Convertir HTML a PDF usando pdf-lib (más confiable que html2pdf.js)
       const pdfDoc = await PDFLib.PDFDocument.create();
-      let currentY = 0;
+      const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+      const fontSize = 10;
+      const lineHeight = 14;
+      const margin = { top: 50, bottom: 50, left: 50, right: 50 };
+      const pageW = 612; // Letter
+      const pageH = 792;
+      const maxWidth = pageW - margin.left - margin.right;
+      const maxLinesPerPage = Math.floor((pageH - margin.top - margin.bottom) / lineHeight);
 
-      while(currentY < canvas.height){
-        const remaining = canvas.height - currentY;
-        let sliceH;
-
-        if(remaining <= pxPerPage){
-          sliceH = remaining;
-        } else {
-          // Buscar mejor punto de corte cerca del ideal
-          const idealEnd = currentY + pxPerPage;
-          const bestBreak = findBestBreak(canvas, idealEnd, 80);
-          sliceH = bestBreak - currentY;
-          if(sliceH < pxPerPage * 0.6) sliceH = pxPerPage; // evitar páginas muy cortas
+      // Extraer texto estructurado del HTML
+      const lineas = textoPlano.split(/\n/).flatMap(linea => {
+        linea = linea.trim();
+        if(!linea) return [''];
+        // Dividir líneas largas
+        const result = [];
+        while(linea.length > 0){
+          const maxChars = Math.floor(maxWidth / (fontSize * 0.5));
+          if(linea.length <= maxChars){
+            result.push(linea);
+            break;
+          }
+          let corte = linea.lastIndexOf(' ', maxChars);
+          if(corte <= 0) corte = maxChars;
+          result.push(linea.substring(0, corte));
+          linea = linea.substring(corte).trim();
         }
+        return result;
+      });
 
-        // Cortar porción del canvas para esta página
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceH;
-        const ctx = pageCanvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, sliceH);
-        ctx.drawImage(canvas, 0, currentY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-
-        // Convertir a JPEG alta calidad y embeber
-        const jpgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-        const jpgBytes = await fetch(jpgData).then(r => r.arrayBuffer());
-        const jpgImage = await pdfDoc.embedJpg(jpgBytes);
-
+      // Crear páginas
+      let lineaIdx = 0;
+      while(lineaIdx < lineas.length){
         const page = pdfDoc.addPage([pageW, pageH]);
-        const drawH = sliceH * pdfScale;
-        page.drawImage(jpgImage, {
-          x: marginX,
-          y: pageH - marginY - drawH,
-          width: contentW,
-          height: drawH
-        });
+        let y = pageH - margin.top;
 
-        currentY += sliceH;
+        for(let i = 0; i < maxLinesPerPage && lineaIdx < lineas.length; i++){
+          const texto = lineas[lineaIdx];
+          if(texto){
+            // Detectar si es título (todo mayúsculas y corto)
+            const esTitulo = texto === texto.toUpperCase() && texto.length < 80 && texto.length > 3;
+            page.drawText(sanitizarWinAnsi(texto), {
+              x: margin.left,
+              y,
+              size: esTitulo ? 11 : fontSize,
+              font: esTitulo ? fontBold : font,
+              color: PDFLib.rgb(0, 0, 0)
+            });
+          }
+          y -= lineHeight;
+          lineaIdx++;
+        }
       }
 
       const pdfBytes = await pdfDoc.save();
       _splitterData.pdfBytes = pdfBytes.buffer;
-      const totalPaginasPDF = pdfDoc.getPageCount();
-      console.log('HTML → PDF (html2canvas):', _splitterData.pdfBytes.byteLength, 'bytes,', totalPaginasPDF, 'páginas');
+      console.log('HTML → PDF (pdf-lib):', _splitterData.pdfBytes.byteLength, 'bytes');
 
       if(progresoEl) progresoEl.textContent = 'Clasificando documento...';
       if(barEl) barEl.style.width = '80%';
 
-      // Crear páginas virtuales para cada página del PDF
+      // Crear página virtual con el texto del HTML
       const textoLower = textoPlano.toLowerCase();
       const fechaDetectada = extraerFechaDelTexto(textoPlano);
-      // También intentar extraer fecha del nombre del archivo
-      const fechaDeNombre = !fechaDetectada ? extraerFechaDelTexto(file.name.replace(/[_\-]/g, ' ')) : null;
-      const fechaFinal = fechaDetectada || fechaDeNombre;
 
-      const paginasVirtuales = [];
-      for(let p = 0; p < totalPaginasPDF; p++){
-        paginasVirtuales.push({
-          num: p + 1,
-          texto: p === 0 ? textoLower : '', // solo la primera tiene texto
-          textoSuperior: p === 0 ? textoLower.substring(0, Math.ceil(textoLower.length * 0.2)) : '',
-          tipoDetectado: null,
-          confianza: 0,
-          tipoAsignado: null,
-          fechaDetectada: fechaFinal,
-          esInicio: p === 0
-        });
-      }
+      const pagina = {
+        num: 1,
+        texto: textoLower,
+        textoSuperior: textoLower.substring(0, Math.ceil(textoLower.length * 0.2)),
+        tipoDetectado: null,
+        confianza: 0,
+        tipoAsignado: null,
+        fechaDetectada,
+        esInicio: true
+      };
 
-      _splitterData.paginas = paginasVirtuales;
+      _splitterData.paginas = [pagina];
 
-      // Clasificar usando el texto completo + nombre del archivo
-      const nombreArchivo = file.name.toLowerCase().replace(/[_\-\.]/g, ' ');
-      const paginaConNombre = { ...paginasVirtuales[0], texto: nombreArchivo + ' ' + textoLower };
-      const { tipo, confianza } = clasificarGrupo([paginaConNombre]);
-      paginasVirtuales[0].tipoDetectado = tipo;
-      paginasVirtuales[0].confianza = confianza;
-      paginasVirtuales.forEach(p => p.tipoAsignado = tipo);
+      // Clasificar usando el texto completo
+      const { tipo, confianza } = clasificarGrupo([pagina]);
+      pagina.tipoDetectado = tipo;
+      pagina.confianza = confianza;
+      pagina.tipoAsignado = tipo;
 
       const regla = DETECTOR_REGLAS.find(r => r.tipo === tipo);
       _splitterData.grupos = [{
         tipo: tipo || 'no_identificado',
         nombre: regla ? regla.nombre : 'No identificado',
         paginaDesde: 1,
-        paginaHasta: totalPaginasPDF,
+        paginaHasta: 1,
         confianza,
-        fechaDetectada: fechaFinal
+        fechaDetectada
       }];
 
       if(barEl) barEl.style.width = '100%';
@@ -1232,31 +972,8 @@ async function iniciarAnalisisPDF(input){
 
       _splitterData.paginas = paginas;
 
-      // Tratar TODO el archivo como UN solo documento
-      // Clasificar usando texto combinado + nombre del archivo
-      const textoCompleto = paginas.map(p => p.texto).join(' ');
-      const nombreArchivoPDF = file.name.toLowerCase().replace(/[_\-\.]/g, ' ');
-      const paginaParaClasificar = { texto: nombreArchivoPDF + ' ' + textoCompleto, textoSuperior: paginas[0]?.textoSuperior || '' };
-      const { tipo: tipoPDF, confianza: confianzaPDF } = clasificarGrupo([paginaParaClasificar]);
-
-      const fechaPDF = extraerFechaDelTexto(paginas.map(p => p.texto).join(' '));
-      const reglaPDF = DETECTOR_REGLAS.find(r => r.tipo === tipoPDF);
-
-      paginas.forEach((p, idx) => {
-        p.tipoDetectado = tipoPDF;
-        p.confianza = confianzaPDF;
-        p.tipoAsignado = tipoPDF;
-        p.esInicio = idx === 0;
-      });
-
-      _splitterData.grupos = [{
-        tipo: tipoPDF || 'no_identificado',
-        nombre: reglaPDF ? reglaPDF.nombre : 'No identificado',
-        paginaDesde: 1,
-        paginaHasta: paginas.length,
-        confianza: confianzaPDF,
-        fechaDetectada: fechaPDF
-      }];
+      // Sistema de 2 pasadas: detectar límites + clasificar grupos
+      _splitterData.grupos = detectarYAgrupar(paginas);
 
       // Mostrar resultados
       mostrarResultadosSplitter();
@@ -1353,11 +1070,6 @@ function mostrarResultadosSplitter(){
 
   // Renderizar thumbnails después de que el HTML esté en el DOM
   setTimeout(() => renderThumbnails(), 200);
-
-  // Si hay cola de archivos, auto-confirmar después de un momento
-  if(_splitterData.colaArchivos && _splitterData.colaIndex < _splitterData.colaArchivos.length){
-    setTimeout(() => confirmarSeparacion(), 500);
-  }
 }
 
 /* ══════════════════════════════════════════
@@ -1452,23 +1164,15 @@ async function confirmarSeparacion(){
     for(const grupo of grupos){
       // Extraer paginas de este grupo
       const newPdf = await PDFLib.PDFDocument.create();
-      // Soportar tanto array de paginas como rango paginaDesde/paginaHasta
-      const pageIndices = grupo.paginas
-        ? grupo.paginas.map(p => p - 1)
-        : Array.from({length: grupo.paginaHasta - grupo.paginaDesde + 1}, (_, i) => grupo.paginaDesde - 1 + i);
-
-      // Limpiar anotaciones antes de copiar
-      try {
-        for(const idx of pageIndices){
-          try { srcPdf.getPages()[idx].node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
-        }
-      } catch(e){}
-
+      const pageIndices = [];
+      for(let i = grupo.paginaDesde - 1; i < grupo.paginaHasta; i++){
+        pageIndices.push(i);
+      }
       const copiedPages = await newPdf.copyPages(srcPdf, pageIndices);
       copiedPages.forEach(p => newPdf.addPage(p));
 
       const pdfBytes = await newPdf.save();
-      const paginas = pageIndices.length;
+      const paginas = grupo.paginaHasta - grupo.paginaDesde + 1;
 
       // Nombre organizado con número de orden
       const docTipoDef = DOC_TIPOS.find(d => d.id === grupo.tipo) || DOC_TIPOS_ADICION.find(d => d.id === grupo.tipo);
@@ -1488,14 +1192,8 @@ async function confirmarSeparacion(){
         await SB.uploadPDF(storagePath, blob);
       }
 
-      // Tipos que permiten múltiples documentos
-      const TIPOS_MULTIPLES = ['invitacion', 'cotizaciones', 'carta_propuesta'];
-      const esMultiple = TIPOS_MULTIPLES.includes(grupo.tipo);
-
-      // Para tipos múltiples, agregar timestamp al ID para no sobreescribir
-      const docId = esMultiple
-        ? `${expId}_${grupo.tipo}_${Date.now()}`
-        : `${expId}_${grupo.tipo}`;
+      // Guardar metadata
+      const docId = `${expId}_${grupo.tipo}`;
       const doc = {
         id: docId,
         expediente_id: expId,
@@ -1520,17 +1218,8 @@ async function confirmarSeparacion(){
 
     toast(`${grupos.length} documentos asignados. Total esta sesión: ${_splitterData.docsGuardados}`);
 
-    // Si hay más archivos en la cola, procesar el siguiente automáticamente
-    if(_splitterData.colaArchivos && _splitterData.colaIndex < _splitterData.colaArchivos.length - 1){
-      _splitterData.colaIndex++;
-      toast(`Procesando archivo ${_splitterData.colaIndex + 1} de ${_splitterData.colaArchivos.length}...`, 'info');
-      await procesarSiguienteArchivoCola();
-    } else {
-      // No hay más archivos en cola, mostrar opciones
-      _splitterData.colaArchivos = null;
-      _splitterData.colaIndex = 0;
-      mostrarPasoCargarMas();
-    }
+    // Volver al paso 1 para cargar más documentos
+    mostrarPasoCargarMas();
 
   } catch(e){
     console.error('Error separando PDF:', e);
@@ -1555,12 +1244,10 @@ function mostrarPasoCargarMas(){
       <h5 class="mt-2 text-success">${_splitterData.docsGuardados} documento(s) asignados</h5>
       <p class="text-muted small">¿Desea cargar más documentos para este expediente?</p>
       <div class="d-flex justify-content-center gap-3 mt-3">
-        <button type="button" class="btn btn-success btn-lg" onclick="abrirSelectorArchivos(true)">
-          <i class="bi bi-files me-2"></i>Subir m\u00e1s archivos
-        </button>
-        <button type="button" class="btn btn-outline-primary btn-lg" onclick="abrirSelectorArchivos(false)">
-          <i class="bi bi-file-earmark-plus me-2"></i>Subir uno solo
-        </button>
+        <label class="btn btn-success btn-lg">
+          <i class="bi bi-upload me-2"></i>Cargar otro archivo
+          <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisPDF(this)">
+        </label>
         <button class="btn btn-outline-secondary btn-lg" onclick="finalizarSplitter()">
           <i class="bi bi-check-lg me-2"></i>Finalizar
         </button>
@@ -1580,24 +1267,17 @@ function finalizarSplitter(){
 /* ── Restaurar el HTML original del paso 1 ── */
 function restaurarPaso1Original(){
   const paso1 = document.getElementById('splitter-paso1');
-  paso1.style.cssText = 'border:3px dashed #ccc;border-radius:12px;margin:10px;transition:background 0.3s';
   paso1.innerHTML = `
     <div class="text-center py-4">
       <i class="bi bi-file-earmark-pdf" style="font-size:3rem;color:#dc3545"></i>
-      <h5 class="mt-2">Suba los documentos del expediente</h5>
-      <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> — La app detectar\u00e1 autom\u00e1ticamente qu\u00e9 documento es</p>
-      <div class="d-flex justify-content-center gap-3 mt-2">
-        <button type="button" class="btn btn-success btn-lg" onclick="abrirSelectorArchivos(true)">
-          <i class="bi bi-files me-2"></i>Subir varios archivos
-        </button>
-        <button type="button" class="btn btn-outline-primary btn-lg" onclick="abrirSelectorArchivos(false)">
-          <i class="bi bi-file-earmark-plus me-2"></i>Subir uno solo
-        </button>
-      </div>
-      <p class="text-muted small mt-3 mb-0"><i class="bi bi-hand-index me-1"></i>O <strong>arrastre y suelte</strong> los archivos aqu\u00ed</p>
+      <h5 class="mt-2">Suba el documento del expediente</h5>
+      <p class="text-muted small">Acepta <strong>PDF</strong> y <strong>HTML</strong> — La app detectará automáticamente qué documento es</p>
+      <label class="btn btn-success btn-lg mt-2">
+        <i class="bi bi-upload me-2"></i>Seleccionar archivo
+        <input type="file" accept=".pdf,.html,.htm" style="display:none" onchange="iniciarAnalisisPDF(this)">
+      </label>
     </div>
   `;
-  inicializarDropZone();
 }
 
 /* ══════════════════════════════════════════
