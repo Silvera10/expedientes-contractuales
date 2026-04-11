@@ -938,6 +938,89 @@ async function generarExpedientePDF(expId){
 }
 
 /* ══════════════════════════════════════════════════════════
+   CONVERTIR HTML a PDF — Usado por Foliar PDF Completo y Organizar
+══════════════════════════════════════════════════════════ */
+async function convertirHTMLaPDF(htmlText){
+  // Crear div visible para html2canvas
+  const renderDiv = document.createElement('div');
+  renderDiv.id = 'html-pdf-render-organizar';
+  renderDiv.style.cssText = 'position:fixed;left:0;top:0;width:816px;z-index:1;background:#fff;overflow:hidden;';
+
+  const parser = new DOMParser();
+  const htmlDoc = parser.parseFromString(htmlText, 'text/html');
+  let allStyles = '';
+  htmlDoc.querySelectorAll('style').forEach(s => {
+    let css = s.textContent;
+    css = css.replace(/@page[^{]*\{[^}]*\}/g, '');
+    css = css.replace(/@media\s+print\s*\{[\s\S]*?\}\s*\}/g, '');
+    css = css.replace(/\bbody\b/g, '#html-pdf-render-organizar');
+    allStyles += css + '\n';
+  });
+
+  renderDiv.innerHTML = `
+    <style>
+      #html-pdf-render-organizar {
+        font-family: Arial, sans-serif; font-size: 11pt; color: #000;
+        padding: 40px 50px; box-sizing: border-box;
+        word-wrap: break-word; overflow-wrap: break-word;
+      }
+      #html-pdf-render-organizar * { box-sizing: border-box; max-width: 100%; }
+      #html-pdf-render-organizar table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+      #html-pdf-render-organizar td, #html-pdf-render-organizar th { word-wrap: break-word; overflow-wrap: break-word; padding: 4px 6px; }
+      #html-pdf-render-organizar img { max-width: 100%; height: auto; }
+      ${allStyles}
+    </style>
+    ${htmlDoc.body.innerHTML}
+  `;
+  renderDiv.querySelectorAll('.no-print, .print-btn, button[onclick*="print"]').forEach(el => el.remove());
+  document.body.appendChild(renderDiv);
+
+  await new Promise(r => setTimeout(r, 800));
+  const contentHeight = renderDiv.scrollHeight;
+
+  const canvas = await html2canvas(renderDiv, {
+    scale: 2, useCORS: true, backgroundColor: '#ffffff',
+    scrollX: 0, scrollY: -window.scrollY,
+    width: 816, height: contentHeight
+  });
+
+  document.body.removeChild(renderDiv);
+
+  // Cortar el canvas en páginas Letter y construir PDF
+  const pdfDoc = await PDFLib.PDFDocument.create();
+  const pageW = 612, pageH = 792, margin = 30;
+  const contentW = pageW - margin * 2;
+  const contentH = pageH - margin * 2;
+  const scale = contentW / canvas.width;
+  const pxPerPage = Math.floor(contentH / scale);
+  const numPages = Math.ceil(canvas.height / pxPerPage);
+
+  for(let p = 0; p < numPages; p++){
+    const srcY = p * pxPerPage;
+    const srcH = Math.min(pxPerPage, canvas.height - srcY);
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = srcH;
+    const ctx = pageCanvas.getContext('2d');
+    ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+    const jpgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+    const jpgBytes = await fetch(jpgData).then(r => r.arrayBuffer());
+    const jpgImage = await pdfDoc.embedJpg(jpgBytes);
+    const page = pdfDoc.addPage([pageW, pageH]);
+    const drawH = srcH * scale;
+    page.drawImage(jpgImage, {
+      x: margin,
+      y: pageH - margin - drawH,
+      width: contentW,
+      height: drawH
+    });
+  }
+
+  const bytes = await pdfDoc.save();
+  return bytes.buffer;
+}
+
+/* ══════════════════════════════════════════════════════════
    FOLIAR PDF COMPLETO — Sube un PDF y agrega carátula + índice + foliación
 ══════════════════════════════════════════════════════════ */
 async function foliarPDFCompleto(expId, inputEl){
@@ -963,23 +1046,23 @@ async function foliarPDFCompleto(expId, inputEl){
     : 'Procesando PDF... Agregando caratula, indice y foliacion...', 'info');
 
   try {
-    // Combinar multiples PDFs en uno si hay varios archivos
-    let srcPdf;
-    if(files.length === 1){
-      const arrayBuffer = await files[0].arrayBuffer();
-      srcPdf = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-    } else {
-      srcPdf = await PDFLib.PDFDocument.create();
-      for(const f of files){
-        const buf = await f.arrayBuffer();
-        const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
-        // Limpiar anotaciones antes de copiar
-        for(const sp of tempPdf.getPages()){
-          try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
-        }
-        const copied = await srcPdf.copyPages(tempPdf, tempPdf.getPageIndices());
-        copied.forEach(p => srcPdf.addPage(p));
+    // Combinar multiples PDFs y HTMLs en uno
+    const srcPdf = await PDFLib.PDFDocument.create();
+    for(const f of files){
+      const esHTML = f.name.toLowerCase().endsWith('.html') || f.name.toLowerCase().endsWith('.htm');
+      let buf;
+      if(esHTML){
+        const htmlText = await f.text();
+        buf = await convertirHTMLaPDF(htmlText);
+      } else {
+        buf = await f.arrayBuffer();
       }
+      const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+      for(const sp of tempPdf.getPages()){
+        try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+      }
+      const copied = await srcPdf.copyPages(tempPdf, tempPdf.getPageIndices());
+      copied.forEach(p => srcPdf.addPage(p));
     }
     const totalPaginasDoc = srcPdf.getPageCount();
     const totalFolios = totalPaginasDoc + 2; // +2 por carátula e índice
@@ -1090,24 +1173,27 @@ async function foliarYOrganizarPDF(expId, inputEl){
     : 'Analizando PDF... Detectando documentos y organizando...', 'info');
 
   try {
-    // Combinar multiples PDFs si hay varios archivos
-    let arrayBuffer;
-    if(files.length === 1){
-      arrayBuffer = await files[0].arrayBuffer();
-    } else {
-      const combinado = await PDFLib.PDFDocument.create();
-      for(const f of files){
-        const buf = await f.arrayBuffer();
-        const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
-        for(const sp of tempPdf.getPages()){
-          try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
-        }
-        const copied = await combinado.copyPages(tempPdf, tempPdf.getPageIndices());
-        copied.forEach(p => combinado.addPage(p));
+    // Convertir HTML a PDF si es necesario, y combinar todos
+    const combinado = await PDFLib.PDFDocument.create();
+    for(const f of files){
+      const esHTML = f.name.toLowerCase().endsWith('.html') || f.name.toLowerCase().endsWith('.htm');
+      let buf;
+      if(esHTML){
+        // Convertir HTML a PDF usando html2canvas
+        const htmlText = await f.text();
+        buf = await convertirHTMLaPDF(htmlText);
+      } else {
+        buf = await f.arrayBuffer();
       }
-      const combinadoBytes = await combinado.save();
-      arrayBuffer = combinadoBytes.buffer;
+      const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+      for(const sp of tempPdf.getPages()){
+        try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+      }
+      const copied = await combinado.copyPages(tempPdf, tempPdf.getPageIndices());
+      copied.forEach(p => combinado.addPage(p));
     }
+    const combinadoBytes = await combinado.save();
+    const arrayBuffer = combinadoBytes.buffer;
 
     // 1. Extraer texto de cada página con pdf.js
     const pdfJs = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;

@@ -336,13 +336,13 @@ async function renderDetalleExpediente(expId){
 
   // Botones de accion
   html += `<div class="d-flex gap-2 mb-3 flex-wrap">
-    <label class="btn btn-primary btn-sm fw-bold mb-0" title="Sube un PDF ya armado y le agrega car\u00e1tula + \u00edndice + foliaci\u00f3n">
+    <label class="btn btn-primary btn-sm fw-bold mb-0" title="Sube PDF y/o HTML ya armados y le agrega car\u00e1tula + \u00edndice + foliaci\u00f3n">
       <i class="bi bi-file-earmark-plus me-2"></i>Foliar PDF Completo
-      <input type="file" accept=".pdf" multiple style="display:none" onchange="foliarPDFCompleto('${exp.id}', this)">
+      <input type="file" accept=".pdf,.html,.htm" multiple style="display:none" onchange="foliarPDFCompleto('${exp.id}', this)">
     </label>
-    <label class="btn btn-warning btn-sm fw-bold mb-0" title="Sube un PDF, organiza los documentos en orden correcto y folia">
+    <label class="btn btn-warning btn-sm fw-bold mb-0" title="Sube PDF y/o HTML, organiza los documentos en orden correcto y folia">
       <i class="bi bi-sort-down me-2"></i>Foliar y Organizar
-      <input type="file" accept=".pdf" multiple style="display:none" onchange="foliarYOrganizarPDF('${exp.id}', this)">
+      <input type="file" accept=".pdf,.html,.htm" multiple style="display:none" onchange="foliarYOrganizarPDF('${exp.id}', this)">
     </label>
     ${!bloqueado ? `<button class="btn btn-success btn-sm fw-bold" onclick="abrirSplitter('${exp.id}')">
       <i class="bi bi-scissors me-2"></i>Subir por Documentos (auto-detectar)
