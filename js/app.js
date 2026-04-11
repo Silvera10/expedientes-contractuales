@@ -1226,43 +1226,88 @@ async function foliarYOrganizarPDF(expId, inputEl){
     : 'Analizando PDF... Detectando documentos y organizando...', 'info');
 
   try {
-    // Convertir HTML a PDF si es necesario, y combinar todos
+    // Convertir HTML a PDF si es necesario, combinar todos y RASTREAR texto original
+    // textoPorArchivo[i] = texto completo del archivo i (ya en lowercase)
+    // rangosArchivo[i] = { inicio, fin } rangos de páginas del PDF combinado
     const combinado = await PDFLib.PDFDocument.create();
+    const textoPorArchivo = [];
+    const rangosArchivo = [];
+    let paginaActual = 0;
+
     for(const f of files){
       const esHTML = f.name.toLowerCase().endsWith('.html') || f.name.toLowerCase().endsWith('.htm');
       let buf;
+      let textoArchivo = '';
+
       if(esHTML){
-        // Convertir HTML a PDF usando html2canvas
         const htmlText = await f.text();
+        // Extraer texto plano del HTML para clasificación
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlText;
+        tempDiv.querySelectorAll('style, script, link').forEach(el => el.remove());
+        textoArchivo = (tempDiv.textContent || tempDiv.innerText || '').toLowerCase();
         buf = await convertirHTMLaPDF(htmlText);
       } else {
         buf = await f.arrayBuffer();
       }
+
       const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
       for(const sp of tempPdf.getPages()){
         try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
       }
       const copied = await combinado.copyPages(tempPdf, tempPdf.getPageIndices());
       copied.forEach(p => combinado.addPage(p));
+
+      const numPagsArchivo = copied.length;
+      rangosArchivo.push({
+        inicio: paginaActual + 1,
+        fin: paginaActual + numPagsArchivo,
+        esHTML,
+        nombre: f.name
+      });
+      textoPorArchivo.push(textoArchivo);
+      paginaActual += numPagsArchivo;
     }
+
     const combinadoBytes = await combinado.save();
     const arrayBuffer = combinadoBytes.buffer;
 
-    // 1. Extraer texto de cada página con pdf.js
+    // 1. Extraer texto de cada página con pdf.js (para PDFs) o usar texto HTML
     const pdfJs = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
     const totalPags = pdfJs.numPages;
     const paginasTexto = [];
 
     for(let i = 1; i <= totalPags; i++){
-      const page = await pdfJs.getPage(i);
-      const content = await page.getTextContent();
-      const texto = content.items.map(item => item.str).join(' ').toLowerCase();
+      // Determinar a qué archivo pertenece esta página
+      const rangoIdx = rangosArchivo.findIndex(r => i >= r.inicio && i <= r.fin);
+      const rango = rangosArchivo[rangoIdx];
+      let texto = '';
+
+      if(rango && rango.esHTML){
+        // Para HTML: usar el texto extraído directamente del archivo original
+        // Solo la primera página del HTML tiene el texto completo (para clasificación)
+        if(i === rango.inicio){
+          texto = textoPorArchivo[rangoIdx];
+        } else {
+          // Páginas siguientes del mismo HTML: texto vacío (se agruparán con la anterior)
+          texto = '';
+        }
+      } else {
+        // Para PDF: extraer texto con pdf.js
+        const page = await pdfJs.getPage(i);
+        const content = await page.getTextContent();
+        texto = content.items.map(item => item.str).join(' ').toLowerCase();
+      }
       paginasTexto.push({ num: i, texto, chars: texto.trim().length });
     }
 
-    // Detectar si es PDF escaneado (sin texto)
-    const paginasSinTexto = paginasTexto.filter(p => p.chars < 20).length;
-    if(paginasSinTexto > totalPags * 0.5){
+    // Detectar si es PDF escaneado (sin texto) — ignorar páginas secundarias de HTMLs
+    const paginasPrincipales = paginasTexto.filter((p, idx) => {
+      const rango = rangosArchivo.find(r => p.num >= r.inicio && p.num <= r.fin);
+      return !rango || !rango.esHTML || p.num === rango.inicio;
+    });
+    const paginasSinTexto = paginasPrincipales.filter(p => p.chars < 20).length;
+    if(paginasSinTexto > paginasPrincipales.length * 0.5){
       toast('Este PDF es escaneado (im\u00e1genes). Use "Foliar PDF Completo" en su lugar \u2014 ese bot\u00f3n no necesita leer texto.', 'warning');
       _generandoPDF = false;
       return;
