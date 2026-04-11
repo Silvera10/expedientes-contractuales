@@ -993,16 +993,52 @@ async function convertirHTMLaPDF(htmlText){
   const contentH = pageH - margin * 2;
   const scale = contentW / canvas.width;
   const pxPerPage = Math.floor(contentH / scale);
-  const numPages = Math.ceil(canvas.height / pxPerPage);
 
-  for(let p = 0; p < numPages; p++){
-    const srcY = p * pxPerPage;
-    const srcH = Math.min(pxPerPage, canvas.height - srcY);
+  // Leer pixels del canvas para detectar espacios en blanco
+  const fullCtx = canvas.getContext('2d');
+  const imgData = fullCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+  // Función: ¿una fila de píxeles es casi toda blanca?
+  const rowIsWhite = (y) => {
+    const tolerance = 10; // permitir casi blanco
+    let whitePixels = 0;
+    for(let x = 0; x < canvas.width; x++){
+      const idx = (y * canvas.width + x) * 4;
+      const r = imgData.data[idx], g = imgData.data[idx+1], b = imgData.data[idx+2];
+      if(r >= 255-tolerance && g >= 255-tolerance && b >= 255-tolerance) whitePixels++;
+    }
+    return whitePixels / canvas.width > 0.98; // 98% de la fila blanca
+  };
+
+  // Encontrar mejor punto de corte cerca del target (dentro de un rango)
+  const findSafeBreak = (targetY) => {
+    const maxLookback = Math.floor(pxPerPage * 0.15); // hasta 15% hacia arriba
+    for(let offset = 0; offset <= maxLookback; offset++){
+      const y = targetY - offset;
+      if(y <= 0) break;
+      // Requiere 3 filas blancas consecutivas para asegurar que es un espacio real
+      if(rowIsWhite(y) && rowIsWhite(y-1) && rowIsWhite(y-2)){
+        return y;
+      }
+    }
+    return targetY; // fallback al corte original
+  };
+
+  let currentY = 0;
+  while(currentY < canvas.height){
+    let endY = Math.min(currentY + pxPerPage, canvas.height);
+    // Si no es la última página, buscar corte seguro
+    if(endY < canvas.height){
+      endY = findSafeBreak(endY);
+    }
+    const srcH = endY - currentY;
+    if(srcH <= 0) break;
+
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = canvas.width;
     pageCanvas.height = srcH;
     const ctx = pageCanvas.getContext('2d');
-    ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+    ctx.drawImage(canvas, 0, currentY, canvas.width, srcH, 0, 0, canvas.width, srcH);
     const jpgData = pageCanvas.toDataURL('image/jpeg', 0.92);
     const jpgBytes = await fetch(jpgData).then(r => r.arrayBuffer());
     const jpgImage = await pdfDoc.embedJpg(jpgBytes);
@@ -1014,6 +1050,8 @@ async function convertirHTMLaPDF(htmlText){
       width: contentW,
       height: drawH
     });
+
+    currentY = endY;
   }
 
   const bytes = await pdfDoc.save();
