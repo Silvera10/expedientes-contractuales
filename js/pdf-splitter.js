@@ -1481,14 +1481,17 @@ async function confirmarSeparacion(){
         ? grupo.paginas.map(p => p - 1)
         : Array.from({length: grupo.paginaHasta - grupo.paginaDesde + 1}, (_, i) => grupo.paginaDesde - 1 + i);
 
-      // Limpiar anotaciones antes de copiar
+      // Copiar intentando preservar anotaciones primero (para mantener imágenes)
+      let copiedPages;
       try {
+        copiedPages = await newPdf.copyPages(srcPdf, pageIndices);
+      } catch(copyErr){
+        console.warn('Retry copyPages sin Annots:', copyErr.message);
         for(const idx of pageIndices){
           try { srcPdf.getPages()[idx].node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
         }
-      } catch(e){}
-
-      const copiedPages = await newPdf.copyPages(srcPdf, pageIndices);
+        copiedPages = await newPdf.copyPages(srcPdf, pageIndices);
+      }
       copiedPages.forEach(p => newPdf.addPage(p));
 
       const pdfBytes = await newPdf.save();

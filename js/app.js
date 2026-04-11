@@ -1252,10 +1252,17 @@ async function foliarYOrganizarPDF(expId, inputEl){
       }
 
       const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
-      for(const sp of tempPdf.getPages()){
-        try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+      // Intentar copiar sin tocar anotaciones primero (preserva contenido completo)
+      let copied;
+      try {
+        copied = await combinado.copyPages(tempPdf, tempPdf.getPageIndices());
+      } catch(copyErr){
+        console.warn('copyPages error, reintentando sin Annots:', copyErr.message);
+        for(const sp of tempPdf.getPages()){
+          try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){}
+        }
+        copied = await combinado.copyPages(tempPdf, tempPdf.getPageIndices());
       }
-      const copied = await combinado.copyPages(tempPdf, tempPdf.getPageIndices());
       copied.forEach(p => combinado.addPage(p));
 
       const numPagsArchivo = copied.length;
