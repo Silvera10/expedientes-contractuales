@@ -153,6 +153,12 @@ const DETECTOR_REGLAS = [
     peso: 3
   },
   {
+    tipo: 'cert_bancaria',
+    nombre: 'Certificación Bancaria',
+    palabras: ['doc-13', 'certificación bancaria', 'certificacion bancaria', 'certificación cuenta bancaria', 'certificacion cuenta bancaria', 'certificado bancario', 'cuenta de ahorros', 'cuenta corriente', 'titular de la cuenta', 'producto bancario', 'número de cuenta', 'numero de cuenta', 'estado de cuenta', 'bancolombia', 'banco de bogotá', 'banco de bogota', 'davivienda', 'banco popular', 'banco agrario', 'bbva', 'scotiabank', 'banco caja social', 'banco av villas', 'certificacion de cuenta', 'certificación de cuenta'],
+    peso: 3
+  },
+  {
     tipo: 'habeas_data',
     nombre: 'Habeas Data',
     palabras: ['doc-09', 'habeas data', 'tratamiento de datos personales', 'datos personales', 'autorización de datos', 'autorizacion de datos', 'protección de datos', 'proteccion de datos', 'ley 1581', 'autorización tratamiento de datos', 'autorizacion tratamiento de datos', 'autoriza el tratamiento y publicidad'],
