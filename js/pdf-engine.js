@@ -18,9 +18,8 @@ async function generarPDFExpediente(expediente, documentos){
   const fontBold = await pdfFinal.embedFont(StandardFonts.HelveticaBold);
   const fontNormal = await pdfFinal.embedFont(StandardFonts.Helvetica);
 
-  // 2. Recopilar todos los PDFs y contar paginas totales
+  // 2. Recopilar todos los PDFs (sin calcular folios todavía)
   const pdfDocs = [];
-  let totalPaginas = 2; // portada + indice
 
   for(const doc of documentos){
     try {
@@ -35,9 +34,8 @@ async function generarPDFExpediente(expediente, documentos){
         doc,
         srcPdf,
         paginas: pagCount,
-        folioInicio: totalPaginas + 1
+        folioInicio: 0 // se calcula después
       });
-      totalPaginas += pagCount;
     } catch(e){
       console.warn('Error cargando PDF:', doc.nombre_archivo, e);
     }
@@ -47,14 +45,43 @@ async function generarPDFExpediente(expediente, documentos){
     throw new Error('No se pudieron cargar documentos PDF');
   }
 
+  // Calcular cuántas páginas ocupará el índice
+  // Aprox 22 items por página (basado en altura disponible)
+  const ITEMS_POR_PAGINA_INDICE = 22;
+  const paginasIndice = Math.max(1, Math.ceil(pdfDocs.length / ITEMS_POR_PAGINA_INDICE));
+
+  // Calcular folios ahora que sabemos cuántas páginas ocupa el índice
+  let folioContador = 1 + paginasIndice + 1; // portada (1) + índice (N) + primer doc
+  let totalPaginas = 1 + paginasIndice;
+  for(const item of pdfDocs){
+    item.folioInicio = folioContador;
+    folioContador += item.paginas;
+    totalPaginas += item.paginas;
+  }
+
   // 3. Generar PORTADA (pagina 1)
   await generarPortada(pdfFinal, expediente, totalPaginas, fontBold, fontNormal);
 
-  // 4. Generar INDICE (pagina 2)
+  // 4. Generar INDICE (multi-página)
   await generarIndice(pdfFinal, pdfDocs, fontBold, fontNormal);
 
+  // Verificar que el índice ocupó la cantidad de páginas estimada
+  const paginasIndiceReal = pdfFinal.getPageCount() - 1; // menos la portada
+  if(paginasIndiceReal !== paginasIndice){
+    // Recalcular folios con el número real de páginas del índice
+    const diferencia = paginasIndiceReal - paginasIndice;
+    folioContador = 1 + paginasIndiceReal + 1;
+    totalPaginas = 1 + paginasIndiceReal;
+    for(const item of pdfDocs){
+      item.folioInicio = folioContador;
+      folioContador += item.paginas;
+      totalPaginas += item.paginas;
+    }
+    console.log(`\u00cdndice us\u00f3 ${paginasIndiceReal} p\u00e1g (estimado: ${paginasIndice}), folios recalculados`);
+  }
+
   // 5. Copiar cada PDF y estampar folio
-  let folioActual = 3; // portada=1, indice=2, primer doc=3
+  let folioActual = 1 + paginasIndiceReal + 1; // después de portada + índice
 
   for(const item of pdfDocs){
     const copiedPages = await pdfFinal.copyPages(item.srcPdf, item.srcPdf.getPageIndices());
@@ -66,10 +93,12 @@ async function generarPDFExpediente(expediente, documentos){
     }
   }
 
-  // 6. Estampar folio en portada e indice
+  // 6. Estampar folio en portada e índice (todas sus páginas)
   const allPages = pdfFinal.getPages();
-  estamparFolio(allPages[0], 1, totalPaginas, fontBold);
-  estamparFolio(allPages[1], 2, totalPaginas, fontBold);
+  estamparFolio(allPages[0], 1, totalPaginas, fontBold); // portada
+  for(let i = 0; i < paginasIndiceReal; i++){
+    estamparFolio(allPages[1 + i], 2 + i, totalPaginas, fontBold);
+  }
 
   // 7. Descargar
   const pdfBytes = await pdfFinal.save();
@@ -207,55 +236,54 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
    INDICE CON HIPERVINCULOS
 ══════════════════════════════════════════ */
 async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal){
-  const page = pdfDoc.addPage(PageSizes.Letter);
-  const { width, height } = page.getSize();
+  // Helper para dibujar el encabezado del índice en una página
+  function dibujarCabecera(page, esContinuacion){
+    const { width, height } = page.getSize();
+    const titulo = esContinuacion ? '\u00cdNDICE DEL EXPEDIENTE (continuaci\u00f3n)' : '\u00cdNDICE DEL EXPEDIENTE';
+    page.drawText(titulo, {
+      x: width / 2 - fontBold.widthOfTextAtSize(titulo, 16) / 2,
+      y: height - 60,
+      size: 16, font: fontBold,
+      color: rgb(0.102, 0.227, 0.361)
+    });
+    page.drawLine({
+      start: { x: 50, y: height - 70 },
+      end: { x: width - 50, y: height - 70 },
+      color: rgb(0.831, 0.627, 0.090),
+      thickness: 2
+    });
+    let y = height - 100;
+    page.drawText('N\u00b0', { x: 55, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText('C\u00d3DIGO', { x: 80, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText('DOCUMENTO', { x: 130, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText('P\u00c1GS.', { x: 420, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText('FOLIO', { x: 480, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+    y -= 5;
+    page.drawLine({
+      start: { x: 50, y },
+      end: { x: width - 50, y },
+      color: rgb(0.8, 0.8, 0.8),
+      thickness: 0.5
+    });
+    return y - 18; // retorna el Y inicial para los items
+  }
 
-  // Titulo
-  const titulo = '\u00cdNDICE DEL EXPEDIENTE';
-  page.drawText(titulo, {
-    x: width / 2 - fontBold.widthOfTextAtSize(titulo, 16) / 2,
-    y: height - 60,
-    size: 16, font: fontBold,
-    color: rgb(0.102, 0.227, 0.361)
-  });
+  let page = pdfDoc.addPage(PageSizes.Letter);
+  const { width } = page.getSize();
+  let y = dibujarCabecera(page, false);
 
-  // Linea
-  page.drawLine({
-    start: { x: 50, y: height - 70 },
-    end: { x: width - 50, y: height - 70 },
-    color: rgb(0.831, 0.627, 0.090),
-    thickness: 2
-  });
-
-  // Cabecera de tabla
-  let y = height - 100;
-  page.drawText('N\u00b0', { x: 55, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-  page.drawText('C\u00d3DIGO', { x: 80, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-  page.drawText('DOCUMENTO', { x: 130, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-  page.drawText('P\u00c1GS.', { x: 420, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-  page.drawText('FOLIO', { x: 480, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-
-  y -= 5;
-  page.drawLine({
-    start: { x: 50, y },
-    end: { x: width - 50, y },
-    color: rgb(0.8, 0.8, 0.8),
-    thickness: 0.5
-  });
-
-  // Items
-  y -= 18;
+  // Items (paginar automáticamente si se llenan)
   pdfDocs.forEach((item, idx) => {
-    if(y < 60){
-      // TODO: agregar segunda pagina de indice si hay muchos docs
-      return;
+    if(y < 70){
+      // Agregar nueva página y redibujar cabecera
+      page = pdfDoc.addPage(PageSizes.Letter);
+      y = dibujarCabecera(page, true);
     }
 
     const num = String(idx + 1).padStart(2, '0');
     const docTipo = DOC_TIPOS.find(d => d.id === item.doc.tipo) || DOC_TIPOS_ADICION.find(d => d.id === item.doc.tipo);
     const nombre = docTipo ? docTipo.nombre : (item.doc.nombre_archivo || 'Documento');
 
-    // Fondo alterno
     if(idx % 2 === 0){
       page.drawRectangle({
         x: 50, y: y - 4,
@@ -266,13 +294,11 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal){
 
     page.drawText(num, { x: 58, y, size: 10, font: fontBold, color: rgb(0.102, 0.227, 0.361) });
 
-    // Codigo
     const codigo = docTipo ? (docTipo.codigo || '') : '';
     if(codigo){
       page.drawText(codigo, { x: 80, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
     }
 
-    // Nombre (truncar si es muy largo)
     const nombreCorto = nombre.length > 45 ? nombre.substring(0, 45) + '...' : nombre;
     page.drawText(nombreCorto, { x: 130, y, size: 10, font: fontNormal, color: rgb(0.2, 0.2, 0.2) });
 
@@ -282,8 +308,13 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal){
     y -= 22;
   });
 
-  // Total
+  // Total en la última página del índice
   y -= 10;
+  if(y < 60){
+    page = pdfDoc.addPage(PageSizes.Letter);
+    y = dibujarCabecera(page, true) - 20;
+  }
+
   page.drawLine({
     start: { x: 50, y: y + 8 },
     end: { x: width - 50, y: y + 8 },
