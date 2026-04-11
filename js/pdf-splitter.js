@@ -37,14 +37,14 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'cert_plan_compras',
     nombre: 'Certificación Plan de Compras',
-    palabras: ['pre-01', 'plan de compras', 'certificación plan de compras', 'certificacion plan de compras', 'plan anual de adquisiciones', 'plan de adquisiciones', 'necesidad incluida en el plan anual', 'línea paa', 'linea paa', 'según línea paa', 'segun linea paa'],
-    peso: 3
+    palabras: ['pre-01', 'certificación plan de compras', 'certificacion plan de compras', 'certificacion plan anual', 'certificación plan anual', 'certifica que la contratacion esta incluida en el plan', 'certifica que la contratación está incluida en el plan', 'certificacion plan anual de adquisiciones', 'certificación plan anual de adquisiciones', 'incluida en el plan anual de adquisiciones', 'línea paa', 'linea paa'],
+    peso: 4
   },
   {
     tipo: 'estudio_previo',
     nombre: 'Estudio Previo / Necesidad',
-    palabras: ['pre-02', 'estudio previo', 'estudios previos', 'estudio de necesidad', 'análisis del sector', 'analisis del sector', 'justificación de la contratación', 'justificacion de la contratacion', 'necesidad según línea paa', 'necesidad segun linea paa'],
-    peso: 3
+    palabras: ['pre-02', 'estudio previo', 'estudios previos', 'estudio de necesidad', 'análisis del sector', 'analisis del sector', 'descripcion de la necesidad', 'descripción de la necesidad', 'fundamentos juridicos que soportan la modalidad', 'fundamentos jurídicos que soportan la modalidad', 'condiciones tecnicas exigidas', 'condiciones técnicas exigidas', 'valor estimado del contrato', 'criterios para seleccionar la oferta'],
+    peso: 4
   },
   {
     tipo: 'solicitud_cdp',

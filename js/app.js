@@ -1323,76 +1323,84 @@ async function foliarYOrganizarPDF(expId, inputEl){
       console.log(`P\u00e1g ${pag.num}: [${pag.tipo || '?'}] conf=${pag.confianza} chars=${pag.chars} "${preview}..."`);
     }
 
-    // 3. Agrupar páginas consecutivas (LÓGICA PEGAJOSA)
-    // Solo cortar cuando una página tiene detección MUY fuerte de otro tipo
+    // 3. Agrupar páginas
+    // ESTRATEGIA MIXTA:
+    // - Si hay varios archivos subidos → cada archivo es un documento independiente
+    // - Si hay un solo archivo (PDF con varias secciones) → usar lógica pegajosa
     const grupos = [];
-    let grupoActual = null;
-    const CONFIANZA_CORTE_MINIMA = 10; // mínimo requerido para cortar un grupo
-    const CONFIANZA_MAXIMA_RATIO = 0.7; // nueva debe ser >= 70% de la máxima del grupo actual
 
-    for(const pag of paginasTexto){
-      const esPaginaCortaOFirmas = pag.chars < 200; // páginas con poco texto (firmas, sellos, continuación)
+    if(files.length > 1){
+      // Un grupo por cada archivo subido
+      for(const rango of rangosArchivo){
+        const paginasDelArchivo = paginasTexto.filter(p => p.num >= rango.inicio && p.num <= rango.fin);
+        // Combinar el texto de todas las páginas del archivo para clasificación
+        const textoCombinado = paginasDelArchivo.map(p => p.texto).join(' ');
+        const pagParaClasificar = { texto: textoCombinado, textoSuperior: '' };
+        const { tipo, confianza } = clasificarGrupo([pagParaClasificar]);
 
-      if(!grupoActual){
-        // Primera página: crear grupo
-        grupoActual = {
-          tipo: pag.tipo || 'no_identificado',
-          confianza: pag.confianza || 0,
-          confianzaMax: pag.confianza || 0,
-          paginas: [pag.num]
-        };
-        continue;
+        grupos.push({
+          tipo: tipo || 'no_identificado',
+          confianza: confianza || 0,
+          confianzaMax: confianza || 0,
+          paginas: paginasDelArchivo.map(p => p.num)
+        });
       }
+    } else {
+      // Un solo archivo: usar lógica pegajosa por página
+      let grupoActual = null;
+      const CONFIANZA_CORTE_MINIMA = 10;
+      const CONFIANZA_MAXIMA_RATIO = 0.7;
 
-      // Calcular puntaje de la página actual contra el tipo del grupo actual
-      // (para ver si aún "pertenece" al grupo)
-      let puntajeContinuidad = 0;
-      if(grupoActual.tipo && grupoActual.tipo !== 'no_identificado'){
-        const reglaGrupo = DETECTOR_REGLAS.find(r => r.tipo === grupoActual.tipo);
-        if(reglaGrupo){
-          for(const pal of reglaGrupo.palabras){
-            if(pag.texto.includes(pal)) puntajeContinuidad += reglaGrupo.peso;
+      for(const pag of paginasTexto){
+        const esPaginaCortaOFirmas = pag.chars < 200;
+
+        if(!grupoActual){
+          grupoActual = {
+            tipo: pag.tipo || 'no_identificado',
+            confianza: pag.confianza || 0,
+            confianzaMax: pag.confianza || 0,
+            paginas: [pag.num]
+          };
+          continue;
+        }
+
+        let puntajeContinuidad = 0;
+        if(grupoActual.tipo && grupoActual.tipo !== 'no_identificado'){
+          const reglaGrupo = DETECTOR_REGLAS.find(r => r.tipo === grupoActual.tipo);
+          if(reglaGrupo){
+            for(const pal of reglaGrupo.palabras){
+              if(pag.texto.includes(pal)) puntajeContinuidad += reglaGrupo.peso;
+            }
+          }
+        }
+
+        const deteccionFuerte = pag.tipo && pag.confianza >= CONFIANZA_CORTE_MINIMA;
+        const tipoDiferente = pag.tipo && pag.tipo !== grupoActual.tipo;
+        const confianzaSuficiente = pag.confianza >= grupoActual.confianzaMax * CONFIANZA_MAXIMA_RATIO;
+        const sinContinuidad = puntajeContinuidad === 0;
+
+        if(deteccionFuerte && !esPaginaCortaOFirmas && tipoDiferente && confianzaSuficiente && sinContinuidad){
+          grupos.push(grupoActual);
+          grupoActual = {
+            tipo: pag.tipo,
+            confianza: pag.confianza,
+            confianzaMax: pag.confianza,
+            paginas: [pag.num]
+          };
+        } else {
+          // Pegajoso: página pertenece al grupo actual
+          grupoActual.paginas.push(pag.num);
+          if((!grupoActual.tipo || grupoActual.tipo === 'no_identificado') && pag.tipo){
+            grupoActual.tipo = pag.tipo;
+            grupoActual.confianza = pag.confianza;
+          }
+          if(pag.confianza > grupoActual.confianzaMax){
+            grupoActual.confianzaMax = pag.confianza;
           }
         }
       }
-
-      // Condiciones estrictas para CORTAR el grupo (hacer nuevo grupo):
-      // 1. La página tiene detección clara (confianza >= mínima de corte)
-      // 2. NO es página corta/firmas
-      // 3. Es un tipo diferente al del grupo actual
-      // 4. La confianza de la nueva es al menos 70% de la máxima del grupo actual
-      //    (evita que una página "débil" rompa un grupo fuertemente identificado)
-      // 5. La página NO tiene ninguna coincidencia con el tipo del grupo actual
-      //    (si tiene keywords del grupo actual, probablemente sigue siendo parte)
-      const deteccionFuerte = pag.tipo && pag.confianza >= CONFIANZA_CORTE_MINIMA;
-      const tipoDiferente = pag.tipo && pag.tipo !== grupoActual.tipo;
-      const confianzaSuficiente = pag.confianza >= grupoActual.confianzaMax * CONFIANZA_MAXIMA_RATIO;
-      const sinContinuidad = puntajeContinuidad === 0;
-
-      if(deteccionFuerte && !esPaginaCortaOFirmas && tipoDiferente && confianzaSuficiente && sinContinuidad){
-        // Cortar: iniciar grupo nuevo
-        grupos.push(grupoActual);
-        grupoActual = {
-          tipo: pag.tipo,
-          confianza: pag.confianza,
-          confianzaMax: pag.confianza,
-          paginas: [pag.num]
-        };
-      } else {
-        // Pegajoso: página pertenece al grupo actual
-        grupoActual.paginas.push(pag.num);
-        // Si el grupo no tenía tipo y esta página sí → adoptar el tipo
-        if((!grupoActual.tipo || grupoActual.tipo === 'no_identificado') && pag.tipo){
-          grupoActual.tipo = pag.tipo;
-          grupoActual.confianza = pag.confianza;
-        }
-        // Actualizar confianza máxima del grupo
-        if(pag.confianza > grupoActual.confianzaMax){
-          grupoActual.confianzaMax = pag.confianza;
-        }
-      }
+      if(grupoActual) grupos.push(grupoActual);
     }
-    if(grupoActual) grupos.push(grupoActual);
 
     // 4. Asignar orden y nombre a cada grupo según DOC_TIPOS
     const todosLosTipos = [...DOC_TIPOS, ...DOC_TIPOS_ADICION];
@@ -1405,7 +1413,10 @@ async function foliarYOrganizarPDF(expId, inputEl){
       grupo.paginaHasta = grupo.paginas[grupo.paginas.length - 1];
     }
 
-    console.log('Grupos detectados:', grupos.map(g => `${g.codigo} ${g.nombre} (${g.paginas.length} págs, conf: ${g.confianza})`));
+    // Ordenar grupos según el orden del catálogo FOSE
+    grupos.sort((a, b) => a.orden - b.orden);
+
+    console.log('Grupos detectados (ordenados):', grupos.map(g => `${g.codigo} ${g.nombre} (${g.paginas.length} págs, conf: ${g.confianza})`));
 
     // 5. Mostrar resultados en el modal del splitter para que el usuario revise
     _splitterData.expId = expId;
