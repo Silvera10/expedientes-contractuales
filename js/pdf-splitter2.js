@@ -95,14 +95,14 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'rut',
     nombre: 'RUT',
-    palabras: ['doc-01', 'registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'dian', 'formulario del registro', 'responsabilidades tributarias', 'rut', 'nit', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial'],
-    peso: 3
+    palabras: ['doc-01', 'registro único tributario', 'registro unico tributario', 'dirección seccional', 'direccion seccional', 'actividad económica principal', 'actividad economica principal', 'formulario del registro', 'responsabilidades tributarias', 'régimen tributario', 'regimen tributario', 'clasificación industrial', 'clasificacion industrial', 'formulario del rut', 'consulta del rut', 'impresión del rut', 'exportadores para uso exclusivo de la dian', 'uso exclusivo de la dian', 'dirección de impuestos', 'direccion de impuestos', 'lugar de expedicion', 'lugar de expedición', 'pais de residencia', 'país de residencia', 'impuestos y aduanas nacionales'],
+    peso: 5
   },
   {
     tipo: 'cedula',
     nombre: 'Cédula',
-    palabras: ['doc-02', 'cédula de ciudadanía', 'cedula de ciudadania', 'república de colombia', 'republica de colombia', 'registraduría', 'registraduria', 'identificación personal', 'identificacion personal', 'documento de identidad', 'fotocopia documento', 'cédula', 'cedula', 'número de identificación', 'numero de identificacion'],
-    peso: 3
+    palabras: ['doc-02', 'fotocopia de la cédula', 'fotocopia de la cedula', 'copia de la cédula de ciudadanía', 'copia de la cedula de ciudadania', 'registraduría nacional del estado civil', 'registraduria nacional del estado civil', 'tarjeta decadactilar', 'firma del registrador', 'cédula de ciudadanía amarilla', 'número único de identificación personal', 'nuip', 'copia ampliada cedula', 'copia ampliada cédula'],
+    peso: 4
   },
   {
     tipo: 'antec_policia',
@@ -137,8 +137,8 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'redeam',
     nombre: 'REDEAM',
-    palabras: ['doc-08', 'redeam', 'redam', 'registro de deudores alimentarios', 'deudores alimentarios morosos', 'obligaciones alimentarias', 'icbf', 'no tener anotación en el registro', 'no tener anotacion en el registro'],
-    peso: 3
+    palabras: ['doc-08', 'redeam', 'redam', 'registro de deudores alimentarios', 'deudores alimentarios morosos', 'obligaciones alimentarias', 'registro deudores alimentarios morosos', 'certificado redeam', 'consulta redeam', 'no aparece registrado como deudor alimentario'],
+    peso: 4
   },
   {
     tipo: 'camara_comercio',
@@ -167,8 +167,8 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'seguridad_social',
     nombre: 'Seguridad Social',
-    palabras: ['doc-10', 'seguridad social', 'planilla integrada', 'pila', 'aportes parafiscales', 'afiliación vigente', 'afiliacion vigente', 'constancia de afiliación', 'constancia de afiliacion', 'planilla de pago', 'riesgos laborales', 'sistema general de seguridad social', 'sgss'],
-    peso: 3
+    palabras: ['doc-10', 'seguridad social', 'planilla integrada', 'planilla integrada de aportes', 'pila', 'aportes parafiscales', 'afiliación vigente', 'afiliacion vigente', 'constancia de afiliación', 'constancia de afiliacion', 'planilla de pago', 'riesgos laborales', 'sistema general de seguridad social', 'sgss', 'resumen general de pago', 'detalle de cotizante', 'detalle de cotizantes', 'aportante', 'operador de informacion', 'operador de información', 'soi.com.co', 'mi planilla', 'nueva eps', 'sura eps', 'sanitas eps', 'colpensiones', 'porvenir pensiones', 'proteccion pensiones', 'colfondos', 'positiva compañía de seguros', 'positiva compania de seguros'],
+    peso: 4
   },
 
   // ═══════════════════════════════════════
