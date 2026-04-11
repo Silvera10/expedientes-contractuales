@@ -998,30 +998,45 @@ async function convertirHTMLaPDF(htmlText){
   const fullCtx = canvas.getContext('2d');
   const imgData = fullCtx.getImageData(0, 0, canvas.width, canvas.height);
 
-  // Función: ¿una fila de píxeles es casi toda blanca?
-  const rowIsWhite = (y) => {
-    const tolerance = 10; // permitir casi blanco
-    let whitePixels = 0;
+  // Función: contar píxeles no-blancos en una fila (menor = más blanco)
+  const rowDarkness = (y) => {
+    if(y < 0 || y >= canvas.height) return canvas.width;
+    const tolerance = 15;
+    let darkPixels = 0;
     for(let x = 0; x < canvas.width; x++){
       const idx = (y * canvas.width + x) * 4;
       const r = imgData.data[idx], g = imgData.data[idx+1], b = imgData.data[idx+2];
-      if(r >= 255-tolerance && g >= 255-tolerance && b >= 255-tolerance) whitePixels++;
+      if(r < 255-tolerance || g < 255-tolerance || b < 255-tolerance) darkPixels++;
     }
-    return whitePixels / canvas.width > 0.98; // 98% de la fila blanca
+    return darkPixels;
   };
 
-  // Encontrar mejor punto de corte cerca del target (dentro de un rango)
+  const isWhiteRow = (y) => rowDarkness(y) / canvas.width < 0.02; // 98% blanco
+
+  // Encontrar mejor punto de corte cerca del target
   const findSafeBreak = (targetY) => {
-    const maxLookback = Math.floor(pxPerPage * 0.15); // hasta 15% hacia arriba
+    const maxLookback = Math.floor(pxPerPage * 0.30); // hasta 30% hacia arriba
+
+    // Paso 1: buscar filas completamente blancas
     for(let offset = 0; offset <= maxLookback; offset++){
       const y = targetY - offset;
       if(y <= 0) break;
-      // Requiere 3 filas blancas consecutivas para asegurar que es un espacio real
-      if(rowIsWhite(y) && rowIsWhite(y-1) && rowIsWhite(y-2)){
-        return y;
+      if(isWhiteRow(y)) return y;
+    }
+
+    // Paso 2 (fallback): buscar la fila MAS clara en el rango
+    let bestY = targetY;
+    let bestDarkness = rowDarkness(targetY);
+    for(let offset = 1; offset <= maxLookback; offset++){
+      const y = targetY - offset;
+      if(y <= 0) break;
+      const d = rowDarkness(y);
+      if(d < bestDarkness){
+        bestDarkness = d;
+        bestY = y;
       }
     }
-    return targetY; // fallback al corte original
+    return bestY;
   };
 
   let currentY = 0;

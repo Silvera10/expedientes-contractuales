@@ -1096,27 +1096,43 @@ async function iniciarAnalisisPDF(input){
       const pdfScale = contentW / canvas.width;
       const pxPerPage = Math.floor(contentH / pdfScale);
 
-      // Función para encontrar mejor punto de corte (buscar línea en blanco)
+      // Función para encontrar mejor punto de corte (buscar línea mas blanca)
       function findBestBreak(canvasEl, idealY, tolerance){
-        const searchRange = Math.min(tolerance, 80); // buscar ±80px
+        const searchRange = Math.max(tolerance, Math.floor(pxPerPage * 0.3)); // hasta 30% del alto de página
         const ctx = canvasEl.getContext('2d');
         const w = canvasEl.width;
-        // Buscar hacia arriba desde el punto ideal
+
+        // Contar píxeles oscuros en una fila
+        const darkness = (y) => {
+          if(y < 0 || y >= canvasEl.height) return w;
+          const row = ctx.getImageData(0, y, w, 1).data;
+          let dark = 0;
+          for(let x = 0; x < w * 4; x += 4){
+            if(row[x] < 240 || row[x+1] < 240 || row[x+2] < 240) dark++;
+          }
+          return dark;
+        };
+
+        // Paso 1: buscar fila totalmente blanca
         for(let offset = 0; offset <= searchRange; offset++){
           const y = idealY - offset;
           if(y < 0) break;
-          const row = ctx.getImageData(0, y, w, 1).data;
-          let isBlank = true;
-          // Revisar cada 10 píxeles (más rápido)
-          for(let x = 0; x < w * 4; x += 40){
-            if(row[x] < 245 || row[x+1] < 245 || row[x+2] < 245){
-              isBlank = false;
-              break;
-            }
-          }
-          if(isBlank) return y;
+          if(darkness(y) / w < 0.02) return y; // 98% blanca
         }
-        return idealY; // si no encuentra, cortar en el punto ideal
+
+        // Paso 2: buscar la fila más clara en el rango
+        let bestY = idealY;
+        let bestDark = darkness(idealY);
+        for(let offset = 1; offset <= searchRange; offset++){
+          const y = idealY - offset;
+          if(y < 0) break;
+          const d = darkness(y);
+          if(d < bestDark){
+            bestDark = d;
+            bestY = y;
+          }
+        }
+        return bestY;
       }
 
       const pdfDoc = await PDFLib.PDFDocument.create();
