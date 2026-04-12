@@ -1843,6 +1843,26 @@ async function ejecutarBackupSilencioso(){
     await writable.write(blob);
     await writable.close();
 
+    // Borrar backups automaticos anteriores (mantener solo el mas reciente)
+    try {
+      const entries = [];
+      for await (const [name, handle] of _backupDirHandle.entries()){
+        if(handle.kind === 'file' && name.startsWith('Backup_Auto_') && name.endsWith('.zip') && name !== nombre){
+          entries.push(name);
+        }
+      }
+      for(const oldName of entries){
+        try {
+          await _backupDirHandle.removeEntry(oldName);
+          console.log(`Backup anterior eliminado: ${oldName}`);
+        } catch(delErr){
+          console.warn('No se pudo borrar ' + oldName + ':', delErr.message);
+        }
+      }
+    } catch(e){
+      console.warn('Error limpiando backups anteriores:', e);
+    }
+
     await DB._put('meta', 'ultimo_backup', Date.now());
     console.log(`Backup autom\u00e1tico: ${nombre}`);
     actualizarIndicadorBackupAuto();
