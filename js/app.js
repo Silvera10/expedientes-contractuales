@@ -40,6 +40,10 @@ async function initApp(){
     // 6. Verificar si necesita backup
     verificarAlertaBackup();
 
+    // 7. Restaurar backup autom\u00e1tico si estaba configurado
+    await restaurarBackupAutomaticoAlIniciar();
+    actualizarIndicadorBackupAuto();
+
     SB.updateSyncUI('ok');
   } catch(e){
     console.error('initApp error:', e);
@@ -1725,6 +1729,156 @@ async function generarIndiceFoliar(pdfDoc, exp, nombreArchivo, totalPaginas, tot
 /* ══════════════════════════════════════════════════════════
    BACKUP / RESTORE — Copia de seguridad ZIP
 ══════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════
+   BACKUP AUTOMATICO
+══════════════════════════════════════════════════════════ */
+let _backupDirHandle = null;  // FileSystemDirectoryHandle
+let _backupIntervalId = null;
+let _backupIntervalMin = 0;
+
+async function configurarBackupAutomatico(){
+  if(!window.showDirectoryPicker){
+    toast('Tu navegador no soporta backup automatico en carpeta. Usa Chrome o Edge.', 'warning');
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    _backupDirHandle = handle;
+    // Guardar handle en IndexedDB (persiste entre recargas)
+    await DB._put('meta', 'backup_dir_handle', handle);
+
+    // Preguntar intervalo
+    const minutos = prompt('\u00bfCada cu\u00e1ntos minutos hacer backup autom\u00e1tico?\n\n15 = cada 15 min\n30 = cada 30 min\n60 = cada hora\n\n(m\u00ednimo 5 min)', '30');
+    if(!minutos) return;
+    const min = Math.max(5, parseInt(minutos) || 30);
+    await DB._put('meta', 'backup_interval_min', min);
+    iniciarBackupAutomatico(min);
+
+    // Hacer un backup inicial inmediato
+    await ejecutarBackupSilencioso();
+    toast(`Backup autom\u00e1tico configurado: cada ${min} minutos en la carpeta seleccionada`, 'success');
+  } catch(e){
+    if(e.name !== 'AbortError'){
+      console.error('Error configurando backup:', e);
+      toast('Error: ' + e.message, 'danger');
+    }
+  }
+}
+
+async function desactivarBackupAutomatico(){
+  if(_backupIntervalId){
+    clearInterval(_backupIntervalId);
+    _backupIntervalId = null;
+  }
+  _backupDirHandle = null;
+  _backupIntervalMin = 0;
+  await DB._del('meta', 'backup_dir_handle');
+  await DB._del('meta', 'backup_interval_min');
+  toast('Backup autom\u00e1tico desactivado', 'info');
+  actualizarIndicadorBackupAuto();
+}
+
+function iniciarBackupAutomatico(minutos){
+  if(_backupIntervalId) clearInterval(_backupIntervalId);
+  _backupIntervalMin = minutos;
+  _backupIntervalId = setInterval(ejecutarBackupSilencioso, minutos * 60 * 1000);
+  actualizarIndicadorBackupAuto();
+}
+
+async function ejecutarBackupSilencioso(){
+  if(!_backupDirHandle || typeof JSZip === 'undefined') return;
+
+  try {
+    // Verificar permiso de escritura
+    const perm = await _backupDirHandle.queryPermission({ mode: 'readwrite' });
+    if(perm !== 'granted'){
+      const req = await _backupDirHandle.requestPermission({ mode: 'readwrite' });
+      if(req !== 'granted'){
+        console.warn('Permiso denegado para backup autom\u00e1tico');
+        return;
+      }
+    }
+
+    const zip = new JSZip();
+    const expedientes = DB._expedientes || [];
+    zip.file('expedientes.json', JSON.stringify(expedientes, null, 2));
+
+    const allDocKeys = await DB._getAllKeys('documentos');
+    const allDocs = [];
+    for(const k of allDocKeys){
+      const doc = await DB._get('documentos', k);
+      if(doc) allDocs.push(doc);
+    }
+    zip.file('documentos.json', JSON.stringify(allDocs, null, 2));
+
+    const allArchivoKeys = await DB._getAllKeys('archivos');
+    let archivosExportados = 0;
+    for(const path of allArchivoKeys){
+      const ab = await DB._get('archivos', path);
+      if(ab){
+        zip.file('archivos/' + path, ab);
+        archivosExportados++;
+      }
+    }
+
+    zip.file('backup_info.json', JSON.stringify({
+      fecha: new Date().toISOString(),
+      version: '1.0',
+      automatico: true,
+      totalExpedientes: expedientes.length,
+      totalDocumentos: allDocs.length,
+      totalArchivos: archivosExportados
+    }, null, 2));
+
+    const blob = await zip.generateAsync({
+      type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 }
+    });
+
+    // Escribir en la carpeta seleccionada
+    const fecha = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+    const nombre = `Backup_Auto_${fecha}.zip`;
+    const fileHandle = await _backupDirHandle.getFileHandle(nombre, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+
+    await DB._put('meta', 'ultimo_backup', Date.now());
+    console.log(`Backup autom\u00e1tico: ${nombre}`);
+    actualizarIndicadorBackupAuto();
+  } catch(e){
+    console.error('Error backup autom\u00e1tico:', e);
+  }
+}
+
+async function restaurarBackupAutomaticoAlIniciar(){
+  try {
+    const handle = await DB._get('meta', 'backup_dir_handle');
+    const min = await DB._get('meta', 'backup_interval_min');
+    if(handle && min){
+      // Verificar que el handle todavía es válido
+      const perm = await handle.queryPermission({ mode: 'readwrite' });
+      if(perm === 'granted' || perm === 'prompt'){
+        _backupDirHandle = handle;
+        iniciarBackupAutomatico(min);
+      }
+    }
+  } catch(e){
+    console.warn('No se pudo restaurar backup autom\u00e1tico:', e);
+  }
+}
+
+function actualizarIndicadorBackupAuto(){
+  const el = document.getElementById('backup-auto-status');
+  if(!el) return;
+  if(_backupIntervalId && _backupIntervalMin){
+    el.innerHTML = `<i class="bi bi-shield-check text-success"></i> Auto: ${_backupIntervalMin}min`;
+    el.title = 'Backup autom\u00e1tico activo';
+  } else {
+    el.innerHTML = '<i class="bi bi-shield-slash text-muted"></i>';
+    el.title = 'Backup autom\u00e1tico desactivado';
+  }
+}
 
 async function descargarBackupZIP(){
   if(typeof JSZip === 'undefined'){

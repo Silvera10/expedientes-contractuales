@@ -90,7 +90,14 @@
             <i class="bi bi-cloud-upload"></i>
             <input type="file" accept=".zip" style="display:none" onchange="restaurarBackupZIP(this)">
           </label>
+          <button class="btn btn-outline-light btn-sm py-0 px-2" onclick="configurarBackupAutomatico()" title="Configurar backup autom&aacute;tico en carpeta">
+            <i class="bi bi-shield-check"></i>
+          </button>
+          <button class="btn btn-outline-light btn-sm py-0 px-2" onclick="desactivarBackupAutomatico()" title="Desactivar backup autom&aacute;tico">
+            <i class="bi bi-shield-slash"></i>
+          </button>
         </div>
+        <span id="backup-auto-status" class="text-light small" style="font-size:10px"></span>
         <span id="sync-status" class="badge bg-secondary" title="Estado de sincronizaci&oacute;n">
           <i class="bi bi-cloud-slash"></i>
         </span>
@@ -351,6 +358,6 @@
 <script src="js/ui.js?v=38"></script>
 <script src="js/pdf-splitter.js?v=36"></script>
 <script src="js/pdf-engine.js?v=35"></script>
-<script src="js/app.js?v=54"></script>
+<script src="js/app.js?v=55"></script>
 </body>
 </html>
