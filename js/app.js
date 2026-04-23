@@ -1950,11 +1950,30 @@ async function restaurarBackupAutomaticoAlIniciar(){
       if(perm === 'granted' || perm === 'prompt'){
         _backupDirHandle = handle;
         iniciarBackupAutomatico(min);
+        // Si hace m\u00e1s del intervalo desde el \u00faltimo backup, correr uno inmediato
+        const ultimoBackup = await DB._get('meta', 'ultimo_backup');
+        const ahora = Date.now();
+        const transcurrido = ultimoBackup ? (ahora - ultimoBackup) / 60000 : Infinity;
+        if(transcurrido >= min){
+          console.log(`Corriendo backup inmediato (\u00faltimo hace ${Math.round(transcurrido)} min)`);
+          setTimeout(() => ejecutarBackupSilencioso(), 3000);
+        }
       }
     }
   } catch(e){
     console.warn('No se pudo restaurar backup autom\u00e1tico:', e);
   }
+}
+
+/* ── Forzar backup ahora a la carpeta configurada ── */
+async function hacerBackupAhora(){
+  if(!_backupDirHandle){
+    toast('No hay carpeta de backup configurada. Haz clic en el escudo para configurarla.', 'warning');
+    return;
+  }
+  toast('Ejecutando backup ahora...', 'info');
+  await ejecutarBackupSilencioso();
+  toast('Backup guardado en la carpeta configurada', 'success');
 }
 
 function actualizarIndicadorBackupAuto(){
