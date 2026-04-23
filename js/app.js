@@ -11,20 +11,48 @@ async function initApp(){
     // 1. Inicializar IndexedDB
     await DB.init();
 
-    // 2. Inicializar Supabase
-    SB.init();
-
-    // 3. Verificar sesion
-    if(SB.isActive()){
-      const user = await SB.getUser();
-      if(!user){
-        document.getElementById('auth-overlay').style.display = 'flex';
-        document.getElementById('app-container').style.display = 'none';
-        return;
+    // 2. Si el usuario eligi\u00f3 modo local, saltar Supabase
+    const modoLocal = localStorage.getItem('modo_local') === '1';
+    if(modoLocal){
+      SB._configured = false;
+      SB.client = null;
+      document.getElementById('user-name').textContent = 'Usuario Local';
+      const syncEl = document.getElementById('sync-status');
+      if(syncEl){
+        syncEl.className = 'badge bg-secondary';
+        syncEl.innerHTML = '<i class="bi bi-laptop"></i>';
+        syncEl.title = 'Modo local (sin nube)';
       }
-      // Mostrar nombre
-      const nombre = user.user_metadata?.nombre || user.email;
-      document.getElementById('user-name').textContent = nombre;
+    } else {
+      // Inicializar Supabase normalmente
+      SB.init();
+
+      // Verificar sesion (con timeout para evitar bloqueo si Supabase cay\u00f3)
+      if(SB.isActive()){
+        try {
+          const userPromise = SB.getUser();
+          const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000));
+          const user = await Promise.race([userPromise, timeoutPromise]);
+          if(!user){
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+            return;
+          }
+          const nombre = user.user_metadata?.nombre || user.email;
+          document.getElementById('user-name').textContent = nombre;
+        } catch(err){
+          // Supabase no responde - mostrar login con opci\u00f3n local
+          console.warn('Supabase no disponible:', err.message);
+          document.getElementById('auth-overlay').style.display = 'flex';
+          document.getElementById('app-container').style.display = 'none';
+          const errEl = document.getElementById('auth-error');
+          if(errEl){
+            errEl.style.display = 'block';
+            errEl.innerHTML = 'Servidor de nube no disponible. Use <b>"Entrar en modo local"</b> para trabajar sin conexi\u00f3n.';
+          }
+          return;
+        }
+      }
     }
 
     // 4. Mostrar app
@@ -57,6 +85,45 @@ document.addEventListener('DOMContentLoaded', initApp);
 /* ══════════════════════════════════════════
    AUTH
 ══════════════════════════════════════════ */
+/* ── Entrar en modo local (sin Supabase) ── */
+async function entrarModoLocal(){
+  try {
+    // Marcar flag en localStorage para recordar la preferencia
+    localStorage.setItem('modo_local', '1');
+
+    // Desactivar Supabase
+    SB._configured = false;
+    SB.client = null;
+
+    // Mostrar app
+    document.getElementById('auth-overlay').style.display = 'none';
+    document.getElementById('app-container').style.display = '';
+    document.getElementById('user-name').textContent = 'Usuario Local';
+
+    // Cargar datos locales
+    await DB.loadExpedientes();
+    await cargarInstituciones();
+    cargarFiltroInstituciones();
+    renderListaExpedientes();
+    verificarAlertaBackup();
+    await restaurarBackupAutomaticoAlIniciar();
+    actualizarIndicadorBackupAuto();
+
+    // Indicador de modo offline
+    const syncEl = document.getElementById('sync-status');
+    if(syncEl){
+      syncEl.className = 'badge bg-secondary';
+      syncEl.innerHTML = '<i class="bi bi-laptop"></i>';
+      syncEl.title = 'Modo local (sin nube)';
+    }
+
+    toast('Modo local activado. Usa los backups ZIP para respaldar tus datos.', 'info');
+  } catch(e){
+    console.error('Error modo local:', e);
+    toast('Error: ' + e.message, 'danger');
+  }
+}
+
 async function doLogin(){
   const email = document.getElementById('auth-email')?.value.trim();
   const pass = document.getElementById('auth-pass')?.value;
@@ -116,7 +183,9 @@ async function doRegister(){
 
 async function doLogout(){
   if(!confirm('\u00bfCerrar sesi\u00f3n?')) return;
-  await SB.logout();
+  // Limpiar flag de modo local
+  localStorage.removeItem('modo_local');
+  try { await SB.logout(); } catch(e){}
   DB._expedientes = [];
   DB._activeId = null;
   document.getElementById('auth-overlay').style.display = 'flex';
