@@ -94,6 +94,12 @@ const DETECTOR_REGLAS = [
     palabras: ['pre-10', 'secop ii', 'secop 2', 'colombia compra eficiente', 'tienda virtual del estado', 'tvec', 'co1.receipt', 'co1.ntc.', 'co1.noc.', 'co1.req.', 'co1.pcons.', 'agencia nacional de contrataci\u00f3n p\u00fablica', 'agencia nacional de contratacion publica', 'comunidad.secop.gov.co', 'www.colombiacompra.gov.co', 'constancia de publicaci\u00f3n secop', 'constancia de publicacion secop', 'proceso de contrataci\u00f3n secop', 'proceso de contratacion secop', 'recibo secop', 'recibo de secop', 'recibo colombia compra'],
     peso: 5
   },
+  {
+    tipo: 'anexos_fotos',
+    nombre: 'Anexos / Fotografías',
+    palabras: ['pre-11', 'anexos', 'anexo', 'fotografias', 'fotograf\u00edas', 'fotos', 'registro fotogr\u00e1fico', 'registro fotografico', 'soporte fotogr\u00e1fico', 'soporte fotografico', 'evidencia fotogr\u00e1fica', 'evidencia fotografica', 'material gr\u00e1fico', 'material grafico', 'archivo anexo', 'documento anexo'],
+    peso: 4
+  },
 
   // ═══════════════════════════════════════
   // DOCUMENTOS DEL CONTRATISTA

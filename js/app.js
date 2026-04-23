@@ -1425,6 +1425,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['evaluacion', 'evaluación', 'evaluacion oferta', 'evaluación oferta'], tipo: 'evaluacion_ofertas' },
         { pats: ['aceptacion de oferta', 'aceptación de oferta'], tipo: 'aceptacion_oferta' },
         { pats: ['co1.receipt', 'co1.ntc', 'co1.noc', 'co1.req', 'co1.pcons', 'secop ii', 'secop 2', 'recibo secop', 'colombia compra', 'tvec', 'tienda virtual'], tipo: 'recibo_secop' },
+        { pats: ['anexos', 'anexo', 'fotos', 'fotografias', 'fotografías', 'registro fotografico', 'registro fotográfico', 'soporte fotografico', 'soporte fotográfico', 'evidencia fotografica', 'evidencia fotográfica', 'imagenes', 'imágenes'], tipo: 'anexos_fotos' },
         { pats: ['referencia bancaria', 'cert bancaria', 'certificacion bancaria', 'certificación bancaria', 'cuenta bancaria'], tipo: 'cert_bancaria' },
         { pats: ['rut'], tipo: 'rut' },
         { pats: ['cedula', 'cédula'], tipo: 'cedula' },
