@@ -24,6 +24,7 @@ const DOC_TIPOS = [
   { id:'carta_propuesta',    nombre:'Carta de Propuesta',               etapa:'pre', orden:7,  icon:'bi-envelope-open',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-07' },
   { id:'evaluacion',         nombre:'Evaluaci\u00f3n de Ofertas',            etapa:'pre', orden:8,  icon:'bi-table',               color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-08' },
   { id:'aceptacion',         nombre:'Aceptaci\u00f3n de Oferta',             etapa:'pre', orden:9,  icon:'bi-check2-circle',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-09' },
+  { id:'recibo_secop',       nombre:'Recibo SECOP II / Colombia Compra',etapa:'pre', orden:9.5,icon:'bi-receipt',             color:'#6610f2', vigencia_dias:null, regla:null, codigo:'PRE-10' },
 
   // Fase 2: Documentos del contratista
   { id:'rut',                nombre:'RUT del Contratista',              etapa:'sel', orden:10, icon:'bi-person-vcard',        color:'#6f42c1', vigencia_dias:null, regla:'vigente', codigo:'DOC-01' },

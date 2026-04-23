@@ -88,6 +88,12 @@ const DETECTOR_REGLAS = [
     palabras: ['pre-09', 'aceptación de oferta', 'aceptacion de oferta', 'aceptación de la oferta', 'aceptacion de la oferta', 'adjudicación', 'adjudicacion', 'se acepta la oferta', 'comunicación de aceptación', 'comunicacion de aceptacion'],
     peso: 3
   },
+  {
+    tipo: 'recibo_secop',
+    nombre: 'Recibo SECOP II / Colombia Compra Eficiente',
+    palabras: ['pre-10', 'secop ii', 'secop 2', 'colombia compra eficiente', 'tienda virtual del estado', 'tvec', 'co1.receipt', 'co1.ntc.', 'co1.noc.', 'co1.req.', 'co1.pcons.', 'agencia nacional de contrataci\u00f3n p\u00fablica', 'agencia nacional de contratacion publica', 'comunidad.secop.gov.co', 'www.colombiacompra.gov.co', 'constancia de publicaci\u00f3n secop', 'constancia de publicacion secop', 'proceso de contrataci\u00f3n secop', 'proceso de contratacion secop', 'recibo secop', 'recibo de secop', 'recibo colombia compra'],
+    peso: 5
+  },
 
   // ═══════════════════════════════════════
   // DOCUMENTOS DEL CONTRATISTA
