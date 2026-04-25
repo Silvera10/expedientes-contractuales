@@ -63,7 +63,7 @@ const DOC_TIPOS = [
 
   // Fase 5: Pago y Liquidacion
   { id:'orden_pago',         nombre:'Orden de Pago',                    etapa:'pag', orden:29, icon:'bi-cash-coin',            color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-01' },
-  { id:'egreso',             nombre:'Comprobante de Egreso',            etapa:'pag', orden:30, icon:'bi-receipt',              color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-02' },
+  { id:'egreso',             nombre:'Comprobante de Egreso',            etapa:'con', orden:20.9, icon:'bi-receipt',            color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-02' },
   { id:'acta_liquidacion',   nombre:'Acta de Liquidaci\u00f3n',              etapa:'pag', orden:31, icon:'bi-file-earmark-x',      color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-03' }
 ];
 
