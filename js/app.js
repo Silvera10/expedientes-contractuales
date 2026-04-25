@@ -1426,6 +1426,13 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['aceptacion de oferta', 'aceptación de oferta'], tipo: 'aceptacion_oferta' },
         { pats: ['co1.receipt', 'co1.ntc', 'co1.noc', 'co1.req', 'co1.pcons', 'secop ii', 'secop 2', 'recibo secop', 'colombia compra', 'tvec', 'tienda virtual'], tipo: 'recibo_secop' },
         { pats: ['anexos', 'anexo', 'fotos', 'fotografias', 'fotografías', 'registro fotografico', 'registro fotográfico', 'soporte fotografico', 'soporte fotográfico', 'evidencia fotografica', 'evidencia fotográfica', 'imagenes', 'imágenes'], tipo: 'anexos_fotos' },
+        // Hechos Cumplidos
+        { pats: ['memorando interno', 'memorando contador', 'memorando del contador', 'memorando hc', 'memorando hechos cumplidos'], tipo: 'hc_memorando' },
+        { pats: ['comunicacion consejo directivo', 'comunicación consejo directivo', 'consejo directivo', 'oficio consejo directivo'], tipo: 'hc_comunicacion' },
+        { pats: ['solicitud cdp hc', 'solicitud cdp hechos cumplidos'], tipo: 'hc_solicitud_cdp' },
+        { pats: ['estudios previos hc', 'estudio previo hc', 'estudios previos hechos cumplidos', 'estudio previo hechos cumplidos'], tipo: 'hc_estudios_previos' },
+        { pats: ['resolucion rector', 'resolución rector', 'resolucion rectoral', 'resolución rectoral', 'resolucion hc', 'resolución hc', 'acto administrativo hc'], tipo: 'hc_resolucion' },
+        { pats: ['orden prestacion servicios hc', 'orden prestación servicios hc', 'ops hc', 'ops hechos cumplidos'], tipo: 'hc_orden_prestacion' },
         { pats: ['referencia bancaria', 'cert bancaria', 'certificacion bancaria', 'certificación bancaria', 'cuenta bancaria'], tipo: 'cert_bancaria' },
         { pats: ['rut'], tipo: 'rut' },
         { pats: ['cedula', 'cédula'], tipo: 'cedula' },

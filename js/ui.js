@@ -26,6 +26,13 @@ const DOC_TIPOS = [
   { id:'aceptacion',         nombre:'Aceptaci\u00f3n de Oferta',             etapa:'pre', orden:9,  icon:'bi-check2-circle',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-09' },
   { id:'recibo_secop',       nombre:'Recibo SECOP II / Colombia Compra',etapa:'pre', orden:9.5,icon:'bi-receipt',             color:'#6610f2', vigencia_dias:null, regla:null, codigo:'PRE-10' },
   { id:'anexos_fotos',       nombre:'Anexos / Fotograf\u00edas',              etapa:'pre', orden:9.6,icon:'bi-images',              color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'PRE-11' },
+  // Documentos Hechos Cumplidos (HC) - aparecen como adicionales cuando se usan
+  { id:'hc_memorando',       nombre:'Memorando Interno (Contador-Rector)',etapa:'hc', orden:70, icon:'bi-envelope-paper',     color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-01' },
+  { id:'hc_comunicacion',    nombre:'Comunicaci\u00f3n al Consejo Directivo',  etapa:'hc', orden:71, icon:'bi-megaphone',          color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-02' },
+  { id:'hc_solicitud_cdp',   nombre:'Solicitud de CDP HC',              etapa:'hc', orden:72, icon:'bi-file-earmark-arrow-up',color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-03' },
+  { id:'hc_estudios_previos',nombre:'Estudios Previos HC',              etapa:'hc', orden:73, icon:'bi-file-earmark-text',  color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-04' },
+  { id:'hc_resolucion',      nombre:'Resoluci\u00f3n del Rector',              etapa:'hc', orden:74, icon:'bi-award',              color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-05' },
+  { id:'hc_orden_prestacion',nombre:'Orden de Prestaci\u00f3n de Servicios HC', etapa:'hc', orden:75, icon:'bi-file-earmark-check', color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-06' },
 
   // Fase 2: Documentos del contratista
   { id:'rut',                nombre:'RUT del Contratista',              etapa:'sel', orden:10, icon:'bi-person-vcard',        color:'#6f42c1', vigencia_dias:null, regla:'vigente', codigo:'DOC-01' },
@@ -79,7 +86,8 @@ const ETAPAS = [
   { key:'sel', label:'Documentos del Contratista',     icon:'bi-2-circle-fill', css:'etapa-sel' },
   { key:'con', label:'Fase Contractual',               icon:'bi-3-circle-fill', css:'etapa-con' },
   { key:'eje', label:'Fase de Ejecuci\u00f3n',              icon:'bi-4-circle-fill', css:'etapa-eje' },
-  { key:'pag', label:'Pago y Liquidaci\u00f3n',               icon:'bi-5-circle-fill', css:'etapa-pag' }
+  { key:'pag', label:'Pago y Liquidaci\u00f3n',               icon:'bi-5-circle-fill', css:'etapa-pag' },
+  { key:'hc',  label:'Hechos Cumplidos (HC)',          icon:'bi-clipboard2-pulse', css:'etapa-hc' }
 ];
 
 const ETAPAS_ADICION = [

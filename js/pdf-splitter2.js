@@ -102,6 +102,46 @@ const DETECTOR_REGLAS = [
   },
 
   // ═══════════════════════════════════════
+  // HECHOS CUMPLIDOS (HC)
+  // ═══════════════════════════════════════
+  {
+    tipo: 'hc_memorando',
+    nombre: 'Memorando Interno (Contador-Rector)',
+    palabras: ['hc-01', 'memorando interno', 'memorando del contador', 'memorando al rector', 'oficio interno del contador', 'comunicaci\u00f3n del contador al rector', 'comunicacion del contador al rector', 'memorando hechos cumplidos', 'memorando hc', 'remito a su despacho', 'pongo en su conocimiento'],
+    peso: 5
+  },
+  {
+    tipo: 'hc_comunicacion',
+    nombre: 'Comunicación al Consejo Directivo',
+    palabras: ['hc-02', 'comunicaci\u00f3n al consejo directivo', 'comunicacion al consejo directivo', 'consejo directivo', 'notificaci\u00f3n consejo directivo', 'notificacion consejo directivo', 'oficio consejo directivo', 'somete a consideraci\u00f3n del consejo', 'somete a consideracion del consejo'],
+    peso: 5
+  },
+  {
+    tipo: 'hc_solicitud_cdp',
+    nombre: 'Solicitud de CDP HC',
+    palabras: ['hc-03', 'solicitud de cdp hc', 'solicitud cdp hechos cumplidos', 'solicitud cdp hc', 'solicitud disponibilidad presupuestal hc', 'solicitud cdp para hechos cumplidos', 'solicito cdp para reconocimiento'],
+    peso: 5
+  },
+  {
+    tipo: 'hc_estudios_previos',
+    nombre: 'Estudios Previos HC',
+    palabras: ['hc-04', 'estudios previos hc', 'estudios previos hechos cumplidos', 'estudio previo hc', 'estudio previo hechos cumplidos', 'justificaci\u00f3n hechos cumplidos', 'justificacion hechos cumplidos', 'modalidad hechos cumplidos', 'reconocimiento de hechos cumplidos'],
+    peso: 5
+  },
+  {
+    tipo: 'hc_resolucion',
+    nombre: 'Resolución del Rector',
+    palabras: ['hc-05', 'resolucion del rector', 'resoluci\u00f3n del rector', 'resolucion rectoral', 'resoluci\u00f3n rectoral', 'resolucion no.', 'resoluci\u00f3n no.', 'resolucion n\u00b0', 'resoluci\u00f3n n\u00b0', 'resolucion numero', 'resoluci\u00f3n n\u00famero', 'el rector resuelve', 'considerando que', 'reconozco hechos cumplidos', 'reconocimiento por hechos cumplidos', 'acto administrativo'],
+    peso: 5
+  },
+  {
+    tipo: 'hc_orden_prestacion',
+    nombre: 'Orden de Prestación de Servicios HC',
+    palabras: ['hc-06', 'orden de prestaci\u00f3n de servicios hc', 'orden de prestacion de servicios hc', 'ops hc', 'ops hechos cumplidos', 'orden prestacion servicios hechos cumplidos', 'orden prestaci\u00f3n servicios hechos cumplidos', 'contrato bilateral hc', 'orden de servicios hc'],
+    peso: 5
+  },
+
+  // ═══════════════════════════════════════
   // DOCUMENTOS DEL CONTRATISTA
   // ═══════════════════════════════════════
   {
