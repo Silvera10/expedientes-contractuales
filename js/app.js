@@ -1426,6 +1426,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['aceptacion de oferta', 'aceptación de oferta'], tipo: 'aceptacion_oferta' },
         { pats: ['co1.receipt', 'co1.ntc', 'co1.noc', 'co1.req', 'co1.pcons', 'secop ii', 'secop 2', 'recibo secop', 'colombia compra', 'tvec', 'tienda virtual'], tipo: 'recibo_secop' },
         { pats: ['anexos', 'anexo', 'fotos', 'fotografias', 'fotografías', 'registro fotografico', 'registro fotográfico', 'soporte fotografico', 'soporte fotográfico', 'evidencia fotografica', 'evidencia fotográfica', 'imagenes', 'imágenes'], tipo: 'anexos_fotos' },
+        { pats: ['resolucion modificacion cdp', 'resolución modificación cdp', 'modificacion del cdp', 'modificación del cdp', 'modificacion cdp', 'modificación cdp', 'resolucion modificatoria cdp', 'resolución modificatoria cdp', 'ampliacion cdp', 'ampliación cdp', 'reduccion cdp', 'reducción cdp'], tipo: 'resolucion_mod_cdp' },
         // Hechos Cumplidos
         { pats: ['memorando interno', 'memorando contador', 'memorando del contador', 'memorando hc', 'memorando hechos cumplidos'], tipo: 'hc_memorando' },
         { pats: ['comunicacion consejo directivo', 'comunicación consejo directivo', 'consejo directivo', 'oficio consejo directivo'], tipo: 'hc_comunicacion' },

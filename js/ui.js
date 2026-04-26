@@ -26,6 +26,7 @@ const DOC_TIPOS = [
   { id:'aceptacion',         nombre:'Aceptaci\u00f3n de Oferta',             etapa:'pre', orden:9,  icon:'bi-check2-circle',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-09' },
   { id:'recibo_secop',       nombre:'Recibo SECOP II / Colombia Compra',etapa:'pre', orden:9.5,icon:'bi-receipt',             color:'#6610f2', vigencia_dias:null, regla:null, codigo:'PRE-10' },
   { id:'anexos_fotos',       nombre:'Anexos / Fotograf\u00edas',              etapa:'pre', orden:9.6,icon:'bi-images',              color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'PRE-11' },
+  { id:'resolucion_mod_cdp', nombre:'Resoluci\u00f3n de Modificaci\u00f3n del CDP',etapa:'pre', orden:4.5,icon:'bi-arrow-repeat',        color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'PRE-12' },
   // Documentos Hechos Cumplidos (HC) - aparecen como adicionales cuando se usan
   { id:'hc_memorando',       nombre:'Memorando Interno (Contador-Rector)',etapa:'hc', orden:70, icon:'bi-envelope-paper',     color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-01' },
   { id:'hc_comunicacion',    nombre:'Comunicaci\u00f3n al Consejo Directivo',  etapa:'hc', orden:71, icon:'bi-megaphone',          color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-02' },

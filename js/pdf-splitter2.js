@@ -100,6 +100,12 @@ const DETECTOR_REGLAS = [
     palabras: ['pre-11', 'anexos', 'anexo', 'fotografias', 'fotograf\u00edas', 'fotos', 'registro fotogr\u00e1fico', 'registro fotografico', 'soporte fotogr\u00e1fico', 'soporte fotografico', 'evidencia fotogr\u00e1fica', 'evidencia fotografica', 'material gr\u00e1fico', 'material grafico', 'archivo anexo', 'documento anexo'],
     peso: 4
   },
+  {
+    tipo: 'resolucion_mod_cdp',
+    nombre: 'Resoluci\u00f3n de Modificaci\u00f3n del CDP',
+    palabras: ['pre-12', 'resoluci\u00f3n de modificaci\u00f3n del cdp', 'resolucion de modificacion del cdp', 'resoluci\u00f3n modificaci\u00f3n cdp', 'resolucion modificacion cdp', 'modificaci\u00f3n al cdp', 'modificacion al cdp', 'modificaci\u00f3n del cdp', 'modificacion del cdp', 'modificaci\u00f3n disponibilidad presupuestal', 'modificacion disponibilidad presupuestal', 'ampliaci\u00f3n cdp', 'ampliacion cdp', 'reducci\u00f3n cdp', 'reduccion cdp', 'traslado presupuestal cdp', 'resoluci\u00f3n modificatoria del cdp', 'resolucion modificatoria del cdp', 'modificar el certificado de disponibilidad', 'modifica el certificado de disponibilidad'],
+    peso: 5
+  },
 
   // ═══════════════════════════════════════
   // HECHOS CUMPLIDOS (HC)
