@@ -25,8 +25,7 @@ const DOC_TIPOS = [
   // \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d
 
   // \u2500\u2500 BLOQUE 1: Documentos Centrales (etapa 'con') \u2500\u2500
-  { id:'egreso',             nombre:'Comprobante de Egreso',            etapa:'con', orden:0.5,icon:'bi-receipt',              color:'#343a40', vigencia_dias:null, regla:null, codigo:'PAG-02' },
-  { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',         etapa:'con', orden:1,  icon:'bi-bank',                 color:'#198754', vigencia_dias:null, regla:null, codigo:'PAG-04' },
+  { id:'egreso',             nombre:'Comprobante de Egreso',            etapa:'con', orden:1,  icon:'bi-receipt',              color:'#343a40', vigencia_dias:null, regla:null, codigo:'PAG-02' },
   { id:'contrato',           nombre:'Contrato Firmado',                 etapa:'con', orden:2,  icon:'bi-file-earmark-medical', color:'#198754', vigencia_dias:null, regla:null, codigo:'CON-01' },
   { id:'rp',                 nombre:'Registro Presupuestal (RP)',       etapa:'con', orden:3,  icon:'bi-file-earmark-lock',    color:'#198754', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-02' },
   { id:'acta_inicio',        nombre:'Acta de Inicio',                   etapa:'con', orden:4,  icon:'bi-play-circle',          color:'#17a2b8', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-03' },
@@ -69,6 +68,7 @@ const DOC_TIPOS = [
 
   // \u2500\u2500 BLOQUE 5: Cierre / Liquidaci\u00f3n (etapa 'pag') \u2500\u2500
   { id:'orden_pago',         nombre:'Orden de Pago',                    etapa:'pag', orden:60, icon:'bi-cash-coin',            color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-01' },
+  { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',         etapa:'pag', orden:60.5,icon:'bi-bank',                color:'#198754', vigencia_dias:null, regla:null, codigo:'PAG-04' },
   { id:'acta_liquidacion',   nombre:'Acta de Liquidaci\u00f3n',              etapa:'pag', orden:61, icon:'bi-file-earmark-x',      color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-03' },
 
   // \u2500\u2500 BLOQUE HC: Hechos Cumplidos (etapa 'hc') \u2500\u2500
