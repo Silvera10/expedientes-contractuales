@@ -188,6 +188,29 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
   }
   datos.push({ label: 'TOTAL FOLIOS', valor: String(totalFolios) });
 
+  // Helper: word-wrap a string into lines that fit within maxWidth points
+  function wrapText(text, font, fontSize, maxWidth){
+    const words = String(text).split(/\s+/);
+    const lines = [];
+    let current = '';
+    for(const word of words){
+      const probe = current ? current + ' ' + word : word;
+      if(font.widthOfTextAtSize(probe, fontSize) <= maxWidth){
+        current = probe;
+      } else {
+        if(current) lines.push(current);
+        // Si una sola palabra es muy larga, aceptarla igual
+        current = word;
+      }
+    }
+    if(current) lines.push(current);
+    return lines.length ? lines : [''];
+  }
+
+  const valorMaxWidth = marcoW - 50; // ancho disponible dentro del marco
+  const valorFontSize = 11;
+  const lineHeight = 13; // separación entre líneas del mismo valor
+
   for(const d of datos){
     // Label
     page.drawText(d.label + ':', {
@@ -195,15 +218,29 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
       size: 9, font: fontBold,
       color: rgb(0.4, 0.4, 0.4)
     });
-    // Valor
-    const valorText = d.valor.length > 70 ? d.valor.substring(0, 70) + '...' : d.valor;
-    page.drawText(valorText, {
-      x: marcoX + 25, y: y - 14,
-      size: 11, font: fontBold,
-      color: rgb(0.1, 0.1, 0.1)
-    });
-    // Linea separadora
-    y -= 38;
+    // Wrap valor para que no se desborde
+    const valorLineas = wrapText(d.valor, fontBold, valorFontSize, valorMaxWidth);
+    // Limitar a máximo 4 líneas
+    const lineasMostrar = valorLineas.slice(0, 4);
+    if(valorLineas.length > 4){
+      lineasMostrar[3] = lineasMostrar[3].substring(0, Math.max(0, lineasMostrar[3].length - 4)) + '...';
+    }
+
+    let valorY = y - 14;
+    for(const linea of lineasMostrar){
+      page.drawText(linea, {
+        x: marcoX + 25, y: valorY,
+        size: valorFontSize, font: fontBold,
+        color: rgb(0.1, 0.1, 0.1)
+      });
+      valorY -= lineHeight;
+    }
+
+    // Bajar 'y' según líneas usadas (mínimo 38, +13 por cada línea extra)
+    const filaAlto = 38 + Math.max(0, lineasMostrar.length - 1) * lineHeight;
+    y -= filaAlto;
+
+    // Línea separadora
     if(y > marcoY + 20){
       page.drawLine({
         start: { x: marcoX + 25, y: y + 10 },
