@@ -1500,7 +1500,8 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['acta recibido', 'acta de recibido', 'acta de recibo'], tipo: 'acta_recibido' },
         { pats: ['factura', 'cuenta de cobro'], tipo: 'factura_cobro' },
         { pats: ['orden de pago', 'orden pago'], tipo: 'orden_pago' },
-        { pats: ['comprobante de egreso', 'egreso'], tipo: 'comprobante_egreso' },
+        { pats: ['comprobante de egreso', 'comprobante egreso', 'egreso'], tipo: 'egreso' },
+        { pats: ['soporte de pago', 'soporte pago', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion', 'consignación', 'recibo bancario', 'soporte bancario', 'pago bancolombia', 'pago davivienda', 'pago bbva', 'pago popular', 'pago bogota', 'pago bogotá', 'pago avvillas', 'pago av villas', 'pago colpatria', 'pago caja social', 'pago agrario', 'pse', 'transferencia ach', 'soporte transferencia', 'comprobante transferencia'], tipo: 'soporte_pago' },
         { pats: ['acta de liquidacion', 'acta de liquidación', 'liquidacion', 'liquidación'], tipo: 'acta_liquidacion' }
       ];
 

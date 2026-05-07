@@ -297,8 +297,14 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'egreso',
     nombre: 'Comprobante de Egreso',
-    palabras: ['pag-02', 'comprobante de egreso', 'comprobante egreso', 'egreso no', 'egreso n°', 'egreso n.°', 'comprobante de pago', 'transferencia bancaria', 'pago neto'],
-    peso: 3
+    palabras: ['pag-02', 'comprobante de egreso', 'comprobante egreso', 'egreso no', 'egreso n°', 'egreso n.°', 'pago neto', 'cheque numero', 'cheque número', 'comprobante de salida de dinero', 'orden de salida'],
+    peso: 4
+  },
+  {
+    tipo: 'soporte_pago',
+    nombre: 'Soporte de Pago Bancario',
+    palabras: ['pag-04', 'soporte de pago', 'soporte pago bancario', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion bancaria', 'consignación bancaria', 'recibo de pago', 'recibo bancario', 'transaccion exitosa', 'transacción exitosa', 'pago realizado', 'pago efectuado', 'pse', 'transferencia ach', 'orden de transferencia', 'cuenta destino', 'cuenta beneficiario', 'pago contratista', 'codigo de aprobacion', 'código de aprobación', 'numero de transaccion', 'número de transacción', 'comprobante de transferencia', 'soporte transferencia'],
+    peso: 5
   },
   {
     tipo: 'acta_liquidacion',
