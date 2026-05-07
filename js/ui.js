@@ -358,7 +358,7 @@ async function renderDetalleExpediente(expId){
     </div>`;
   }
 
-  // Botones de accion (solo dos: Foliar y Organizar + Generar)
+  // Botones de accion
   html += `<div class="d-flex gap-2 mb-3 flex-wrap">
     <label class="btn btn-warning btn-sm fw-bold mb-0" title="Sube PDF y/o HTML, organiza los documentos en orden correcto y folia">
       <i class="bi bi-sort-down me-2"></i>Foliar y Organizar
@@ -367,6 +367,9 @@ async function renderDetalleExpediente(expId){
     <button class="btn btn-generar" onclick="generarExpedientePDF('${exp.id}')" ${docsSubidos.length === 0 ? 'disabled' : ''}>
       <i class="bi bi-file-earmark-pdf me-2"></i>Generar Expediente PDF Foliado
     </button>
+    ${!bloqueado && docsSubidos.length > 0 ? `<button class="btn btn-outline-danger btn-sm" onclick="borrarTodosDocumentos('${exp.id}')" title="Borra todos los PDFs subidos del expediente (mantiene el expediente)">
+      <i class="bi bi-trash3 me-1"></i>Borrar todos los documentos
+    </button>` : ''}
   </div>`;
 
   // Documentos por etapa

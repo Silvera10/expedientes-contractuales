@@ -957,6 +957,49 @@ async function agregarDocExtra(expId){
 }
 
 /* ══════════════════════════════════════════
+   BORRAR TODOS LOS DOCUMENTOS DEL EXPEDIENTE
+══════════════════════════════════════════ */
+async function borrarTodosDocumentos(expId){
+  const exp = DB.getExpediente(expId);
+  if(!exp) return;
+  const docs = await DB.loadDocumentos(expId);
+  if(!docs.length){
+    toast('No hay documentos para borrar', 'info');
+    return;
+  }
+  if(!confirm(`¿Borrar TODOS los ${docs.length} documentos del expediente?\n\nEl expediente se mantiene, solo se borran los archivos subidos.\n\nEsta acción no se puede deshacer.`)){
+    return;
+  }
+  toast(`Borrando ${docs.length} documentos...`, 'info');
+  try {
+    let borrados = 0;
+    for(const d of docs){
+      try {
+        await DB.deleteDocumento(d.id);
+        borrados++;
+      } catch(e){
+        console.warn('Error borrando ' + d.id + ':', e);
+      }
+    }
+    // Borrar también el PDF foliado generado si existe
+    try {
+      const foliadoPath = await DB._get('meta', `foliado_${expId}`);
+      if(foliadoPath){
+        await DB._del('archivos', foliadoPath);
+        await DB._del('meta', `foliado_${expId}`);
+      }
+    } catch(e){}
+
+    await actualizarEstadoExpediente(expId);
+    renderDetalleExpediente(expId);
+    toast(`✓ ${borrados} documentos borrados. Expediente vacío listo para subir de nuevo.`, 'success');
+  } catch(e){
+    console.error('Error borrando documentos:', e);
+    toast('Error: ' + e.message, 'danger');
+  }
+}
+
+/* ══════════════════════════════════════════
    ACTUALIZAR ESTADO DEL EXPEDIENTE
 ══════════════════════════════════════════ */
 async function actualizarEstadoExpediente(expId){
