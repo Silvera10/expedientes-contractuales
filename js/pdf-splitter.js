@@ -1072,7 +1072,10 @@ async function iniciarAnalisisPDF(input){
             overflow-wrap: break-word;
             vertical-align: top;
           }
-          #html-pdf-render img { max-width: 100%; height: auto; }
+          /* Limites estrictos para imagenes (firmas, logos) - evita que se agranden */
+          #html-pdf-render img { max-width: 220px !important; max-height: 110px !important; height: auto !important; width: auto !important; object-fit: contain; }
+          /* Firmas: aun mas pequenas */
+          #html-pdf-render img.firma, #html-pdf-render img.signature, #html-pdf-render [class*="firma"] img, #html-pdf-render [class*="signature"] img { max-width: 180px !important; max-height: 80px !important; }
           /* Asegurar que el texto largo no desborde */
           #html-pdf-render p, #html-pdf-render div, #html-pdf-render span {
             max-width: 100%;

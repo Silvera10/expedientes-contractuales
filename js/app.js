@@ -1083,7 +1083,10 @@ async function convertirHTMLaPDF(htmlText){
       #html-pdf-render-organizar * { box-sizing: border-box; max-width: 100%; }
       #html-pdf-render-organizar table { width: 100%; table-layout: fixed; border-collapse: collapse; }
       #html-pdf-render-organizar td, #html-pdf-render-organizar th { word-wrap: break-word; overflow-wrap: break-word; padding: 4px 6px; }
-      #html-pdf-render-organizar img { max-width: 100%; height: auto; }
+      /* Limites para imagenes (firmas, logos, sellos) - evita que se agranden */
+      #html-pdf-render-organizar img { max-width: 220px !important; max-height: 110px !important; height: auto !important; width: auto !important; object-fit: contain; }
+      /* Firmas (clases comunes) - mas pequenas aun */
+      #html-pdf-render-organizar img.firma, #html-pdf-render-organizar img.signature, #html-pdf-render-organizar [class*="firma"] img, #html-pdf-render-organizar [class*="signature"] img { max-width: 180px !important; max-height: 80px !important; }
       ${allStyles}
     </style>
     ${htmlDoc.body.innerHTML}
