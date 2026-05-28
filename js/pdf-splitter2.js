@@ -263,8 +263,8 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'factura',
     nombre: 'Factura / Cuenta de Cobro',
-    palabras: ['eje-02', 'factura de venta', 'factura electrónica', 'factura electronica', 'cuenta de cobro', 'factura no', 'factura n°', 'factura n.°', 'subtotal', 'total a pagar', 'valor neto'],
-    peso: 3
+    palabras: ['eje-02', 'factura de venta', 'factura electrónica', 'factura electronica', 'cuenta de cobro', 'cuenta de cobro n', 'cuenta de cobro no', 'cuenta de cobro n°', 'detalle del cobro', 'monto a pagar', 'no responsable del iva', 'responsable del iva', 'debe a:', 'factura no', 'factura n°', 'factura n.°', 'subtotal', 'total a pagar', 'valor neto', 'emisor', 'deudor', 'fecha de emisión', 'detalle del producto', 'concepto del cobro', 'honorarios profesionales por'],
+    peso: 5
   },
   {
     tipo: 'informe_contratista',

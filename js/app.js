@@ -1494,14 +1494,15 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['camara de comercio', 'cámara de comercio'], tipo: 'camara_comercio' },
         { pats: ['hoja de vida', 'hv persona natural'], tipo: 'hoja_vida' },
         { pats: ['carta juramentada'], tipo: 'habeas_data' }, // carta juramentada suele ser habeas data
-        { pats: ['contrato firmado', 'contrato'], tipo: 'contrato' },
+        // IMPORTANTE: 'cuenta de cobro' y 'factura' ANTES de 'contrato' para evitar false positive
+        { pats: ['cuenta de cobro', 'cta de cobro', 'cta cobro', 'cuenta cobro', 'factura', 'factura electronica', 'factura electrónica'], tipo: 'factura' },
+        { pats: ['contrato firmado', 'contrato de prestacion', 'contrato de prestación', 'contrato de compraventa', 'contrato de suministro', 'contrato laboral'], tipo: 'contrato' },
         { pats: ['registro presupuestal', 'rp '], tipo: 'rp' },
         { pats: ['acta de inicio'], tipo: 'acta_inicio' },
         { pats: ['orden de compra', 'orden compra'], tipo: 'orden_compra' },
         { pats: ['informe contratista', 'informe del contratista'], tipo: 'informe_contratista' },
         { pats: ['informe supervisor', 'informe de supervision', 'informe de supervisión', 'informe del supervisor'], tipo: 'informe_supervisor' },
         { pats: ['acta recibido', 'acta de recibido', 'acta de recibo'], tipo: 'acta_recibido' },
-        { pats: ['factura', 'cuenta de cobro'], tipo: 'factura_cobro' },
         { pats: ['orden de pago', 'orden pago'], tipo: 'orden_pago' },
         { pats: ['comprobante de egreso', 'comprobante egreso', 'egreso'], tipo: 'egreso' },
         { pats: ['soporte de pago', 'soporte pago', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion', 'consignación', 'recibo bancario', 'soporte bancario', 'pago bancolombia', 'pago davivienda', 'pago bbva', 'pago popular', 'pago bogota', 'pago bogotá', 'pago avvillas', 'pago av villas', 'pago colpatria', 'pago caja social', 'pago agrario', 'pse', 'transferencia ach', 'soporte transferencia', 'comprobante transferencia', 'pago.pdf', 'pago pdf'], tipo: 'soporte_pago' },
