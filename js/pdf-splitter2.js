@@ -108,6 +108,58 @@ const DETECTOR_REGLAS = [
   },
 
   // ═══════════════════════════════════════
+  // INFORMES ANUALES INSTITUCIONALES (INF)
+  // ═══════════════════════════════════════
+  {
+    tipo: 'inf_ejec_ingresos',
+    nombre: 'Ejecución Presupuestal de Ingresos',
+    palabras: ['inf-01', 'ejecución presupuestal de ingresos', 'ejecucion presupuestal de ingresos', 'ejecución de ingresos', 'ejecucion de ingresos', 'ejec_ingresos', 'ejec ingresos', '01_ejec_ingresos', 'ingresos recaudados', 'recursos del balance', 'recursos sgp', 'transferencias nacionales gratuidad'],
+    peso: 5
+  },
+  {
+    tipo: 'inf_ejec_egresos',
+    nombre: 'Ejecución Presupuestal de Egresos',
+    palabras: ['inf-02', 'ejecución presupuestal de egresos', 'ejecucion presupuestal de egresos', 'ejecución de egresos', 'ejecucion de egresos', 'ejec_egresos', 'ejec egresos', '02_ejec_egresos', 'egresos comprometidos', 'pagos efectuados', 'gastos por rubro'],
+    peso: 5
+  },
+  {
+    tipo: 'inf_pac_ejecutado',
+    nombre: 'PAC Ejecutado',
+    palabras: ['inf-03', 'pac ejecutado', 'pac_ejecutado', '03_pac_ejecutado', 'programa anual mensualizado de caja ejecutado', 'pac ejecucion', 'pac ejecución'],
+    peso: 5
+  },
+  {
+    tipo: 'inf_relacion_gastos',
+    nombre: 'Relación de Gastos',
+    palabras: ['inf-04', 'relación de gastos', 'relacion de gastos', 'relacion_gastos', '10_relacion_gastos', 'detalle de gastos', 'consolidado de gastos'],
+    peso: 5
+  },
+  {
+    tipo: 'inf_cierre_anual',
+    nombre: 'Cierre Presupuestal Anual',
+    palabras: ['inf-05', 'cierre presupuestal anual', 'cierre presupuestal', 'cierre anual', 'cierre_2026anual', 'cierre fiscal', 'cierre vigencia', 'reservas presupuestales', 'cuentas por pagar al cierre'],
+    peso: 5
+  },
+  {
+    tipo: 'inf_contraloria',
+    nombre: 'Reporte Contraloría',
+    palabras: ['inf-06', 'reporte contraloría', 'reporte contraloria', 'contraloria_2026anual', 'informe a contraloría', 'informe a contraloria', 'sirec', 'sireci'],
+    peso: 5
+  },
+  {
+    tipo: 'inf_pac_anual',
+    nombre: 'PAC Anual',
+    palabras: ['inf-07', 'pac anual', 'pac_2026anual', 'programa anual mensualizado de caja', 'pac programación', 'pac programacion'],
+    peso: 5
+  },
+  {
+    tipo: 'inf_conciliacion',
+    nombre: 'Conciliación Presupuesto-Contabilidad',
+    palabras: ['inf-08', 'conciliación presupuesto-contabilidad', 'conciliacion presupuesto-contabilidad', 'conc-ppto-cont', 'conc_ppto_cont', 'cruce presupuesto contabilidad', 'partidas conciliatorias'],
+    peso: 5
+  },
+
+  // ═══════════════════════════════════════
   // HECHOS CUMPLIDOS (HC)
   // ═══════════════════════════════════════
   {

@@ -1237,6 +1237,51 @@ async function generarExpedientePDF(expId){
 /* ══════════════════════════════════════════════════════════
    CONVERTIR HTML a PDF — Usado por Foliar PDF Completo y Organizar
 ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   CONVERTIR EXCEL/CSV a PDF — Para informes anuales
+══════════════════════════════════════════════════════════ */
+async function convertirExcelaPDF(file){
+  if(typeof XLSX === 'undefined'){
+    throw new Error('Librería XLSX no cargada');
+  }
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+
+  // Construir HTML con las hojas del libro
+  let htmlPartes = `<html><head><meta charset="utf-8"><style>
+    body { font-family: Arial, sans-serif; font-size: 9pt; padding: 20px; }
+    h2 { font-size: 14pt; color: #000; border-bottom: 1.5pt solid #000; padding-bottom: 4px; margin: 16px 0 10px; }
+    h3 { font-size: 10pt; color: #444; margin: 14px 0 6px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
+    th, td { border: 0.5pt solid #888; padding: 3px 5px; text-align: left; vertical-align: top; font-size: 8pt; }
+    th { background: #e9e9e9; font-weight: bold; }
+    tr:nth-child(even) td { background: #fafafa; }
+  </style></head><body>`;
+  htmlPartes += `<h2>${file.name.replace(/\.(xlsx|xls|csv)$/i, '').replace(/[_-]/g, ' ')}</h2>`;
+
+  let textoTotal = '';
+  for(const sheetName of wb.SheetNames){
+    const ws = wb.Sheets[sheetName];
+    if(!ws) continue;
+    htmlPartes += `<h3>Hoja: ${sheetName}</h3>`;
+    // Generar HTML de la tabla
+    let htmlTabla = XLSX.utils.sheet_to_html(ws, { editable: false });
+    // Quitar <html><body> exteriores y solo dejar la tabla
+    htmlTabla = htmlTabla.replace(/^[\s\S]*?<table/i, '<table').replace(/<\/table>[\s\S]*$/i, '</table>');
+    htmlPartes += htmlTabla;
+    // Extraer texto para clasificación
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    textoTotal += ' ' + csv;
+  }
+  htmlPartes += '</body></html>';
+
+  const pdfBytes = await convertirHTMLaPDF(htmlPartes);
+  return {
+    pdfBytes,
+    texto: (file.name + ' ' + textoTotal).toLowerCase()
+  };
+}
+
 async function convertirHTMLaPDF(htmlText){
   // Crear div visible para html2canvas
   const renderDiv = document.createElement('div');
@@ -1535,7 +1580,9 @@ async function foliarYOrganizarPDF(expId, inputEl){
     let paginaActual = 0;
 
     for(const f of files){
-      const esHTML = f.name.toLowerCase().endsWith('.html') || f.name.toLowerCase().endsWith('.htm');
+      const nombre = f.name.toLowerCase();
+      const esHTML = nombre.endsWith('.html') || nombre.endsWith('.htm');
+      const esExcel = nombre.endsWith('.xlsx') || nombre.endsWith('.xls') || nombre.endsWith('.csv');
       let buf;
       let textoArchivo = '';
 
@@ -1547,6 +1594,11 @@ async function foliarYOrganizarPDF(expId, inputEl){
         tempDiv.querySelectorAll('style, script, link').forEach(el => el.remove());
         textoArchivo = (tempDiv.textContent || tempDiv.innerText || '').toLowerCase();
         buf = await convertirHTMLaPDF(htmlText);
+      } else if(esExcel){
+        // Convertir Excel/CSV a HTML primero, luego a PDF
+        const result = await convertirExcelaPDF(f);
+        buf = result.pdfBytes;
+        textoArchivo = result.texto;
       } else {
         buf = await f.arrayBuffer();
       }
@@ -1661,6 +1713,15 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['estudios previos hc', 'estudio previo hc', 'estudios previos hechos cumplidos', 'estudio previo hechos cumplidos'], tipo: 'hc_estudios_previos' },
         { pats: ['resolucion rector', 'resolución rector', 'resolucion rectoral', 'resolución rectoral', 'resolucion hc', 'resolución hc', 'acto administrativo hc'], tipo: 'hc_resolucion' },
         { pats: ['orden prestacion servicios hc', 'orden prestación servicios hc', 'ops hc', 'ops hechos cumplidos'], tipo: 'hc_orden_prestacion' },
+        // Informes Anuales Institucionales (a Secretaría de Educación)
+        { pats: ['01_ejec_ingresos', 'ejec_ingresos', 'ejec ingresos', 'ejecucion de ingresos', 'ejecución de ingresos', 'ejecucion presupuestal ingresos', 'ejecución presupuestal ingresos'], tipo: 'inf_ejec_ingresos' },
+        { pats: ['02_ejec_egresos', 'ejec_egresos', 'ejec egresos', 'ejecucion de egresos', 'ejecución de egresos', 'ejecucion presupuestal egresos', 'ejecución presupuestal egresos'], tipo: 'inf_ejec_egresos' },
+        { pats: ['03_pac_ejecutado', 'pac_ejecutado', 'pac ejecutado'], tipo: 'inf_pac_ejecutado' },
+        { pats: ['10_relacion_gastos', 'relacion_gastos', 'relacion gastos', 'relación gastos', 'relación de gastos', 'relacion de gastos'], tipo: 'inf_relacion_gastos' },
+        { pats: ['cierre_2026anual', 'cierre anual', 'cierre presupuestal', 'cierre 2026', 'cierre 2027', 'cierre 2028', 'cierre fiscal'], tipo: 'inf_cierre_anual' },
+        { pats: ['contraloria_2026anual', 'contraloria anual', 'contraloría anual', 'reporte contraloria', 'reporte contraloría', 'sirec', 'sireci'], tipo: 'inf_contraloria' },
+        { pats: ['pac_2026anual', 'pac anual', 'pac 2026', 'pac 2027', 'pac 2028', 'programa anual mensualizado'], tipo: 'inf_pac_anual' },
+        { pats: ['conc-ppto-cont', 'conc_ppto_cont', 'conc ppto cont', 'conciliacion ppto', 'conciliación ppto', 'conciliacion presupuesto contabilidad', 'conciliación presupuesto contabilidad'], tipo: 'inf_conciliacion' },
         { pats: ['referencia bancaria', 'cert bancaria', 'certificacion bancaria', 'certificación bancaria', 'cuenta bancaria'], tipo: 'cert_bancaria' },
         { pats: ['rut'], tipo: 'rut' },
         { pats: ['cedula', 'cédula'], tipo: 'cedula' },

@@ -71,6 +71,17 @@ const DOC_TIPOS = [
   { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',         etapa:'pag', orden:60.5,icon:'bi-bank',                color:'#198754', vigencia_dias:null, regla:null, codigo:'PAG-04' },
   { id:'acta_liquidacion',   nombre:'Acta de Liquidaci\u00f3n',              etapa:'pag', orden:61, icon:'bi-file-earmark-x',      color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-03' },
 
+  // \u2500\u2500 BLOQUE INF: Informes Anuales Institucionales (etapa 'inf') \u2500\u2500
+  // Para entregar a Secretar\u00eda de Educaci\u00f3n y Alcald\u00eda
+  { id:'inf_ejec_ingresos',  nombre:'Ejecuci\u00f3n Presupuestal de Ingresos',etapa:'inf', orden:90, icon:'bi-graph-up',            color:'#198754', vigencia_dias:null, regla:null, codigo:'INF-01' },
+  { id:'inf_ejec_egresos',   nombre:'Ejecuci\u00f3n Presupuestal de Egresos', etapa:'inf', orden:91, icon:'bi-graph-down',          color:'#dc3545', vigencia_dias:null, regla:null, codigo:'INF-02' },
+  { id:'inf_pac_ejecutado',  nombre:'PAC Ejecutado',                    etapa:'inf', orden:92, icon:'bi-calendar-check',      color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'INF-03' },
+  { id:'inf_relacion_gastos',nombre:'Relaci\u00f3n de Gastos',               etapa:'inf', orden:93, icon:'bi-list-columns',        color:'#fd7e14', vigencia_dias:null, regla:null, codigo:'INF-04' },
+  { id:'inf_cierre_anual',   nombre:'Cierre Presupuestal Anual',        etapa:'inf', orden:94, icon:'bi-archive',             color:'#6f42c1', vigencia_dias:null, regla:null, codigo:'INF-05' },
+  { id:'inf_contraloria',    nombre:'Reporte Contralor\u00eda',              etapa:'inf', orden:95, icon:'bi-shield-check',        color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'INF-06' },
+  { id:'inf_pac_anual',      nombre:'PAC Anual',                        etapa:'inf', orden:96, icon:'bi-calendar3',           color:'#17a2b8', vigencia_dias:null, regla:null, codigo:'INF-07' },
+  { id:'inf_conciliacion',   nombre:'Conciliaci\u00f3n Presupuesto-Contabilidad',etapa:'inf',orden:97,icon:'bi-arrows-collapse',  color:'#6c757d', vigencia_dias:null, regla:null, codigo:'INF-08' },
+
   // \u2500\u2500 BLOQUE HC: Hechos Cumplidos (etapa 'hc') \u2500\u2500
   { id:'hc_memorando',       nombre:'Memorando Interno (Contador-Rector)',etapa:'hc', orden:80, icon:'bi-envelope-paper',     color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-01' },
   { id:'hc_comunicacion',    nombre:'Comunicaci\u00f3n al Consejo Directivo', etapa:'hc', orden:81, icon:'bi-megaphone',           color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-02' },
@@ -100,7 +111,8 @@ const ETAPAS = [
   { key:'sel', label:'Habilitantes del Contratista',     icon:'bi-3-circle-fill', css:'etapa-sel' },
   { key:'eje', label:'Ejecuci\u00f3n del Contrato',           icon:'bi-4-circle-fill', css:'etapa-eje' },
   { key:'pag', label:'Cierre / Liquidaci\u00f3n',             icon:'bi-5-circle-fill', css:'etapa-pag' },
-  { key:'hc',  label:'Hechos Cumplidos (HC)',            icon:'bi-clipboard2-pulse', css:'etapa-hc' }
+  { key:'hc',  label:'Hechos Cumplidos (HC)',            icon:'bi-clipboard2-pulse', css:'etapa-hc' },
+  { key:'inf', label:'Informes Anuales (Sec. Educaci\u00f3n)',icon:'bi-file-earmark-bar-graph', css:'etapa-inf' }
 ];
 
 const ETAPAS_ADICION = [
@@ -363,7 +375,7 @@ async function renderDetalleExpediente(expId){
   html += `<div class="d-flex gap-2 mb-3 flex-wrap">
     <label class="btn btn-warning btn-sm fw-bold mb-0" title="Sube PDF y/o HTML, organiza los documentos en orden correcto y folia">
       <i class="bi bi-sort-down me-2"></i>Foliar y Organizar
-      <input type="file" accept=".pdf,.html,.htm" multiple style="display:none" onchange="foliarYOrganizarPDF('${exp.id}', this)">
+      <input type="file" accept=".pdf,.html,.htm,.xlsx,.xls,.csv" multiple style="display:none" onchange="foliarYOrganizarPDF('${exp.id}', this)">
     </label>
     <button class="btn btn-generar" onclick="generarExpedientePDF('${exp.id}')" ${docsSubidos.length === 0 ? 'disabled' : ''}>
       <i class="bi bi-file-earmark-pdf me-2"></i>Generar Expediente PDF Foliado
