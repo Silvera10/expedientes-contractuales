@@ -393,93 +393,247 @@ async function generarInformeAnual(){
   toast(`Generando informe con ${exps.length} expediente(s)... Esto puede tardar.`, 'info');
 
   try {
-    const pdfFinal = await PDFLib.PDFDocument.create();
-    const fontBold = await pdfFinal.embedFont(PDFLib.StandardFonts.HelveticaBold);
-    const fontNormal = await pdfFinal.embedFont(PDFLib.StandardFonts.Helvetica);
-
-    // Portada general del informe
-    const portada = pdfFinal.addPage(PDFLib.PageSizes.Letter);
-    const { width, height } = portada.getSize();
-    const centerX = width / 2;
-
-    portada.drawRectangle({ x: 0, y: height - 120, width, height: 120, color: PDFLib.rgb(0.102, 0.227, 0.361) });
-    portada.drawRectangle({ x: 0, y: height - 124, width, height: 4, color: PDFLib.rgb(0.831, 0.627, 0.090) });
-
-    const tit = 'INFORME DE EXPEDIENTES CONTRACTUALES';
-    portada.drawText(tit, { x: centerX - fontBold.widthOfTextAtSize(tit, 18) / 2, y: height - 55, size: 18, font: fontBold, color: PDFLib.rgb(1,1,1) });
-
-    const periodo = trimestre ? `TRIMESTRE ${trimestre} DE ${anio}` : `A\u00d1O ${anio}`;
-    portada.drawText(periodo, { x: centerX - fontBold.widthOfTextAtSize(periodo, 14) / 2, y: height - 80, size: 14, font: fontNormal, color: PDFLib.rgb(0.9,0.9,0.9) });
-
-    const instData = getInstitucionData(filtro);
-    let yp = height - 180;
-    const infos = [
-      { l: 'INSTITUCI\u00d3N', v: filtro.toUpperCase() },
-    ];
-    if(instData?.nit) infos.push({ l: 'NIT', v: instData.nit });
-    if(instData?.municipio) infos.push({ l: 'MUNICIPIO', v: instData.municipio.toUpperCase() });
-    if(instData?.rector) infos.push({ l: 'RECTOR(A)', v: instData.rector.toUpperCase() });
-    infos.push({ l: 'TOTAL EXPEDIENTES', v: String(exps.length) });
-
-    for(const info of infos){
-      portada.drawText(sanitizarWinAnsi(info.l + ':'), { x: 80, y: yp, size: 9, font: fontBold, color: PDFLib.rgb(0.4,0.4,0.4) });
-      portada.drawText(sanitizarWinAnsi(info.v), { x: 80, y: yp - 16, size: 12, font: fontBold, color: PDFLib.rgb(0.1,0.1,0.1) });
-      yp -= 42;
-    }
-
-    // Agregar cada expediente foliado (genera al vuelo si no existe)
-    let expedientesIncluidos = 0;
+    // PASO 1: Pre-procesar cada expediente para obtener bytes y n\u00famero de p\u00e1ginas
+    toast(`Procesando ${exps.length} expediente(s)...`, 'info');
+    const procesados = [];
     let expedientesSinDocs = 0;
+
     for(let i = 0; i < exps.length; i++){
       const exp = exps[i];
-      toast(`Procesando expediente ${i+1} de ${exps.length}: ${exp.contrato_numero}...`, 'info');
+      toast(`Procesando ${i+1}/${exps.length}: ${exp.contrato_numero}...`, 'info');
 
       let foliadoBytes = null;
-
-      // 1. Intentar usar PDF foliado guardado
       const foliadoPath = await DB._get('meta', `foliado_${exp.id}`);
       if(foliadoPath){
         foliadoBytes = await DB.getArchivo(foliadoPath);
       }
-
-      // 2. Si no hay PDF guardado, generarlo al vuelo
       if(!foliadoBytes){
         const docs = await DB.loadDocumentos(exp.id);
-        if(!docs.length){
-          console.warn('Expediente sin documentos:', exp.contrato_numero);
-          expedientesSinDocs++;
-          continue;
-        }
+        if(!docs.length){ expedientesSinDocs++; continue; }
         try {
-          // generarPDFExpediente con returnBytes: true retorna el ArrayBuffer
           foliadoBytes = await generarPDFExpediente(exp, docs, { returnBytes: true });
         } catch(e){
-          console.warn('Error generando expediente al vuelo:', exp.contrato_numero, e);
+          console.warn('Error generando ' + exp.contrato_numero + ':', e);
           continue;
         }
       }
-
       if(!foliadoBytes) continue;
 
-      const srcPdf = await PDFLib.PDFDocument.load(foliadoBytes, { ignoreEncryption: true });
+      const tempPdf = await PDFLib.PDFDocument.load(foliadoBytes, { ignoreEncryption: true });
+      procesados.push({ exp, bytes: foliadoBytes, pages: tempPdf.getPageCount() });
+    }
+
+    if(procesados.length === 0){
+      const msg = expedientesSinDocs > 0
+        ? `Ninguno de los ${exps.length} expedientes tiene documentos cargados.`
+        : 'No se pudo generar el informe.';
+      toast(msg, 'warning');
+      _generandoPDF = false;
+      return;
+    }
+
+    // PASO 2: Calcular cu\u00e1ntas p\u00e1ginas tendr\u00e1 la portada+\u00edndice
+    // 1 p\u00e1gina header + N p\u00e1ginas tabla (15 contratos por p\u00e1gina)
+    const CONTRATOS_POR_PAG = 15;
+    const paginasTabla = Math.ceil(procesados.length / CONTRATOS_POR_PAG);
+    const paginasPreliminar = 1 + paginasTabla; // header + tabla
+
+    // PASO 3: Calcular folio de inicio de cada expediente en el PDF combinado
+    let folioActual = paginasPreliminar + 1;
+    for(const p of procesados){
+      p.folioInicio = folioActual;
+      folioActual += p.pages;
+    }
+    const totalFolios = folioActual - 1;
+
+    // PASO 4: Crear PDF y generar portada
+    const pdfFinal = await PDFLib.PDFDocument.create();
+    const fontBold = await pdfFinal.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    const fontNormal = await pdfFinal.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    const portada = pdfFinal.addPage(PDFLib.PageSizes.Letter);
+    const { width, height } = portada.getSize();
+    const centerX = width / 2;
+
+    // Header de portada (negro, sin tinta de fondo)
+    portada.drawText('INFORME ANUAL DE EXPEDIENTES CONTRACTUALES', {
+      x: centerX - fontBold.widthOfTextAtSize('INFORME ANUAL DE EXPEDIENTES CONTRACTUALES', 16) / 2,
+      y: height - 60, size: 16, font: fontBold, color: PDFLib.rgb(0,0,0)
+    });
+    const periodo = trimestre ? `TRIMESTRE ${trimestre} DE ${anio}` : `VIGENCIA ${anio}`;
+    portada.drawText(periodo, {
+      x: centerX - fontBold.widthOfTextAtSize(periodo, 13) / 2,
+      y: height - 82, size: 13, font: fontNormal, color: PDFLib.rgb(0.2,0.2,0.2)
+    });
+
+    // L\u00ednea separadora
+    portada.drawLine({
+      start: { x: 50, y: height - 95 }, end: { x: width - 50, y: height - 95 },
+      color: PDFLib.rgb(0, 0, 0), thickness: 1.5
+    });
+
+    // Datos instituci\u00f3n
+    const instData = getInstitucionData(filtro);
+    let yp = height - 120;
+    const infos = [
+      { l: 'INSTITUCI\u00d3N EDUCATIVA', v: filtro.toUpperCase() }
+    ];
+    if(instData?.nit) infos.push({ l: 'NIT', v: instData.nit });
+    if(instData?.municipio) infos.push({ l: 'MUNICIPIO', v: instData.municipio.toUpperCase() });
+    if(instData?.rector) infos.push({ l: 'RECTOR(A) - ORDENADOR DEL GASTO', v: instData.rector.toUpperCase() + (instData.cedulaRector ? ' - C.C. ' + instData.cedulaRector : '') });
+
+    const valorTotal = procesados.reduce((s, p) => s + (Number(p.exp.valor) || 0), 0);
+    infos.push({ l: 'TOTAL EXPEDIENTES', v: String(procesados.length) });
+    infos.push({ l: 'VALOR TOTAL CONTRATADO', v: '$' + valorTotal.toLocaleString('es-CO') });
+    infos.push({ l: 'TOTAL FOLIOS', v: String(totalFolios) });
+
+    for(const info of infos){
+      portada.drawText(sanitizarWinAnsi(info.l + ':'), { x: 60, y: yp, size: 8, font: fontBold, color: PDFLib.rgb(0.4,0.4,0.4) });
+      // wrap larga
+      const valSafe = sanitizarWinAnsi(info.v);
+      const maxW = width - 120;
+      let valShow = valSafe;
+      if(fontBold.widthOfTextAtSize(valSafe, 11) > maxW){
+        // truncar
+        while(valShow.length > 0 && fontBold.widthOfTextAtSize(valShow + '...', 11) > maxW){
+          valShow = valShow.slice(0, -1);
+        }
+        valShow += '...';
+      }
+      portada.drawText(valShow, { x: 60, y: yp - 14, size: 11, font: fontBold, color: PDFLib.rgb(0.1,0.1,0.1) });
+      yp -= 32;
+    }
+
+    // Pie de portada con LR Tributarias
+    portada.drawText('LR TRIBUTARIAS', {
+      x: centerX - fontBold.widthOfTextAtSize('LR TRIBUTARIAS', 11) / 2,
+      y: 55, size: 11, font: fontBold, color: PDFLib.rgb(0, 0, 0)
+    });
+    const fechaGen = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
+    portada.drawText(`Generado el ${fechaGen}`, {
+      x: centerX - fontNormal.widthOfTextAtSize(`Generado el ${fechaGen}`, 9) / 2,
+      y: 38, size: 9, font: fontNormal, color: PDFLib.rgb(0.4,0.4,0.4)
+    });
+
+    // PASO 5: Generar tabla de contratos (puede ocupar varias p\u00e1ginas)
+    function dibujarCabeceraTabla(page, esContinuacion){
+      const { width: w, height: h } = page.getSize();
+      const titulo = esContinuacion ? 'TABLA DE CONTRATOS (continuaci\u00f3n)' : 'TABLA DE CONTRATOS DEL INFORME';
+      page.drawText(titulo, {
+        x: w/2 - fontBold.widthOfTextAtSize(titulo, 14) / 2,
+        y: h - 50, size: 14, font: fontBold, color: PDFLib.rgb(0,0,0)
+      });
+      page.drawLine({
+        start: { x: 30, y: h - 60 }, end: { x: w - 30, y: h - 60 },
+        color: PDFLib.rgb(0,0,0), thickness: 1
+      });
+      // Cabecera columnas
+      let y = h - 80;
+      page.drawText('N\u00b0', { x: 35, y, size: 9, font: fontBold, color: PDFLib.rgb(0.3,0.3,0.3) });
+      page.drawText('CONTRATO', { x: 55, y, size: 9, font: fontBold, color: PDFLib.rgb(0.3,0.3,0.3) });
+      page.drawText('CONTRATISTA', { x: 130, y, size: 9, font: fontBold, color: PDFLib.rgb(0.3,0.3,0.3) });
+      page.drawText('OBJETO', { x: 260, y, size: 9, font: fontBold, color: PDFLib.rgb(0.3,0.3,0.3) });
+      page.drawText('VALOR', { x: 460, y, size: 9, font: fontBold, color: PDFLib.rgb(0.3,0.3,0.3) });
+      page.drawText('FOLIO', { x: 540, y, size: 9, font: fontBold, color: PDFLib.rgb(0.3,0.3,0.3) });
+      y -= 4;
+      page.drawLine({
+        start: { x: 30, y }, end: { x: w - 30, y },
+        color: PDFLib.rgb(0.7,0.7,0.7), thickness: 0.5
+      });
+      return y - 14;
+    }
+
+    function truncar(txt, maxW, fontSize, font){
+      let t = String(txt || '');
+      if(font.widthOfTextAtSize(t, fontSize) <= maxW) return t;
+      while(t.length > 0 && font.widthOfTextAtSize(t + '...', fontSize) > maxW){
+        t = t.slice(0, -1);
+      }
+      return t + '...';
+    }
+
+    let paginaTabla = pdfFinal.addPage(PDFLib.PageSizes.Letter);
+    let yTabla = dibujarCabeceraTabla(paginaTabla, false);
+    let itemsEnPagina = 0;
+
+    for(let i = 0; i < procesados.length; i++){
+      const p = procesados[i];
+      const exp = p.exp;
+
+      // Si la p\u00e1gina actual est\u00e1 llena, crear una nueva
+      if(itemsEnPagina >= CONTRATOS_POR_PAG || yTabla < 80){
+        paginaTabla = pdfFinal.addPage(PDFLib.PageSizes.Letter);
+        yTabla = dibujarCabeceraTabla(paginaTabla, true);
+        itemsEnPagina = 0;
+      }
+
+      // Fondo alterno
+      if(i % 2 === 0){
+        paginaTabla.drawRectangle({
+          x: 30, y: yTabla - 6, width: width - 60, height: 26,
+          color: PDFLib.rgb(0.96, 0.97, 0.98)
+        });
+      }
+
+      // N\u00b0 fila
+      paginaTabla.drawText(String(i+1).padStart(2,'0'), {
+        x: 35, y: yTabla, size: 9, font: fontBold, color: PDFLib.rgb(0,0,0)
+      });
+      // Contrato
+      paginaTabla.drawText(sanitizarWinAnsi(truncar(exp.contrato_numero + '/' + exp.anio, 70, 9, fontNormal)), {
+        x: 55, y: yTabla, size: 9, font: fontNormal, color: PDFLib.rgb(0,0,0)
+      });
+      // Contratista
+      paginaTabla.drawText(sanitizarWinAnsi(truncar(exp.contratista || '\u2014', 125, 9, fontNormal)), {
+        x: 130, y: yTabla, size: 9, font: fontNormal, color: PDFLib.rgb(0,0,0)
+      });
+      // Objeto
+      paginaTabla.drawText(sanitizarWinAnsi(truncar(exp.objeto || '\u2014', 195, 8, fontNormal)), {
+        x: 260, y: yTabla, size: 8, font: fontNormal, color: PDFLib.rgb(0.2,0.2,0.2)
+      });
+      // Valor
+      const valTxt = exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : '\u2014';
+      paginaTabla.drawText(sanitizarWinAnsi(truncar(valTxt, 75, 9, fontBold)), {
+        x: 460, y: yTabla, size: 9, font: fontBold, color: PDFLib.rgb(0,0,0)
+      });
+      // Folio
+      paginaTabla.drawText(String(p.folioInicio), {
+        x: 540, y: yTabla, size: 9, font: fontBold, color: PDFLib.rgb(0,0,0)
+      });
+
+      yTabla -= 22;
+      itemsEnPagina++;
+    }
+
+    // Total al final de la tabla
+    yTabla -= 8;
+    if(yTabla > 60){
+      paginaTabla.drawLine({
+        start: { x: 30, y: yTabla + 8 }, end: { x: width - 30, y: yTabla + 8 },
+        color: PDFLib.rgb(0,0,0), thickness: 1
+      });
+      paginaTabla.drawText(`Total: ${procesados.length} contratos`, {
+        x: 35, y: yTabla - 5, size: 10, font: fontBold, color: PDFLib.rgb(0,0,0)
+      });
+      paginaTabla.drawText(`Valor total: $${valorTotal.toLocaleString('es-CO')}`, {
+        x: 250, y: yTabla - 5, size: 10, font: fontBold, color: PDFLib.rgb(0,0,0)
+      });
+      paginaTabla.drawText(`${totalFolios} folios`, {
+        x: 470, y: yTabla - 5, size: 10, font: fontBold, color: PDFLib.rgb(0,0,0)
+      });
+    }
+
+    // PASO 6: Agregar cada expediente al PDF final
+    let expedientesIncluidos = 0;
+    for(const p of procesados){
+      const srcPdf = await PDFLib.PDFDocument.load(p.bytes, { ignoreEncryption: true });
       try {
         const srcPages2 = srcPdf.getPages();
         for(const sp of srcPages2){ try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(e){} }
       } catch(e){}
       const copiedPages = await pdfFinal.copyPages(srcPdf, srcPdf.getPageIndices());
-      for(const page of copiedPages){
-        pdfFinal.addPage(page);
-      }
+      for(const page of copiedPages){ pdfFinal.addPage(page); }
       expedientesIncluidos++;
-    }
-
-    if(expedientesIncluidos === 0){
-      const msg = expedientesSinDocs > 0
-        ? `Ninguno de los ${exps.length} expedientes tiene documentos cargados. Sube documentos primero.`
-        : 'No se pudo generar el informe. Verifica que los expedientes tengan documentos.';
-      toast(msg, 'warning');
-      _generandoPDF = false;
-      return;
     }
 
     const pdfBytes = await pdfFinal.save();
