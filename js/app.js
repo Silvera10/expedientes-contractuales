@@ -1722,6 +1722,10 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['contraloria_2026anual', 'contraloria anual', 'contraloría anual', 'reporte contraloria', 'reporte contraloría', 'sirec', 'sireci'], tipo: 'inf_contraloria' },
         { pats: ['pac_2026anual', 'pac anual', 'pac 2026', 'pac 2027', 'pac 2028', 'programa anual mensualizado'], tipo: 'inf_pac_anual' },
         { pats: ['conc-ppto-cont', 'conc_ppto_cont', 'conc ppto cont', 'conciliacion ppto', 'conciliación ppto', 'conciliacion presupuesto contabilidad', 'conciliación presupuesto contabilidad'], tipo: 'inf_conciliacion' },
+        // Certificados FSE — la detección del trimestre se hace por contenido en pdf-splitter.js
+        // Los archivos del portal FSE tienen nombres genéricos sin trimestre
+        // por eso aquí solo identificamos el tipo (certificado vs reporte)
+        // El trimestre lo detectamos en el contenido del PDF que dice "PRIMER TRIMESTRE", "SEGUNDO TRIMESTRE", etc.
         { pats: ['referencia bancaria', 'cert bancaria', 'certificacion bancaria', 'certificación bancaria', 'cuenta bancaria'], tipo: 'cert_bancaria' },
         { pats: ['rut'], tipo: 'rut' },
         { pats: ['cedula', 'cédula'], tipo: 'cedula' },
@@ -1767,6 +1771,36 @@ async function foliarYOrganizarPDF(expId, inputEl){
             tipo = tipoDef.id;
             confianza = 100;
             console.log(`\u2713 "${rango.nombre}" \u2192 ${codigoBuscado} (c\u00f3digo FOSE)`);
+          }
+        }
+
+        // PASO 1.5: Detecci\u00f3n especial FSE con trimestre por contenido
+        // Los archivos del portal FSE tienen nombres genericos (certificado_paz_y_salvo_reporte_f.pdf)
+        // pero el contenido dice "PRIMER TRIMESTRE", "SEGUNDO TRIMESTRE", etc.
+        if(!tipo){
+          const textoFSE = paginasDelArchivo.map(p => p.texto).join(' ').toLowerCase();
+          const esCertificadoFSE = nombreLower.includes('certificado') && (textoFSE.includes('fse') || textoFSE.includes('fondos de servicios educativos') || textoFSE.includes('informacion reportada') || textoFSE.includes('informaci\u00f3n reportada') || textoFSE.includes('paz y salvo'));
+          const esReporteFSE = (nombreLower.includes('reportepdf') || nombreLower.includes('cus_fse') || nombreLower.includes('cus fse')) || (textoFSE.includes('reporte archivos cargados') || textoFSE.includes('reporte archivos cargados fse'));
+
+          if(esCertificadoFSE || esReporteFSE){
+            // Detectar trimestre
+            let trimestre = null;
+            if(textoFSE.match(/primer\s+trimestre|trimestre\s*\[?1\]?|trimestre\s+1\b|t1\b/i)) trimestre = 1;
+            else if(textoFSE.match(/segundo\s+trimestre|trimestre\s*\[?2\]?|trimestre\s+2\b|t2\b/i)) trimestre = 2;
+            else if(textoFSE.match(/tercer\s+trimestre|trimestre\s*\[?3\]?|trimestre\s+3\b|t3\b/i)) trimestre = 3;
+            else if(textoFSE.match(/cuarto\s+trimestre|trimestre\s*\[?4\]?|trimestre\s+4\b|t4\b/i)) trimestre = 4;
+
+            if(trimestre){
+              if(esCertificadoFSE){
+                tipo = `inf_cert_t${trimestre}`;
+                confianza = 90;
+                console.log(`\u2713 "${rango.nombre}" \u2192 INF-0${8+trimestre} Certificado FSE T${trimestre} (contenido)`);
+              } else if(esReporteFSE){
+                tipo = `inf_reporte_t${trimestre}`;
+                confianza = 90;
+                console.log(`\u2713 "${rango.nombre}" \u2192 INF-${9+trimestre} Reporte FSE T${trimestre} (contenido)`);
+              }
+            }
           }
         }
 

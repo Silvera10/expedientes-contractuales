@@ -82,6 +82,16 @@ const DOC_TIPOS = [
   { id:'inf_pac_anual',      nombre:'PAC Anual',                        etapa:'inf', orden:96, icon:'bi-calendar3',           color:'#17a2b8', vigencia_dias:null, regla:null, codigo:'INF-07' },
   { id:'inf_conciliacion',   nombre:'Conciliaci\u00f3n Presupuesto-Contabilidad',etapa:'inf',orden:97,icon:'bi-arrows-collapse',  color:'#6c757d', vigencia_dias:null, regla:null, codigo:'INF-08' },
 
+  // Certificados FSE por trimestre (Secretar\u00eda de Educaci\u00f3n)
+  { id:'inf_cert_t1',        nombre:'Certificado FSE Paz y Salvo - T1',  etapa:'inf', orden:98, icon:'bi-patch-check',         color:'#198754', vigencia_dias:null, regla:null, codigo:'INF-09' },
+  { id:'inf_reporte_t1',     nombre:'Reporte Consolidado FSE - T1',      etapa:'inf', orden:98.5,icon:'bi-file-earmark-spreadsheet',color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'INF-10' },
+  { id:'inf_cert_t2',        nombre:'Certificado FSE Paz y Salvo - T2',  etapa:'inf', orden:99, icon:'bi-patch-check',         color:'#198754', vigencia_dias:null, regla:null, codigo:'INF-11' },
+  { id:'inf_reporte_t2',     nombre:'Reporte Consolidado FSE - T2',      etapa:'inf', orden:99.5,icon:'bi-file-earmark-spreadsheet',color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'INF-12' },
+  { id:'inf_cert_t3',        nombre:'Certificado FSE Paz y Salvo - T3',  etapa:'inf', orden:100,icon:'bi-patch-check',         color:'#198754', vigencia_dias:null, regla:null, codigo:'INF-13' },
+  { id:'inf_reporte_t3',     nombre:'Reporte Consolidado FSE - T3',      etapa:'inf', orden:100.5,icon:'bi-file-earmark-spreadsheet',color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'INF-14' },
+  { id:'inf_cert_t4',        nombre:'Certificado FSE Paz y Salvo - T4',  etapa:'inf', orden:101,icon:'bi-patch-check',         color:'#198754', vigencia_dias:null, regla:null, codigo:'INF-15' },
+  { id:'inf_reporte_t4',     nombre:'Reporte Consolidado FSE - T4',      etapa:'inf', orden:101.5,icon:'bi-file-earmark-spreadsheet',color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'INF-16' },
+
   // \u2500\u2500 BLOQUE HC: Hechos Cumplidos (etapa 'hc') \u2500\u2500
   { id:'hc_memorando',       nombre:'Memorando Interno (Contador-Rector)',etapa:'hc', orden:80, icon:'bi-envelope-paper',     color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-01' },
   { id:'hc_comunicacion',    nombre:'Comunicaci\u00f3n al Consejo Directivo', etapa:'hc', orden:81, icon:'bi-megaphone',           color:'#795548', vigencia_dias:null, regla:null, codigo:'HC-02' },

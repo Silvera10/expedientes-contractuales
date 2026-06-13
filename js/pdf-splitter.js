@@ -158,6 +158,55 @@ const DETECTOR_REGLAS = [
     palabras: ['inf-08', 'conciliación presupuesto-contabilidad', 'conciliacion presupuesto-contabilidad', 'conciliación presupuestal contable', 'conciliacion presupuestal contable', 'conc-ppto-cont', 'conc_ppto_cont', 'conciliacion ppto', 'conciliación ppto', 'cruce presupuesto contabilidad', 'partidas conciliatorias'],
     peso: 5
   },
+  // Certificados FSE por trimestre
+  {
+    tipo: 'inf_cert_t1',
+    nombre: 'Certificado FSE Paz y Salvo - T1',
+    palabras: ['inf-09', 'certificado de información reportada primer trimestre', 'certificado de informacion reportada primer trimestre', 'certificado paz y salvo primer trimestre', 'paz y salvo trimestre 1', 'paz y salvo t1', 'fse trimestre 1', 'primer trimestre fse', 'vigencia primer trimestre', 'certificado fse t1'],
+    peso: 6
+  },
+  {
+    tipo: 'inf_reporte_t1',
+    nombre: 'Reporte Consolidado FSE - T1',
+    palabras: ['inf-10', 'reporte archivos cargados fse primer trimestre', 'reporte fse t1', 'reporte consolidado primer trimestre', 'reportepdf_cus_fse primer trimestre', 'fse 007 primer trimestre', 'cus_fse_007 t1'],
+    peso: 6
+  },
+  {
+    tipo: 'inf_cert_t2',
+    nombre: 'Certificado FSE Paz y Salvo - T2',
+    palabras: ['inf-11', 'certificado de información reportada segundo trimestre', 'certificado de informacion reportada segundo trimestre', 'certificado paz y salvo segundo trimestre', 'paz y salvo trimestre 2', 'paz y salvo t2', 'fse trimestre 2', 'segundo trimestre fse', 'vigencia segundo trimestre', 'certificado fse t2'],
+    peso: 6
+  },
+  {
+    tipo: 'inf_reporte_t2',
+    nombre: 'Reporte Consolidado FSE - T2',
+    palabras: ['inf-12', 'reporte archivos cargados fse segundo trimestre', 'reporte fse t2', 'reporte consolidado segundo trimestre', 'reportepdf_cus_fse segundo trimestre', 'fse 007 segundo trimestre', 'cus_fse_007 t2'],
+    peso: 6
+  },
+  {
+    tipo: 'inf_cert_t3',
+    nombre: 'Certificado FSE Paz y Salvo - T3',
+    palabras: ['inf-13', 'certificado de información reportada tercer trimestre', 'certificado de informacion reportada tercer trimestre', 'certificado paz y salvo tercer trimestre', 'paz y salvo trimestre 3', 'paz y salvo t3', 'fse trimestre 3', 'tercer trimestre fse', 'vigencia tercer trimestre', 'certificado fse t3'],
+    peso: 6
+  },
+  {
+    tipo: 'inf_reporte_t3',
+    nombre: 'Reporte Consolidado FSE - T3',
+    palabras: ['inf-14', 'reporte archivos cargados fse tercer trimestre', 'reporte fse t3', 'reporte consolidado tercer trimestre', 'reportepdf_cus_fse tercer trimestre', 'fse 007 tercer trimestre', 'cus_fse_007 t3'],
+    peso: 6
+  },
+  {
+    tipo: 'inf_cert_t4',
+    nombre: 'Certificado FSE Paz y Salvo - T4',
+    palabras: ['inf-15', 'certificado de información reportada cuarto trimestre', 'certificado de informacion reportada cuarto trimestre', 'certificado paz y salvo cuarto trimestre', 'paz y salvo trimestre 4', 'paz y salvo t4', 'fse trimestre 4', 'cuarto trimestre fse', 'vigencia cuarto trimestre', 'certificado fse t4'],
+    peso: 6
+  },
+  {
+    tipo: 'inf_reporte_t4',
+    nombre: 'Reporte Consolidado FSE - T4',
+    palabras: ['inf-16', 'reporte archivos cargados fse cuarto trimestre', 'reporte fse t4', 'reporte consolidado cuarto trimestre', 'reportepdf_cus_fse cuarto trimestre', 'fse 007 cuarto trimestre', 'cus_fse_007 t4'],
+    peso: 6
+  },
 
   // ═══════════════════════════════════════
   // HECHOS CUMPLIDOS (HC)

@@ -158,6 +158,15 @@ const DETECTOR_REGLAS = [
     palabras: ['inf-08', 'conciliación presupuesto-contabilidad', 'conciliacion presupuesto-contabilidad', 'conc-ppto-cont', 'conc_ppto_cont', 'cruce presupuesto contabilidad', 'partidas conciliatorias'],
     peso: 5
   },
+  // Certificados FSE por trimestre
+  { tipo: 'inf_cert_t1', nombre: 'Certificado FSE T1', palabras: ['inf-09', 'certificado de información reportada primer trimestre', 'certificado paz y salvo primer trimestre', 'paz y salvo trimestre 1', 'paz y salvo t1', 'primer trimestre fse'], peso: 6 },
+  { tipo: 'inf_reporte_t1', nombre: 'Reporte FSE T1', palabras: ['inf-10', 'reporte archivos cargados fse primer trimestre', 'reporte fse t1', 'cus_fse_007 t1'], peso: 6 },
+  { tipo: 'inf_cert_t2', nombre: 'Certificado FSE T2', palabras: ['inf-11', 'certificado de información reportada segundo trimestre', 'certificado paz y salvo segundo trimestre', 'paz y salvo trimestre 2', 'paz y salvo t2', 'segundo trimestre fse'], peso: 6 },
+  { tipo: 'inf_reporte_t2', nombre: 'Reporte FSE T2', palabras: ['inf-12', 'reporte archivos cargados fse segundo trimestre', 'reporte fse t2', 'cus_fse_007 t2'], peso: 6 },
+  { tipo: 'inf_cert_t3', nombre: 'Certificado FSE T3', palabras: ['inf-13', 'certificado de información reportada tercer trimestre', 'certificado paz y salvo tercer trimestre', 'paz y salvo trimestre 3', 'paz y salvo t3', 'tercer trimestre fse'], peso: 6 },
+  { tipo: 'inf_reporte_t3', nombre: 'Reporte FSE T3', palabras: ['inf-14', 'reporte archivos cargados fse tercer trimestre', 'reporte fse t3', 'cus_fse_007 t3'], peso: 6 },
+  { tipo: 'inf_cert_t4', nombre: 'Certificado FSE T4', palabras: ['inf-15', 'certificado de información reportada cuarto trimestre', 'certificado paz y salvo cuarto trimestre', 'paz y salvo trimestre 4', 'paz y salvo t4', 'cuarto trimestre fse'], peso: 6 },
+  { tipo: 'inf_reporte_t4', nombre: 'Reporte FSE T4', palabras: ['inf-16', 'reporte archivos cargados fse cuarto trimestre', 'reporte fse t4', 'cus_fse_007 t4'], peso: 6 },
 
   // ═══════════════════════════════════════
   // HECHOS CUMPLIDOS (HC)
