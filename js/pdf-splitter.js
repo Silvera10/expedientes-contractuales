@@ -385,6 +385,12 @@ const DETECTOR_REGLAS = [
     palabras: ['eje-05', 'acta de recibo', 'recibo a satisfacción', 'recibo a satisfaccion', 'a entera satisfacción', 'a entera satisfaccion', 'recibido a conformidad', 'acta de recibido a satisfacción', 'acta de recibido a satisfaccion'],
     peso: 3
   },
+  {
+    tipo: 'entrada_almacen',
+    nombre: 'Entrada de Almacén',
+    palabras: ['eje-06', 'entrada de almacén', 'entrada de almacen', 'entrada almacén', 'entrada almacen', 'comprobante de entrada de almacén', 'comprobante de entrada de almacen', 'formato entrada de almacén', 'formato entrada de almacen', 'ingreso al almacén', 'ingreso al almacen', 'kardex', 'inventario entrada', 'recepción de bienes', 'recepcion de bienes', 'almacenista', 'movimiento de almacén', 'movimiento de almacen', 'planilla de entrada', 'entrada n°', 'entrada no.', 'entrada n.°'],
+    peso: 5
+  },
 
   // ═══════════════════════════════════════
   // PAGO Y LIQUIDACIÓN

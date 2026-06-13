@@ -1749,6 +1749,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['informe contratista', 'informe del contratista'], tipo: 'informe_contratista' },
         { pats: ['informe supervisor', 'informe de supervision', 'informe de supervisión', 'informe del supervisor'], tipo: 'informe_supervisor' },
         { pats: ['acta recibido', 'acta de recibido', 'acta de recibo'], tipo: 'acta_recibido' },
+        { pats: ['entrada de almacen', 'entrada de almacén', 'entrada almacen', 'entrada almacén', 'entrada_almacen', 'comprobante de entrada', 'ingreso al almacen', 'ingreso al almacén', 'recepcion bienes', 'recepción bienes', 'kardex'], tipo: 'entrada_almacen' },
         { pats: ['orden de pago', 'orden pago'], tipo: 'orden_pago' },
         { pats: ['comprobante de egreso', 'comprobante egreso', 'egreso'], tipo: 'egreso' },
         { pats: ['soporte de pago', 'soporte pago', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion', 'consignación', 'recibo bancario', 'soporte bancario', 'pago bancolombia', 'pago davivienda', 'pago bbva', 'pago popular', 'pago bogota', 'pago bogotá', 'pago avvillas', 'pago av villas', 'pago colpatria', 'pago caja social', 'pago agrario', 'pse', 'transferencia ach', 'soporte transferencia', 'comprobante transferencia', 'pago.pdf', 'pago pdf'], tipo: 'soporte_pago' },
