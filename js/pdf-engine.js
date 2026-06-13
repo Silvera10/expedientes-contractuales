@@ -249,18 +249,28 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
 
   // Pie de pagina
   const fecha = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
+
+  // LR TRIBUTARIAS — marca de la empresa
+  const empresa = 'LR TRIBUTARIAS';
+  page.drawText(empresa, {
+    x: centerX - fontBold.widthOfTextAtSize(empresa, 11) / 2,
+    y: 55,
+    size: 11, font: fontBold,
+    color: rgb(0, 0, 0)
+  });
+
   page.drawText(`Generado el ${fecha}`, {
     x: centerX - fontNormal.widthOfTextAtSize(`Generado el ${fecha}`, 9) / 2,
-    y: 50,
+    y: 38,
     size: 9, font: fontNormal,
-    color: rgb(0.5, 0.5, 0.5)
+    color: rgb(0.4, 0.4, 0.4)
   });
 
   const sistema = 'Sistema de Expedientes Contractuales';
   page.drawText(sistema, {
-    x: centerX - fontNormal.widthOfTextAtSize(sistema, 8) / 2,
-    y: 35,
-    size: 8, font: fontNormal,
+    x: centerX - fontNormal.widthOfTextAtSize(sistema, 7) / 2,
+    y: 25,
+    size: 7, font: fontNormal,
     color: rgb(0.6, 0.6, 0.6)
   });
 }
