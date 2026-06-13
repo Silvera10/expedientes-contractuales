@@ -100,8 +100,11 @@ async function generarPDFExpediente(expediente, documentos){
     estamparFolio(allPages[1 + i], 2 + i, totalPaginas, fontBold);
   }
 
-  // 7. Descargar
+  // 7. Descargar o retornar bytes
   const pdfBytes = await pdfFinal.save();
+  if(arguments[2] && arguments[2].returnBytes){
+    return pdfBytes.buffer;
+  }
   descargarPDF(pdfBytes, `Expediente_Cto_${expediente.contrato_numero}_${expediente.anio}.pdf`);
 }
 

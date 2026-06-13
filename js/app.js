@@ -427,14 +427,38 @@ async function generarInformeAnual(){
       yp -= 42;
     }
 
-    // Agregar cada expediente foliado
+    // Agregar cada expediente foliado (genera al vuelo si no existe)
     let expedientesIncluidos = 0;
-    for(const exp of exps){
-      // Buscar PDF foliado guardado
-      const foliadoPath = await DB._get('meta', `foliado_${exp.id}`);
-      if(!foliadoPath) continue;
+    let expedientesSinDocs = 0;
+    for(let i = 0; i < exps.length; i++){
+      const exp = exps[i];
+      toast(`Procesando expediente ${i+1} de ${exps.length}: ${exp.contrato_numero}...`, 'info');
 
-      const foliadoBytes = await DB.getArchivo(foliadoPath);
+      let foliadoBytes = null;
+
+      // 1. Intentar usar PDF foliado guardado
+      const foliadoPath = await DB._get('meta', `foliado_${exp.id}`);
+      if(foliadoPath){
+        foliadoBytes = await DB.getArchivo(foliadoPath);
+      }
+
+      // 2. Si no hay PDF guardado, generarlo al vuelo
+      if(!foliadoBytes){
+        const docs = await DB.loadDocumentos(exp.id);
+        if(!docs.length){
+          console.warn('Expediente sin documentos:', exp.contrato_numero);
+          expedientesSinDocs++;
+          continue;
+        }
+        try {
+          // generarPDFExpediente con returnBytes: true retorna el ArrayBuffer
+          foliadoBytes = await generarPDFExpediente(exp, docs, { returnBytes: true });
+        } catch(e){
+          console.warn('Error generando expediente al vuelo:', exp.contrato_numero, e);
+          continue;
+        }
+      }
+
       if(!foliadoBytes) continue;
 
       const srcPdf = await PDFLib.PDFDocument.load(foliadoBytes, { ignoreEncryption: true });
@@ -450,7 +474,10 @@ async function generarInformeAnual(){
     }
 
     if(expedientesIncluidos === 0){
-      toast('Ninguno de los expedientes tiene PDF foliado guardado. Use "Foliar PDF Completo" primero en cada expediente.', 'warning');
+      const msg = expedientesSinDocs > 0
+        ? `Ninguno de los ${exps.length} expedientes tiene documentos cargados. Sube documentos primero.`
+        : 'No se pudo generar el informe. Verifica que los expedientes tengan documentos.';
+      toast(msg, 'warning');
       _generandoPDF = false;
       return;
     }
