@@ -113,53 +113,49 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
   const { width, height } = page.getSize();
   const centerX = width / 2;
 
-  // Fondo decorativo superior
-  page.drawRectangle({
-    x: 0, y: height - 120,
-    width, height: 120,
-    color: rgb(0.102, 0.227, 0.361) // azul oscuro
-  });
+  // \u2550\u2550\u2550 PORTADA AHORRO DE TINTA \u2014 Solo texto negro + lineas finas \u2550\u2550\u2550
 
-  // Linea dorada
-  page.drawRectangle({
-    x: 0, y: height - 124,
-    width, height: 4,
-    color: rgb(0.831, 0.627, 0.090) // dorado
-  });
-
-  // Titulo en franja
+  // Titulo principal en negro
   page.drawText('EXPEDIENTE CONTRACTUAL', {
     x: centerX - fontBold.widthOfTextAtSize('EXPEDIENTE CONTRACTUAL', 22) / 2,
-    y: height - 55,
+    y: height - 75,
     size: 22, font: fontBold,
-    color: rgb(1, 1, 1)
+    color: rgb(0, 0, 0)
   });
 
   const subtitulo = 'Contrataci\u00f3n Especial hasta 20 SMLMV';
   page.drawText(subtitulo, {
     x: centerX - fontNormal.widthOfTextAtSize(subtitulo, 11) / 2,
-    y: height - 75,
+    y: height - 95,
     size: 11, font: fontNormal,
-    color: rgb(0.9, 0.9, 0.9)
+    color: rgb(0.2, 0.2, 0.2)
   });
 
   const subtitulo2 = 'Ley 715 de 2001 \u2013 Decreto 4791 de 2008';
   page.drawText(subtitulo2, {
     x: centerX - fontNormal.widthOfTextAtSize(subtitulo2, 9) / 2,
-    y: height - 90,
+    y: height - 110,
     size: 9, font: fontNormal,
-    color: rgb(0.8, 0.8, 0.8)
+    color: rgb(0.3, 0.3, 0.3)
   });
 
-  // Marco central
+  // Linea horizontal fina debajo del titulo
+  page.drawLine({
+    start: { x: 50, y: height - 125 },
+    end: { x: width - 50, y: height - 125 },
+    color: rgb(0, 0, 0),
+    thickness: 1.5
+  });
+
+  // Marco central con solo borde (sin relleno)
   const marcoX = 60, marcoW = width - 120;
   const marcoY = 180, marcoH = height - 330;
   page.drawRectangle({
     x: marcoX, y: marcoY,
     width: marcoW, height: marcoH,
-    borderColor: rgb(0.102, 0.227, 0.361),
-    borderWidth: 2,
-    color: rgb(0.98, 0.98, 0.98)
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1
+    // sin color de fondo
   });
 
   // Datos del expediente + institución
