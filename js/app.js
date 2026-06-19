@@ -1238,6 +1238,73 @@ async function generarExpedientePDF(expId){
    CONVERTIR HTML a PDF — Usado por Foliar PDF Completo y Organizar
 ══════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════
+   CONVERTIR IMAGEN (JPG, PNG, HEIC) a PDF
+══════════════════════════════════════════════════════════ */
+async function convertirImagenaPDF(file){
+  const pdfDoc = await PDFLib.PDFDocument.create();
+  const buf = await file.arrayBuffer();
+  const ext = file.name.toLowerCase().split('.').pop();
+
+  let imgBytes = buf;
+  // HEIC/HEIF necesitan conversion previa via canvas
+  if(['heic', 'heif', 'webp'].includes(ext)){
+    // Renderizar imagen en canvas y exportar como JPEG
+    const blob = new Blob([buf], { type: file.type || 'image/' + ext });
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((res, rej) => {
+        const im = new Image();
+        im.onload = () => res(im);
+        im.onerror = rej;
+        im.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      imgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // Embed imagen (jpg o png)
+  let embedded;
+  try {
+    if(ext === 'png'){
+      embedded = await pdfDoc.embedPng(imgBytes);
+    } else {
+      embedded = await pdfDoc.embedJpg(imgBytes);
+    }
+  } catch(e){
+    // Si falló como tipo original, reintentar como el otro
+    try { embedded = await pdfDoc.embedJpg(imgBytes); }
+    catch(e2){ embedded = await pdfDoc.embedPng(imgBytes); }
+  }
+
+  // Crear página tamaño Carta con la imagen centrada
+  const pageW = 612, pageH = 792;
+  const margin = 30;
+  const maxW = pageW - margin * 2;
+  const maxH = pageH - margin * 2;
+  const imgW = embedded.width;
+  const imgH = embedded.height;
+  const scale = Math.min(maxW / imgW, maxH / imgH);
+  const drawW = imgW * scale;
+  const drawH = imgH * scale;
+  const x = (pageW - drawW) / 2;
+  const y = (pageH - drawH) / 2;
+
+  const page = pdfDoc.addPage([pageW, pageH]);
+  page.drawImage(embedded, { x, y, width: drawW, height: drawH });
+
+  const bytes = await pdfDoc.save();
+  return bytes.buffer;
+}
+
+/* ══════════════════════════════════════════════════════════
    CONVERTIR EXCEL/CSV a PDF — Para informes anuales
 ══════════════════════════════════════════════════════════ */
 async function convertirExcelaPDF(file){
@@ -1583,6 +1650,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
       const nombre = f.name.toLowerCase();
       const esHTML = nombre.endsWith('.html') || nombre.endsWith('.htm');
       const esExcel = nombre.endsWith('.xlsx') || nombre.endsWith('.xls') || nombre.endsWith('.csv');
+      const esImagen = ['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp'].some(e => nombre.endsWith(e));
       let buf;
       let textoArchivo = '';
 
@@ -1599,6 +1667,10 @@ async function foliarYOrganizarPDF(expId, inputEl){
         const result = await convertirExcelaPDF(f);
         buf = result.pdfBytes;
         textoArchivo = result.texto;
+      } else if(esImagen){
+        // Convertir imagen a PDF (foto de cartelera, escaneado con celular, etc.)
+        buf = await convertirImagenaPDF(f);
+        textoArchivo = nombre; // solo el nombre del archivo para clasificación
       } else {
         buf = await f.arrayBuffer();
       }
@@ -1704,7 +1776,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['evaluacion', 'evaluación', 'evaluacion oferta', 'evaluación oferta'], tipo: 'evaluacion_ofertas' },
         { pats: ['aceptacion de oferta', 'aceptación de oferta'], tipo: 'aceptacion_oferta' },
         { pats: ['co1.receipt', 'co1.ntc', 'co1.noc', 'co1.req', 'co1.pcons', 'secop ii', 'secop 2', 'recibo secop', 'colombia compra', 'tvec', 'tienda virtual'], tipo: 'recibo_secop' },
-        { pats: ['anexos', 'anexo', 'fotos', 'fotografias', 'fotografías', 'registro fotografico', 'registro fotográfico', 'soporte fotografico', 'soporte fotográfico', 'evidencia fotografica', 'evidencia fotográfica', 'imagenes', 'imágenes'], tipo: 'anexos_fotos' },
+        { pats: ['anexos', 'anexo', 'fotos', 'foto', 'fotografias', 'fotografías', 'fotografia', 'fotografía', 'registro fotografico', 'registro fotográfico', 'soporte fotografico', 'soporte fotográfico', 'evidencia fotografica', 'evidencia fotográfica', 'imagenes', 'imágenes', 'imagen', 'cartelera', 'mural', 'publicacion fisica', 'publicación física', 'fijacion publica', 'fijación pública', 'img_', 'whatsapp image'], tipo: 'anexos_fotos' },
         { pats: ['resolucion modificacion cdp', 'resolución modificación cdp', 'modificacion del cdp', 'modificación del cdp', 'modificacion cdp', 'modificación cdp', 'resolucion modificatoria cdp', 'resolución modificatoria cdp', 'ampliacion cdp', 'ampliación cdp', 'reduccion cdp', 'reducción cdp'], tipo: 'resolucion_mod_cdp' },
         // Hechos Cumplidos
         { pats: ['memorando interno', 'memorando contador', 'memorando del contador', 'memorando hc', 'memorando hechos cumplidos'], tipo: 'hc_memorando' },

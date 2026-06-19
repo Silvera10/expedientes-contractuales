@@ -386,7 +386,7 @@ async function renderDetalleExpediente(expId){
   html += `<div class="d-flex gap-2 mb-3 flex-wrap">
     <label class="btn btn-warning btn-sm fw-bold mb-0" title="Sube PDF y/o HTML, organiza los documentos en orden correcto y folia">
       <i class="bi bi-sort-down me-2"></i>Foliar y Organizar
-      <input type="file" accept=".pdf,.html,.htm,.xlsx,.xls,.csv" multiple style="display:none" onchange="foliarYOrganizarPDF('${exp.id}', this)">
+      <input type="file" accept=".pdf,.html,.htm,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.heic,.heif,.webp" multiple style="display:none" onchange="foliarYOrganizarPDF('${exp.id}', this)">
     </label>
     <button class="btn btn-generar" onclick="generarExpedientePDF('${exp.id}')" ${docsSubidos.length === 0 ? 'disabled' : ''}>
       <i class="bi bi-file-earmark-pdf me-2"></i>Generar Expediente PDF Foliado
