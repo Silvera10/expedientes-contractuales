@@ -15,51 +15,52 @@
 */
 const DOC_TIPOS = [
   // \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
-  // \u2551 ORDEN AUDIT-FRIENDLY (lo importante primero)              \u2551
+  // \u2551 ORDEN CRONOL\u00d3GICO REGULATORIO (Colombia Compra Eficiente) \u2551
+  // \u2551 Ley 80/1993, Ley 1150/2007, Ley 715/2001, Decreto 4791    \u2551
   // \u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2563
-  // \u2551 1. Documentos Centrales (Egreso + Contrato + RP + Acta)   \u2551
-  // \u2551 2. Justificaci\u00f3n Precontractual                           \u2551
-  // \u2551 3. Habilitantes del Contratista                           \u2551
-  // \u2551 4. Ejecuci\u00f3n del Contrato                                 \u2551
-  // \u2551 5. Cierre / Liquidaci\u00f3n                                   \u2551
+  // \u2551 1. Planeaci\u00f3n (Precontractual)                            \u2551
+  // \u2551 2. Habilitantes del Contratista                           \u2551
+  // \u2551 3. Contractual (Perfeccionamiento)                        \u2551
+  // \u2551 4. Ejecuci\u00f3n                                              \u2551
+  // \u2551 5. Pago                                                   \u2551
+  // \u2551 6. Liquidaci\u00f3n y Cierre                                   \u2551
   // \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d
 
-  // \u2500\u2500 BLOQUE 1: Documentos Centrales (etapa 'con') \u2500\u2500
-  { id:'egreso',             nombre:'Comprobante de Egreso',            etapa:'con', orden:1,  icon:'bi-receipt',              color:'#343a40', vigencia_dias:null, regla:null, codigo:'PAG-02' },
-  { id:'contrato',           nombre:'Contrato Firmado',                 etapa:'con', orden:2,  icon:'bi-file-earmark-medical', color:'#198754', vigencia_dias:null, regla:null, codigo:'CON-01' },
-  { id:'rp',                 nombre:'Registro Presupuestal (RP)',       etapa:'con', orden:3,  icon:'bi-file-earmark-lock',    color:'#198754', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-02' },
-  { id:'acta_inicio',        nombre:'Acta de Inicio',                   etapa:'con', orden:4,  icon:'bi-play-circle',          color:'#17a2b8', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-03' },
+  // \u2500\u2500 1. FASE PRECONTRACTUAL / PLANEACI\u00d3N (etapa 'pre') \u2500\u2500
+  { id:'cert_plan_compras',  nombre:'Certificaci\u00f3n Plan de Compras',    etapa:'pre', orden:1,  icon:'bi-clipboard2-check',    color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-01' },
+  { id:'estudio_previo',     nombre:'Estudio Previo / Necesidad',       etapa:'pre', orden:2,  icon:'bi-file-earmark-ruled',  color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-02' },
+  { id:'solicitud_cdp',      nombre:'Solicitud de CDP',                 etapa:'pre', orden:3,  icon:'bi-file-earmark-arrow-up', color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-03' },
+  { id:'cdp',                nombre:'CDP (Disponibilidad Presupuestal)', etapa:'pre', orden:4, icon:'bi-file-earmark-check',  color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-04' },
+  { id:'resolucion_mod_cdp', nombre:'Resoluci\u00f3n de Modificaci\u00f3n del CDP',etapa:'pre', orden:4.5,icon:'bi-arrow-repeat',     color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'PRE-12' },
+  { id:'invitacion',         nombre:'Invitaci\u00f3n a Ofertar',             etapa:'pre', orden:5,  icon:'bi-envelope-paper',      color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-05' },
+  { id:'cotizaciones',       nombre:'Cotizaci\u00f3n(es) Recibidas',         etapa:'pre', orden:6,  icon:'bi-receipt',             color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-06' },
+  { id:'carta_propuesta',    nombre:'Carta de Propuesta',               etapa:'pre', orden:7,  icon:'bi-envelope-open',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-07' },
+  { id:'evaluacion',         nombre:'Evaluaci\u00f3n de Ofertas',            etapa:'pre', orden:8,  icon:'bi-table',               color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-08' },
+  { id:'aceptacion',         nombre:'Aceptaci\u00f3n de Oferta',             etapa:'pre', orden:9,  icon:'bi-check2-circle',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-09' },
+  { id:'recibo_secop',       nombre:'Recibo SECOP II / Colombia Compra',etapa:'pre', orden:10, icon:'bi-receipt',             color:'#6610f2', vigencia_dias:null, regla:null, codigo:'PRE-10' },
+  { id:'anexos_fotos',       nombre:'Anexos / Fotograf\u00edas',              etapa:'pre', orden:11, icon:'bi-images',              color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'PRE-11' },
 
-  // \u2500\u2500 BLOQUE 2: Justificaci\u00f3n Precontractual (etapa 'pre') \u2500\u2500
-  { id:'cert_plan_compras',  nombre:'Certificaci\u00f3n Plan de Compras',    etapa:'pre', orden:10, icon:'bi-clipboard2-check',    color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-01' },
-  { id:'estudio_previo',     nombre:'Estudio Previo / Necesidad',       etapa:'pre', orden:11, icon:'bi-file-earmark-ruled',  color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-02' },
-  { id:'solicitud_cdp',      nombre:'Solicitud de CDP',                 etapa:'pre', orden:12, icon:'bi-file-earmark-arrow-up', color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-03' },
-  { id:'cdp',                nombre:'CDP (Disponibilidad Presupuestal)', etapa:'pre', orden:13, icon:'bi-file-earmark-check',  color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-04' },
-  { id:'resolucion_mod_cdp', nombre:'Resoluci\u00f3n de Modificaci\u00f3n del CDP',etapa:'pre', orden:13.5,icon:'bi-arrow-repeat',     color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'PRE-12' },
-  { id:'invitacion',         nombre:'Invitaci\u00f3n a Ofertar',             etapa:'pre', orden:14, icon:'bi-envelope-paper',      color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-05' },
-  { id:'cotizaciones',       nombre:'Cotizaci\u00f3n(es) Recibidas',         etapa:'pre', orden:15, icon:'bi-receipt',             color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-06' },
-  { id:'carta_propuesta',    nombre:'Carta de Propuesta',               etapa:'pre', orden:16, icon:'bi-envelope-open',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-07' },
-  { id:'evaluacion',         nombre:'Evaluaci\u00f3n de Ofertas',            etapa:'pre', orden:17, icon:'bi-table',               color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-08' },
-  { id:'aceptacion',         nombre:'Aceptaci\u00f3n de Oferta',             etapa:'pre', orden:18, icon:'bi-check2-circle',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-09' },
-  { id:'recibo_secop',       nombre:'Recibo SECOP II / Colombia Compra',etapa:'pre', orden:19, icon:'bi-receipt',             color:'#6610f2', vigencia_dias:null, regla:null, codigo:'PRE-10' },
-  { id:'anexos_fotos',       nombre:'Anexos / Fotograf\u00edas',              etapa:'pre', orden:20, icon:'bi-images',              color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'PRE-11' },
+  // \u2500\u2500 2. HABILITANTES DEL CONTRATISTA (etapa 'sel') \u2500\u2500
+  { id:'rut',                nombre:'RUT del Contratista',              etapa:'sel', orden:20, icon:'bi-person-vcard',        color:'#6f42c1', vigencia_dias:null, regla:'vigente', codigo:'DOC-01' },
+  { id:'cedula',             nombre:'C\u00e9dula del Contratista',           etapa:'sel', orden:21, icon:'bi-person-badge',        color:'#6f42c1', vigencia_dias:null, regla:null, codigo:'DOC-02' },
+  { id:'antec_policia',      nombre:'Antecedentes Polic\u00eda',             etapa:'sel', orden:22, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-03' },
+  { id:'antec_procuraduria', nombre:'Antecedentes Procuradur\u00eda',        etapa:'sel', orden:23, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-04' },
+  { id:'antec_contraloria',  nombre:'Antecedentes Contralor\u00eda',         etapa:'sel', orden:24, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-05' },
+  { id:'medidas_correctivas',nombre:'Medidas Correctivas',              etapa:'sel', orden:25, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-06' },
+  { id:'inhabilidades',      nombre:'Consulta de Inhabilidades',        etapa:'sel', orden:26, icon:'bi-shield-exclamation',  color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-07' },
+  { id:'redeam',             nombre:'REDEAM (Deudores Alimentarios)',   etapa:'sel', orden:27, icon:'bi-exclamation-triangle', color:'#e83e8c', vigencia_dias:90,  regla:'vigente', codigo:'DOC-08' },
+  { id:'habeas_data',        nombre:'Habeas Data',                      etapa:'sel', orden:28, icon:'bi-fingerprint',         color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'DOC-09' },
+  { id:'seguridad_social',   nombre:'Seguridad Social (EPS+Pensi\u00f3n+ARL)', etapa:'sel', orden:29, icon:'bi-heart-pulse',     color:'#e83e8c', vigencia_dias:30,  regla:'mes_pago', codigo:'DOC-10' },
+  { id:'camara_comercio',    nombre:'C\u00e1mara de Comercio',                etapa:'sel', orden:30, icon:'bi-shop',                color:'#6f42c1', vigencia_dias:30,  regla:'renovado', codigo:'DOC-11' },
+  { id:'hoja_vida',          nombre:'Hoja de Vida del Contratista',     etapa:'sel', orden:31, icon:'bi-person-lines-fill',  color:'#6f42c1', vigencia_dias:null, regla:null, codigo:'DOC-12' },
+  { id:'cert_bancaria',      nombre:'Certificaci\u00f3n Bancaria',            etapa:'sel', orden:32, icon:'bi-bank',                color:'#198754', vigencia_dias:90,  regla:'vigente', codigo:'DOC-13' },
 
-  // \u2500\u2500 BLOQUE 3: Habilitantes del Contratista (etapa 'sel') \u2500\u2500
-  { id:'rut',                nombre:'RUT del Contratista',              etapa:'sel', orden:30, icon:'bi-person-vcard',        color:'#6f42c1', vigencia_dias:null, regla:'vigente', codigo:'DOC-01' },
-  { id:'cedula',             nombre:'C\u00e9dula del Contratista',           etapa:'sel', orden:31, icon:'bi-person-badge',        color:'#6f42c1', vigencia_dias:null, regla:null, codigo:'DOC-02' },
-  { id:'antec_policia',      nombre:'Antecedentes Polic\u00eda',             etapa:'sel', orden:32, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-03' },
-  { id:'antec_procuraduria', nombre:'Antecedentes Procuradur\u00eda',        etapa:'sel', orden:33, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-04' },
-  { id:'antec_contraloria',  nombre:'Antecedentes Contralor\u00eda',         etapa:'sel', orden:34, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-05' },
-  { id:'medidas_correctivas',nombre:'Medidas Correctivas',              etapa:'sel', orden:35, icon:'bi-shield-check',        color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-06' },
-  { id:'inhabilidades',      nombre:'Consulta de Inhabilidades',        etapa:'sel', orden:36, icon:'bi-shield-exclamation',  color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-07' },
-  { id:'redeam',             nombre:'REDEAM (Deudores Alimentarios)',   etapa:'sel', orden:37, icon:'bi-exclamation-triangle', color:'#e83e8c', vigencia_dias:90,  regla:'vigente', codigo:'DOC-08' },
-  { id:'habeas_data',        nombre:'Habeas Data',                      etapa:'sel', orden:38, icon:'bi-fingerprint',         color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'DOC-09' },
-  { id:'seguridad_social',   nombre:'Seguridad Social (EPS+Pensi\u00f3n+ARL)', etapa:'sel', orden:39, icon:'bi-heart-pulse',     color:'#e83e8c', vigencia_dias:30,  regla:'mes_pago', codigo:'DOC-10' },
-  { id:'camara_comercio',    nombre:'C\u00e1mara de Comercio',                etapa:'sel', orden:40, icon:'bi-shop',                color:'#6f42c1', vigencia_dias:30,  regla:'renovado', codigo:'DOC-11' },
-  { id:'hoja_vida',          nombre:'Hoja de Vida del Contratista',     etapa:'sel', orden:41, icon:'bi-person-lines-fill',  color:'#6f42c1', vigencia_dias:null, regla:null, codigo:'DOC-12' },
-  { id:'cert_bancaria',      nombre:'Certificaci\u00f3n Bancaria',            etapa:'sel', orden:42, icon:'bi-bank',                color:'#198754', vigencia_dias:90,  regla:'vigente', codigo:'DOC-13' },
+  // \u2500\u2500 3. FASE CONTRACTUAL / Perfeccionamiento (etapa 'con') \u2500\u2500
+  { id:'contrato',           nombre:'Contrato Firmado',                 etapa:'con', orden:40, icon:'bi-file-earmark-medical', color:'#198754', vigencia_dias:null, regla:null, codigo:'CON-01' },
+  { id:'rp',                 nombre:'Registro Presupuestal (RP)',       etapa:'con', orden:41, icon:'bi-file-earmark-lock',    color:'#198754', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-02' },
+  { id:'acta_inicio',        nombre:'Acta de Inicio',                   etapa:'con', orden:42, icon:'bi-play-circle',          color:'#17a2b8', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-03' },
 
-  // \u2500\u2500 BLOQUE 4: Ejecuci\u00f3n del Contrato (etapa 'eje') \u2500\u2500
+  // \u2500\u2500 4. FASE DE EJECUCI\u00d3N (etapa 'eje') \u2500\u2500
   { id:'orden_compra',       nombre:'Orden de Compra / Servicio',       etapa:'eje', orden:50, icon:'bi-cart-check',           color:'#dc3545', vigencia_dias:null, regla:null, codigo:'EJE-01' },
   { id:'factura',            nombre:'Factura / Cuenta de Cobro',        etapa:'eje', orden:51, icon:'bi-receipt-cutoff',       color:'#dc3545', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-02' },
   { id:'informe_contratista',nombre:'Informe del Contratista',          etapa:'eje', orden:52, icon:'bi-file-earmark-person',  color:'#dc3545', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-03' },
@@ -67,11 +68,14 @@ const DOC_TIPOS = [
   { id:'acta_recibido',      nombre:'Acta Recibo a Satisfacci\u00f3n',       etapa:'eje', orden:54, icon:'bi-check2-square',       color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-05' },
   { id:'entrada_almacen',    nombre:'Entrada de Almac\u00e9n',               etapa:'eje', orden:55, icon:'bi-box-seam',            color:'#fd7e14', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-06' },
 
-  // \u2500\u2500 BLOQUE 5: Cierre / Liquidaci\u00f3n (etapa 'pag') \u2500\u2500
+  // \u2500\u2500 5. FASE DE PAGO (etapa 'pag') \u2500\u2500
   { id:'orden_pago',         nombre:'Orden de Pago',                    etapa:'pag', orden:60, icon:'bi-cash-coin',            color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-01' },
-  { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',         etapa:'pag', orden:60.5,icon:'bi-bank',                color:'#198754', vigencia_dias:null, regla:null, codigo:'PAG-04' },
-  { id:'acta_liquidacion',   nombre:'Acta de Liquidaci\u00f3n',              etapa:'pag', orden:61, icon:'bi-file-earmark-x',      color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-03' },
-  { id:'acta_cierre',        nombre:'Acta de Cierre del Contrato',      etapa:'pag', orden:62, icon:'bi-archive-fill',        color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-05' },
+  { id:'egreso',             nombre:'Comprobante de Egreso',            etapa:'pag', orden:61, icon:'bi-receipt',              color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-02' },
+  { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',         etapa:'pag', orden:62, icon:'bi-bank',                 color:'#198754', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-04' },
+
+  // \u2500\u2500 6. LIQUIDACI\u00d3N Y CIERRE (etapa 'pag', al final) \u2500\u2500
+  { id:'acta_liquidacion',   nombre:'Acta de Liquidaci\u00f3n',              etapa:'pag', orden:70, icon:'bi-file-earmark-x',       color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-03' },
+  { id:'acta_cierre',        nombre:'Acta de Cierre del Contrato',      etapa:'pag', orden:71, icon:'bi-archive-fill',         color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-05' },
 
   // \u2500\u2500 BLOQUE INF: Informes Anuales Institucionales (etapa 'inf') \u2500\u2500
   // Para entregar a Secretar\u00eda de Educaci\u00f3n y Alcald\u00eda
@@ -118,13 +122,13 @@ const DOC_TIPOS_ADICION = [
 ];
 
 const ETAPAS = [
-  { key:'con', label:'Documentos Centrales (Auditor\u00eda)', icon:'bi-1-circle-fill', css:'etapa-con' },
-  { key:'pre', label:'Justificaci\u00f3n Precontractual',     icon:'bi-2-circle-fill', css:'etapa-pre' },
-  { key:'sel', label:'Habilitantes del Contratista',     icon:'bi-3-circle-fill', css:'etapa-sel' },
-  { key:'eje', label:'Ejecuci\u00f3n del Contrato',           icon:'bi-4-circle-fill', css:'etapa-eje' },
-  { key:'pag', label:'Cierre / Liquidaci\u00f3n',             icon:'bi-5-circle-fill', css:'etapa-pag' },
-  { key:'hc',  label:'Hechos Cumplidos (HC)',            icon:'bi-clipboard2-pulse', css:'etapa-hc' },
-  { key:'inf', label:'Informes Anuales (Sec. Educaci\u00f3n)',icon:'bi-file-earmark-bar-graph', css:'etapa-inf' }
+  { key:'pre', label:'1. Fase Precontractual / Planeaci\u00f3n',   icon:'bi-1-circle-fill', css:'etapa-pre' },
+  { key:'sel', label:'2. Documentos del Contratista',         icon:'bi-2-circle-fill', css:'etapa-sel' },
+  { key:'con', label:'3. Fase Contractual / Perfeccionamiento',icon:'bi-3-circle-fill', css:'etapa-con' },
+  { key:'eje', label:'4. Fase de Ejecuci\u00f3n',                  icon:'bi-4-circle-fill', css:'etapa-eje' },
+  { key:'pag', label:'5. Fase de Pago, Liquidaci\u00f3n y Cierre', icon:'bi-5-circle-fill', css:'etapa-pag' },
+  { key:'hc',  label:'Hechos Cumplidos (HC)',                 icon:'bi-clipboard2-pulse', css:'etapa-hc' },
+  { key:'inf', label:'Informes Anuales (Sec. Educaci\u00f3n)',     icon:'bi-file-earmark-bar-graph', css:'etapa-inf' }
 ];
 
 const ETAPAS_ADICION = [
