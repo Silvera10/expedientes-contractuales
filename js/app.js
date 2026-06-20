@@ -1238,6 +1238,65 @@ async function generarExpedientePDF(expId){
    CONVERTIR HTML a PDF — Usado por Foliar PDF Completo y Organizar
 ══════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════
+   REPARAR PDF problemático: rasterizar páginas a imagen
+   y crear un nuevo PDF limpio (para PDFs escaneados con
+   estructura dañada que pdf.js/pdf-lib no maneja bien)
+══════════════════════════════════════════════════════════ */
+async function repararPDFRasterizando(buf){
+  // Cargar con pdf.js
+  const pdfJs = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+  const numPaginas = pdfJs.numPages;
+  const pdfNuevo = await PDFLib.PDFDocument.create();
+
+  for(let i = 1; i <= numPaginas; i++){
+    const page = await pdfJs.getPage(i);
+    const viewport = page.getViewport({ scale: 2 }); // alta resolución
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    // Fondo blanco por si la página tiene transparencia
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    try {
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    } catch(e){
+      console.warn(`Reparar PDF: error renderizando página ${i}:`, e.message);
+      continue;
+    }
+
+    // Verificar si la página tiene contenido (no completamente blanca)
+    const datos = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let tienePuntoNoBlanco = false;
+    for(let p = 0; p < datos.length; p += 4 * 1000){ // muestreo cada 1000 píxeles
+      if(datos[p] < 250 || datos[p+1] < 250 || datos[p+2] < 250){
+        tienePuntoNoBlanco = true;
+        break;
+      }
+    }
+    if(!tienePuntoNoBlanco){
+      console.warn(`Página ${i} quedó completamente en blanco después de renderizar`);
+    }
+
+    // Exportar como JPEG y embeber
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    const jpgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
+    const jpg = await pdfNuevo.embedJpg(jpgBytes);
+
+    // Crear página con la imagen (mismas proporciones que el viewport)
+    const aspect = viewport.width / viewport.height;
+    const pageW = 612; // Letter width
+    const pageH = pageW / aspect;
+    const nuevaPag = pdfNuevo.addPage([pageW, pageH]);
+    nuevaPag.drawImage(jpg, { x: 0, y: 0, width: pageW, height: pageH });
+  }
+
+  const bytes = await pdfNuevo.save();
+  return bytes.buffer;
+}
+
+/* ══════════════════════════════════════════════════════════
    CONVERTIR IMAGEN (JPG, PNG, HEIC) a PDF
 ══════════════════════════════════════════════════════════ */
 async function convertirImagenaPDF(file){
@@ -1673,6 +1732,37 @@ async function foliarYOrganizarPDF(expId, inputEl){
         textoArchivo = nombre; // solo el nombre del archivo para clasificación
       } else {
         buf = await f.arrayBuffer();
+
+        // DETECCIÓN: si es un PDF problemático (no se puede renderizar con pdf.js),
+        // rasterizarlo a imagen para garantizar que el contenido aparezca en el PDF final
+        if(nombre.endsWith('.pdf')){
+          try {
+            const testPdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+            const firstPage = await testPdf.getPage(1);
+            const tv = firstPage.getViewport({ scale: 1 });
+            const testCanvas = document.createElement('canvas');
+            testCanvas.width = Math.min(tv.width, 200);
+            testCanvas.height = Math.min(tv.height, 200);
+            const tctx = testCanvas.getContext('2d');
+            tctx.fillStyle = '#ffffff';
+            tctx.fillRect(0, 0, testCanvas.width, testCanvas.height);
+            await firstPage.render({ canvasContext: tctx, viewport: firstPage.getViewport({ scale: testCanvas.width / tv.width }) }).promise;
+            // Verificar si quedó en blanco
+            const datos = tctx.getImageData(0, 0, testCanvas.width, testCanvas.height).data;
+            let tieneContenido = false;
+            for(let p = 0; p < datos.length; p += 4 * 100){
+              if(datos[p] < 250 || datos[p+1] < 250 || datos[p+2] < 250){ tieneContenido = true; break; }
+            }
+            if(!tieneContenido){
+              console.warn(`⚠ "${nombre}" rinde en blanco con pdf.js → reparando con rasterización`);
+              buf = await repararPDFRasterizando(buf);
+            }
+          } catch(testErr){
+            console.warn(`⚠ "${nombre}" no se puede renderizar (${testErr.message}) → reparando con rasterización`);
+            try { buf = await repararPDFRasterizando(await f.arrayBuffer()); }
+            catch(repErr){ console.error('No se pudo reparar:', repErr); }
+          }
+        }
       }
 
       const tempPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
