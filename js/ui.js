@@ -35,6 +35,7 @@ const DOC_TIPOS = [
   { id:'invitacion',         nombre:'Invitaci\u00f3n a Ofertar',             etapa:'pre', orden:5,  icon:'bi-envelope-paper',      color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-05' },
   { id:'cotizaciones',       nombre:'Cotizaci\u00f3n(es) Recibidas',         etapa:'pre', orden:6,  icon:'bi-receipt',             color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-06' },
   { id:'carta_propuesta',    nombre:'Carta de Propuesta',               etapa:'pre', orden:7,  icon:'bi-envelope-open',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-07' },
+  { id:'acta_cierre_proceso',nombre:'Acta de Cierre del Proceso de Selecci\u00f3n',etapa:'pre',orden:7.5,icon:'bi-flag',          color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-13' },
   { id:'evaluacion',         nombre:'Evaluaci\u00f3n de Ofertas',            etapa:'pre', orden:8,  icon:'bi-table',               color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-08' },
   { id:'aceptacion',         nombre:'Aceptaci\u00f3n de Oferta',             etapa:'pre', orden:9,  icon:'bi-check2-circle',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-09' },
   { id:'recibo_secop',       nombre:'Recibo SECOP II / Colombia Compra',etapa:'pre', orden:10, icon:'bi-receipt',             color:'#6610f2', vigencia_dias:null, regla:null, codigo:'PRE-10' },

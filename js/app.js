@@ -1238,6 +1238,31 @@ async function generarExpedientePDF(expId){
    CONVERTIR HTML a PDF — Usado por Foliar PDF Completo y Organizar
 ══════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════
+   LIMPIAR ESTRUCTURA DE PDF con pdf-lib
+   pdf-lib es tolerante a PDFs con startxref incorrecto
+   y al re-guardarlo genera un PDF con estructura limpia
+   que pdf.js sí puede leer.
+══════════════════════════════════════════════════════════ */
+async function limpiarPDFConPdfLib(buf){
+  const original = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true, updateMetadata: false });
+  const nuevo = await PDFLib.PDFDocument.create();
+  const indices = original.getPageIndices();
+  let copied;
+  try {
+    copied = await nuevo.copyPages(original, indices);
+  } catch(e){
+    // Intentar sin Annots
+    for(const sp of original.getPages()){
+      try { sp.node.delete(PDFLib.PDFName.of('Annots')); } catch(_){}
+    }
+    copied = await nuevo.copyPages(original, indices);
+  }
+  copied.forEach(p => nuevo.addPage(p));
+  const bytes = await nuevo.save({ useObjectStreams: false });
+  return bytes.buffer;
+}
+
+/* ══════════════════════════════════════════════════════════
    REPARAR PDF problemático: rasterizar páginas a imagen
    y crear un nuevo PDF limpio (para PDFs escaneados con
    estructura dañada que pdf.js/pdf-lib no maneja bien)
@@ -1916,7 +1941,9 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['comprobante de egreso', 'comprobante egreso', 'egreso'], tipo: 'egreso' },
         { pats: ['soporte de pago', 'soporte pago', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion', 'consignación', 'recibo bancario', 'soporte bancario', 'pago bancolombia', 'pago davivienda', 'pago bbva', 'pago popular', 'pago bogota', 'pago bogotá', 'pago avvillas', 'pago av villas', 'pago colpatria', 'pago caja social', 'pago agrario', 'pse', 'transferencia ach', 'soporte transferencia', 'comprobante transferencia', 'pago.pdf', 'pago pdf', 'nominaproveedoreslibranzas', 'nomina proveedores libranzas', 'nómina proveedores libranzas', 'nomina proveedores', 'nómina proveedores', 'libranzas', 'proveedoreslibranzas'], tipo: 'soporte_pago' },
         { pats: ['acta de liquidacion', 'acta de liquidación', 'liquidacion', 'liquidación'], tipo: 'acta_liquidacion' },
-        { pats: ['acta de cierre', 'acta cierre', 'cierre del contrato', 'cierre contractual', 'cierre definitivo', 'acta de archivo', 'expediente cerrado', 'cierre y archivo'], tipo: 'acta_cierre' }
+        // IMPORTANTE: Acta de Cierre del PROCESO va ANTES porque es más específico
+        { pats: ['acta de cierre del proceso', 'cierre del proceso', 'cierre proceso de seleccion', 'cierre proceso de selección', 'cierre recepcion ofertas', 'cierre recepción ofertas', 'cierre invitacion', 'cierre invitación'], tipo: 'acta_cierre_proceso' },
+        { pats: ['acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo', 'acta de archivo', 'expediente cerrado', 'cierre y archivo', 'acta de cierre', 'acta cierre'], tipo: 'acta_cierre' }
       ];
 
       for(const rango of rangosArchivo){
