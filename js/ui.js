@@ -60,15 +60,15 @@ const DOC_TIPOS = [
 
   // \u2500\u2500 4. FASE DE EJECUCI\u00d3N (etapa 'eje') \u2500\u2500
   { id:'orden_compra',       nombre:'Orden de Compra / Servicio',       etapa:'eje', orden:50, icon:'bi-cart-check',           color:'#dc3545', vigencia_dias:null, regla:null, codigo:'EJE-01' },
-  { id:'factura',            nombre:'Factura / Cuenta de Cobro',        etapa:'eje', orden:51, icon:'bi-receipt-cutoff',       color:'#dc3545', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-02' },
   { id:'informe_contratista',nombre:'Informe del Contratista',          etapa:'eje', orden:52, icon:'bi-file-earmark-person',  color:'#dc3545', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-03' },
   { id:'informe_supervisor', nombre:'Informe de Supervisi\u00f3n',           etapa:'eje', orden:53, icon:'bi-clipboard-check',     color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-04' },
   { id:'acta_recibido',      nombre:'Acta Recibo a Satisfacci\u00f3n',       etapa:'eje', orden:54, icon:'bi-check2-square',       color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-05' },
   { id:'entrada_almacen',    nombre:'Entrada de Almac\u00e9n',               etapa:'eje', orden:55, icon:'bi-box-seam',            color:'#fd7e14', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-06' },
 
   // \u2500\u2500 5. FASE DE PAGO (etapa 'pag') \u2500\u2500
-  // Soportes de pago: Factura (EJE-02), Seguridad Social, Cert. Bancaria
+  // Soportes de pago JUNTOS: Factura, Seguridad Social, Cert. Bancaria
   // (Decreto 4791/2008 - requisitos para autorizar pago)
+  { id:'factura',            nombre:'Factura / Cuenta de Cobro',        etapa:'pag', orden:57, icon:'bi-receipt-cutoff',       color:'#dc3545', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-02' },
   { id:'seguridad_social',   nombre:'Seguridad Social (EPS+Pensi\u00f3n+ARL)',etapa:'pag', orden:58, icon:'bi-heart-pulse',         color:'#e83e8c', vigencia_dias:30,  regla:'mes_pago', codigo:'DOC-10' },
   { id:'cert_bancaria',      nombre:'Certificaci\u00f3n Bancaria',           etapa:'pag', orden:59, icon:'bi-bank',                 color:'#198754', vigencia_dias:90,  regla:'vigente', codigo:'DOC-13' },
   { id:'orden_pago',         nombre:'Orden de Pago',                    etapa:'pag', orden:60, icon:'bi-cash-coin',            color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-01' },
