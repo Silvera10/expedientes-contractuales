@@ -280,7 +280,7 @@ const DETECTOR_REGLAS = [
   {
     tipo: 'habeas_data',
     nombre: 'Habeas Data',
-    palabras: ['doc-09', 'habeas data', 'tratamiento de datos personales', 'datos personales', 'autorización de datos', 'autorizacion de datos', 'protección de datos', 'proteccion de datos', 'ley 1581', 'autorización tratamiento de datos', 'autorizacion tratamiento de datos', 'autoriza el tratamiento y publicidad'],
+    palabras: ['doc-09', 'habeas data', 'habeas-data', 'tratamiento de datos personales', 'autorización tratamiento de datos', 'autorizacion tratamiento de datos', 'ley 1581 de 2012', 'ley 1581', 'autoriza el tratamiento y publicidad', 'autorización de tratamiento de datos personales', 'autorizacion de tratamiento de datos personales', 'decreto 1377 de 2013', 'política de tratamiento de datos', 'politica de tratamiento de datos', 'consentimiento informado tratamiento', 'autorizo el tratamiento de mis datos', 'carta juramentada habeas data'],
     peso: 3
   },
   {
@@ -378,6 +378,12 @@ const DETECTOR_REGLAS = [
     nombre: 'Acta de Liquidación',
     palabras: ['pag-03', 'acta de liquidación', 'acta de liquidacion', 'liquidación del contrato', 'liquidacion del contrato', 'balance financiero del contrato', 'liquidación bilateral', 'liquidacion bilateral'],
     peso: 3
+  },
+  {
+    tipo: 'acta_cierre',
+    nombre: 'Acta de Cierre del Contrato',
+    palabras: ['pag-05', 'acta de cierre', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo', 'archivo definitivo del contrato', 'acta de archivo', 'archivo del expediente', 'expediente cerrado', 'expediente finalizado', 'cierre y archivo', 'paz y salvo final del contrato', 'cierre de la relación contractual', 'cierre de la relacion contractual'],
+    peso: 4
   },
 
   // ═══════════════════════════════════════

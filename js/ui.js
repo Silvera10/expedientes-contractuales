@@ -71,6 +71,7 @@ const DOC_TIPOS = [
   { id:'orden_pago',         nombre:'Orden de Pago',                    etapa:'pag', orden:60, icon:'bi-cash-coin',            color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-01' },
   { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',         etapa:'pag', orden:60.5,icon:'bi-bank',                color:'#198754', vigencia_dias:null, regla:null, codigo:'PAG-04' },
   { id:'acta_liquidacion',   nombre:'Acta de Liquidaci\u00f3n',              etapa:'pag', orden:61, icon:'bi-file-earmark-x',      color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-03' },
+  { id:'acta_cierre',        nombre:'Acta de Cierre del Contrato',      etapa:'pag', orden:62, icon:'bi-archive-fill',        color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-05' },
 
   // \u2500\u2500 BLOQUE INF: Informes Anuales Institucionales (etapa 'inf') \u2500\u2500
   // Para entregar a Secretar\u00eda de Educaci\u00f3n y Alcald\u00eda
