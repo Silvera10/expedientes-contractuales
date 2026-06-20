@@ -1798,7 +1798,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         // Los archivos del portal FSE tienen nombres genéricos sin trimestre
         // por eso aquí solo identificamos el tipo (certificado vs reporte)
         // El trimestre lo detectamos en el contenido del PDF que dice "PRIMER TRIMESTRE", "SEGUNDO TRIMESTRE", etc.
-        { pats: ['referencia bancaria', 'cert bancaria', 'certificacion bancaria', 'certificación bancaria', 'cuenta bancaria'], tipo: 'cert_bancaria' },
+        { pats: ['referencia bancaria', 'cert bancaria', 'cert bancario', 'certificacion bancaria', 'certificación bancaria', 'certificado bancario', 'certificado bancaria', 'cuenta bancaria', 'cuenta bancario', 'certificado banco', 'certificacion banco', 'certificación banco'], tipo: 'cert_bancaria' },
         { pats: ['rut'], tipo: 'rut' },
         { pats: ['cedula', 'cédula'], tipo: 'cedula' },
         { pats: ['policia nacional', 'policía nacional', 'antecedentes policia', 'antecedentes policía'], tipo: 'antec_policia' },
