@@ -314,20 +314,65 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal){
     return y - 18; // retorna el Y inicial para los items
   }
 
+  // Mapa de fases regulatorias (etapa → label)
+  const FASES = {
+    'pre': '1. FASE PRECONTRACTUAL / PLANEACIÓN',
+    'sel': '2. DOCUMENTOS DEL CONTRATISTA / HABILITANTES',
+    'con': '3. FASE CONTRACTUAL / PERFECCIONAMIENTO',
+    'eje': '4. FASE DE EJECUCIÓN',
+    'pag': '5. FASE DE PAGO, LIQUIDACIÓN Y CIERRE',
+    'ant': '6. DOCUMENTOS VIGENCIA ANTERIOR',
+    'adi': '7. ADICIÓN / VIGENCIA ACTUAL',
+    'hc':  '8. HECHOS CUMPLIDOS (HC)',
+    'inf': '9. INFORMES ANUALES INSTITUCIONALES'
+  };
+
   let page = pdfDoc.addPage(PageSizes.Letter);
   const { width } = page.getSize();
   let y = dibujarCabecera(page, false);
 
-  // Items (paginar automáticamente si se llenan)
-  pdfDocs.forEach((item, idx) => {
-    if(y < 70){
-      // Agregar nueva página y redibujar cabecera
+  // Función para dibujar encabezado de fase
+  function dibujarHeaderFase(faseKey){
+    if(y < 90){
       page = pdfDoc.addPage(PageSizes.Letter);
       y = dibujarCabecera(page, true);
     }
+    y -= 6;
+    page.drawRectangle({
+      x: 50, y: y - 4,
+      width: width - 100, height: 18,
+      color: rgb(0.102, 0.227, 0.361) // azul oscuro
+    });
+    page.drawText(FASES[faseKey] || faseKey.toUpperCase(), {
+      x: 58, y: y + 1,
+      size: 9, font: fontBold,
+      color: rgb(1, 1, 1) // blanco
+    });
+    y -= 22;
+  }
+
+  // Items (paginar automáticamente y agrupar por fase)
+  let faseActual = null;
+  pdfDocs.forEach((item, idx) => {
+    const docTipo = DOC_TIPOS.find(d => d.id === item.doc.tipo) || DOC_TIPOS_ADICION.find(d => d.id === item.doc.tipo);
+    const faseDoc = docTipo ? docTipo.etapa : null;
+
+    // Si cambia la fase, dibujar el encabezado
+    if(faseDoc && faseDoc !== faseActual){
+      dibujarHeaderFase(faseDoc);
+      faseActual = faseDoc;
+    }
+
+    if(y < 70){
+      page = pdfDoc.addPage(PageSizes.Letter);
+      y = dibujarCabecera(page, true);
+      // Re-dibujar header de fase actual al continuar
+      if(faseActual){
+        dibujarHeaderFase(faseActual);
+      }
+    }
 
     const num = String(idx + 1).padStart(2, '0');
-    const docTipo = DOC_TIPOS.find(d => d.id === item.doc.tipo) || DOC_TIPOS_ADICION.find(d => d.id === item.doc.tipo);
     const nombre = docTipo ? docTipo.nombre : (item.doc.nombre_archivo || 'Documento');
 
     if(idx % 2 === 0){
