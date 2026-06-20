@@ -1774,7 +1774,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['cotizacion', 'cotización', 'cotizaciones'], tipo: 'cotizaciones' },
         { pats: ['carta de participacion', 'carta de participación', 'carta propuesta', 'carta de propuesta'], tipo: 'carta_propuesta' },
         { pats: ['evaluacion', 'evaluación', 'evaluacion oferta', 'evaluación oferta'], tipo: 'evaluacion_ofertas' },
-        { pats: ['aceptacion de oferta', 'aceptación de oferta'], tipo: 'aceptacion_oferta' },
+        { pats: ['aceptacion de oferta', 'aceptación de oferta', 'aceptacion oferta', 'aceptación oferta', 'oferta aceptada', 'aprobacion oferta', 'aprobación oferta'], tipo: 'aceptacion_oferta' },
         { pats: ['co1 receipt', 'co1 ntc', 'co1 noc', 'co1 req', 'co1 pcons', 'secop ii', 'secop 2', 'recibo secop', 'colombia compra', 'tvec', 'tienda virtual'], tipo: 'recibo_secop' },
         { pats: ['anexos', 'anexo', 'fotos', 'foto', 'fotografias', 'fotografías', 'fotografia', 'fotografía', 'registro fotografico', 'registro fotográfico', 'soporte fotografico', 'soporte fotográfico', 'evidencia fotografica', 'evidencia fotográfica', 'imagenes', 'imágenes', 'imagen', 'cartelera', 'mural', 'publicacion fisica', 'publicación física', 'fijacion publica', 'fijación pública', 'img_', 'whatsapp image'], tipo: 'anexos_fotos' },
         { pats: ['resolucion modificacion cdp', 'resolución modificación cdp', 'modificacion del cdp', 'modificación del cdp', 'modificacion cdp', 'modificación cdp', 'resolucion modificatoria cdp', 'resolución modificatoria cdp', 'ampliacion cdp', 'ampliación cdp', 'reduccion cdp', 'reducción cdp'], tipo: 'resolucion_mod_cdp' },
@@ -1814,7 +1814,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['carta juramentada'], tipo: 'habeas_data' }, // carta juramentada suele ser habeas data
         // IMPORTANTE: 'cuenta de cobro' y 'factura' ANTES de 'contrato' para evitar false positive
         { pats: ['cuenta de cobro', 'cta de cobro', 'cta cobro', 'cuenta cobro', 'factura', 'factura electronica', 'factura electrónica'], tipo: 'factura' },
-        { pats: ['contrato firmado', 'contrato de prestacion', 'contrato de prestación', 'contrato de compraventa', 'contrato de suministro', 'contrato laboral'], tipo: 'contrato' },
+        { pats: ['contrato firmado', 'contrato de prestacion', 'contrato de prestación', 'contrato de compraventa', 'contrato de suministro', 'contrato laboral', 'contrato pdf', 'contrato.pdf'], tipo: 'contrato' },
         { pats: ['registro presupuestal', 'rp '], tipo: 'rp' },
         { pats: ['acta de inicio'], tipo: 'acta_inicio' },
         { pats: ['orden de compra', 'orden compra'], tipo: 'orden_compra' },
@@ -1824,7 +1824,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['entrada de almacen', 'entrada de almacén', 'entrada almacen', 'entrada almacén', 'entrada_almacen', 'comprobante de entrada', 'ingreso al almacen', 'ingreso al almacén', 'recepcion bienes', 'recepción bienes', 'kardex'], tipo: 'entrada_almacen' },
         { pats: ['orden de pago', 'orden pago'], tipo: 'orden_pago' },
         { pats: ['comprobante de egreso', 'comprobante egreso', 'egreso'], tipo: 'egreso' },
-        { pats: ['soporte de pago', 'soporte pago', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion', 'consignación', 'recibo bancario', 'soporte bancario', 'pago bancolombia', 'pago davivienda', 'pago bbva', 'pago popular', 'pago bogota', 'pago bogotá', 'pago avvillas', 'pago av villas', 'pago colpatria', 'pago caja social', 'pago agrario', 'pse', 'transferencia ach', 'soporte transferencia', 'comprobante transferencia', 'pago.pdf', 'pago pdf'], tipo: 'soporte_pago' },
+        { pats: ['soporte de pago', 'soporte pago', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion', 'consignación', 'recibo bancario', 'soporte bancario', 'pago bancolombia', 'pago davivienda', 'pago bbva', 'pago popular', 'pago bogota', 'pago bogotá', 'pago avvillas', 'pago av villas', 'pago colpatria', 'pago caja social', 'pago agrario', 'pse', 'transferencia ach', 'soporte transferencia', 'comprobante transferencia', 'pago.pdf', 'pago pdf', 'nominaproveedoreslibranzas', 'nomina proveedores libranzas', 'nómina proveedores libranzas', 'nomina proveedores', 'nómina proveedores', 'libranzas', 'proveedoreslibranzas'], tipo: 'soporte_pago' },
         { pats: ['acta de liquidacion', 'acta de liquidación', 'liquidacion', 'liquidación'], tipo: 'acta_liquidacion' },
         { pats: ['acta de cierre', 'acta cierre', 'cierre del contrato', 'cierre contractual', 'cierre definitivo', 'acta de archivo', 'expediente cerrado', 'cierre y archivo'], tipo: 'acta_cierre' }
       ];
@@ -1849,12 +1849,18 @@ async function foliarYOrganizarPDF(expId, inputEl){
         }
 
         // PASO 1.5: Detecci\u00f3n especial FSE con trimestre por contenido
-        // Los archivos del portal FSE tienen nombres genericos (certificado_paz_y_salvo_reporte_f.pdf)
-        // pero el contenido dice "PRIMER TRIMESTRE", "SEGUNDO TRIMESTRE", etc.
+        // Los archivos del portal FSE tienen nombres espec\u00edficos:
+        // - certificado_paz_y_salvo_reporte_f.pdf
+        // - reportePDF_CUS_FSE_007.pdf
+        // NO debe confundir con "Certificado Bancario" u otros certificados generales
         if(!tipo){
           const textoFSE = paginasDelArchivo.map(p => p.texto).join(' ').toLowerCase();
-          const esCertificadoFSE = nombreLower.includes('certificado') && (textoFSE.includes('fse') || textoFSE.includes('fondos de servicios educativos') || textoFSE.includes('informacion reportada') || textoFSE.includes('informaci\u00f3n reportada') || textoFSE.includes('paz y salvo'));
-          const esReporteFSE = (nombreLower.includes('reportepdf') || nombreLower.includes('cus_fse') || nombreLower.includes('cus fse')) || (textoFSE.includes('reporte archivos cargados') || textoFSE.includes('reporte archivos cargados fse'));
+          // Requerir indicadores ESTRICTOS en el nombre Y en el contenido
+          const nombreEsFSE = nombreLower.includes('paz_y_salvo') || nombreLower.includes('paz y salvo') || nombreLower.includes('paz-y-salvo') || nombreLower.includes('cus_fse') || nombreLower.includes('cus fse') || nombreLower.includes('reportepdf_cus_fse') || nombreLower.includes('reporte_archivos_cargados') || nombreLower.includes('certificado_paz_y_salvo') || nombreLower.includes('reportepdf');
+          const contenidoEsFSE = textoFSE.includes('fondos de servicios educativos') || textoFSE.includes('certificado de informaci\u00f3n reportada') || textoFSE.includes('certificado de informacion reportada') || textoFSE.includes('reporte archivos cargados fse') || textoFSE.includes('secretar\u00eda de educaci\u00f3n de bol\u00edvar') || textoFSE.includes('secretaria de educacion de bolivar');
+
+          const esCertificadoFSE = nombreEsFSE && nombreLower.includes('certificado') && (contenidoEsFSE || textoFSE.includes('paz y salvo'));
+          const esReporteFSE = nombreEsFSE && (nombreLower.includes('reportepdf') || nombreLower.includes('cus_fse') || nombreLower.includes('cus fse')) && (contenidoEsFSE || textoFSE.includes('reporte archivos cargados'));
 
           if(esCertificadoFSE || esReporteFSE){
             // Detectar trimestre
