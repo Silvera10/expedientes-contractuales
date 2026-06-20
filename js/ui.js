@@ -50,10 +50,8 @@ const DOC_TIPOS = [
   { id:'inhabilidades',      nombre:'Consulta de Inhabilidades',        etapa:'sel', orden:26, icon:'bi-shield-exclamation',  color:'#20c997', vigencia_dias:90,  regla:'vigente', codigo:'DOC-07' },
   { id:'redeam',             nombre:'REDEAM (Deudores Alimentarios)',   etapa:'sel', orden:27, icon:'bi-exclamation-triangle', color:'#e83e8c', vigencia_dias:90,  regla:'vigente', codigo:'DOC-08' },
   { id:'habeas_data',        nombre:'Habeas Data',                      etapa:'sel', orden:28, icon:'bi-fingerprint',         color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'DOC-09' },
-  { id:'seguridad_social',   nombre:'Seguridad Social (EPS+Pensi\u00f3n+ARL)', etapa:'sel', orden:29, icon:'bi-heart-pulse',     color:'#e83e8c', vigencia_dias:30,  regla:'mes_pago', codigo:'DOC-10' },
   { id:'camara_comercio',    nombre:'C\u00e1mara de Comercio',                etapa:'sel', orden:30, icon:'bi-shop',                color:'#6f42c1', vigencia_dias:30,  regla:'renovado', codigo:'DOC-11' },
   { id:'hoja_vida',          nombre:'Hoja de Vida del Contratista',     etapa:'sel', orden:31, icon:'bi-person-lines-fill',  color:'#6f42c1', vigencia_dias:null, regla:null, codigo:'DOC-12' },
-  { id:'cert_bancaria',      nombre:'Certificaci\u00f3n Bancaria',            etapa:'sel', orden:32, icon:'bi-bank',                color:'#198754', vigencia_dias:90,  regla:'vigente', codigo:'DOC-13' },
 
   // \u2500\u2500 3. FASE CONTRACTUAL / Perfeccionamiento (etapa 'con') \u2500\u2500
   { id:'contrato',           nombre:'Contrato Firmado',                 etapa:'con', orden:40, icon:'bi-file-earmark-medical', color:'#198754', vigencia_dias:null, regla:null, codigo:'CON-01' },
@@ -69,6 +67,10 @@ const DOC_TIPOS = [
   { id:'entrada_almacen',    nombre:'Entrada de Almac\u00e9n',               etapa:'eje', orden:55, icon:'bi-box-seam',            color:'#fd7e14', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-06' },
 
   // \u2500\u2500 5. FASE DE PAGO (etapa 'pag') \u2500\u2500
+  // Soportes de pago: Factura (EJE-02), Seguridad Social, Cert. Bancaria
+  // (Decreto 4791/2008 - requisitos para autorizar pago)
+  { id:'seguridad_social',   nombre:'Seguridad Social (EPS+Pensi\u00f3n+ARL)',etapa:'pag', orden:58, icon:'bi-heart-pulse',         color:'#e83e8c', vigencia_dias:30,  regla:'mes_pago', codigo:'DOC-10' },
+  { id:'cert_bancaria',      nombre:'Certificaci\u00f3n Bancaria',           etapa:'pag', orden:59, icon:'bi-bank',                 color:'#198754', vigencia_dias:90,  regla:'vigente', codigo:'DOC-13' },
   { id:'orden_pago',         nombre:'Orden de Pago',                    etapa:'pag', orden:60, icon:'bi-cash-coin',            color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-01' },
   { id:'egreso',             nombre:'Comprobante de Egreso',            etapa:'pag', orden:61, icon:'bi-receipt',              color:'#343a40', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-02' },
   { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',         etapa:'pag', orden:62, icon:'bi-bank',                 color:'#198754', vigencia_dias:null, regla:'despues_contrato', codigo:'PAG-04' },
