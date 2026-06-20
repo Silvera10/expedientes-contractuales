@@ -1805,7 +1805,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['procuraduria', 'procuraduría'], tipo: 'antec_procuraduria' },
         { pats: ['contraloria', 'contraloría'], tipo: 'antec_contraloria' },
         { pats: ['rnmc', 'medidas correctivas'], tipo: 'medidas_correctivas' },
-        { pats: ['inhabilidades', 'consulta de inhabilidades'], tipo: 'inhabilidades' },
+        { pats: ['inhabilidades', 'consulta de inhabilidades', 'delitos sexuales', 'certificado delitos sexuales', 'delito sexual', 'inhabilidad para contratar', 'pedofilo', 'agresor sexual', 'consulta sirec', 'consulta sireci'], tipo: 'inhabilidades' },
         { pats: ['redeam', 'redam', 'redan', 'deudores alimentarios'], tipo: 'redeam' },
         { pats: ['habeas data'], tipo: 'habeas_data' },
         { pats: ['seguridad social', 'planilla', 'pila', 'eps', 'pension'], tipo: 'seguridad_social' },
