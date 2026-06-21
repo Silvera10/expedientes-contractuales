@@ -420,6 +420,12 @@ const DETECTOR_REGLAS = [
     peso: 5
   },
   {
+    tipo: 'verificacion_requisitos',
+    nombre: 'Verificación de Requisitos',
+    palabras: ['pre-15', 'verificación de requisitos', 'verificacion de requisitos', 'verificación requisitos habilitantes', 'verificacion requisitos habilitantes', 'cumple con los requisitos', 'cumple con todos los requisitos', 'acta de verificación de requisitos', 'acta de verificacion de requisitos', 'lista de chequeo requisitos', 'check list requisitos', 'requisitos legales financieros y técnicos', 'requisitos legales financieros y tecnicos', 'verificación habilitantes', 'verificacion habilitantes', 'check list contratista'],
+    peso: 5
+  },
+  {
     tipo: 'acta_aclaratoria',
     nombre: 'Acta(s) Aclaratoria(s)',
     palabras: ['eje-07', 'acta aclaratoria', 'actas aclaratorias', 'acta de aclaración', 'acta de aclaracion', 'aclaración del contrato', 'aclaracion del contrato', 'modificación aclaratoria', 'modificacion aclaratoria', 'acta de precisión', 'acta de precision', 'acta complementaria', 'aclaratoria de obligaciones', 'acta de corrección', 'acta de correccion'],
