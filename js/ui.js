@@ -32,6 +32,7 @@ const DOC_TIPOS = [
   { id:'solicitud_cdp',      nombre:'Solicitud de CDP',                 etapa:'pre', orden:3,  icon:'bi-file-earmark-arrow-up', color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-03' },
   { id:'cdp',                nombre:'CDP (Disponibilidad Presupuestal)', etapa:'pre', orden:4, icon:'bi-file-earmark-check',  color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-04' },
   { id:'resolucion_mod_cdp', nombre:'Resoluci\u00f3n de Modificaci\u00f3n del CDP',etapa:'pre', orden:4.5,icon:'bi-arrow-repeat',     color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'PRE-12' },
+  { id:'acuerdo_consejo',    nombre:'Acuerdo del Consejo Directivo / Aprobaci\u00f3n',etapa:'pre',orden:4.7,icon:'bi-people-fill', color:'#198754', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-14' },
   { id:'invitacion',         nombre:'Invitaci\u00f3n a Ofertar',             etapa:'pre', orden:5,  icon:'bi-envelope-paper',      color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-05' },
   { id:'cotizaciones',       nombre:'Cotizaci\u00f3n(es) Recibidas',         etapa:'pre', orden:6,  icon:'bi-receipt',             color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-06' },
   { id:'carta_propuesta',    nombre:'Carta de Propuesta',               etapa:'pre', orden:7,  icon:'bi-envelope-open',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-07' },
@@ -79,6 +80,7 @@ const DOC_TIPOS = [
   // \u2500\u2500 6. LIQUIDACI\u00d3N Y CIERRE (etapa 'pag', al final) \u2500\u2500
   // NOTA: El "Acta de Liquidaci\u00f3n" ES el cierre formal del contrato.
   // No existe documento separado "Acta de Cierre del Contrato"
+  { id:'acta_aclaratoria',   nombre:'Acta(s) Aclaratoria(s)',           etapa:'pag', orden:65, icon:'bi-info-circle',          color:'#fd7e14', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-07' },
   { id:'acta_liquidacion',   nombre:'Acta de Liquidaci\u00f3n / Cierre del Contrato',etapa:'pag',orden:70,icon:'bi-file-earmark-x',color:'#343a40',vigencia_dias:null,regla:'despues_contrato', codigo:'PAG-03' },
 
   // \u2500\u2500 BLOQUE INF: Informes Anuales Institucionales (etapa 'inf') \u2500\u2500

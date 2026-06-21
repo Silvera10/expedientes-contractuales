@@ -414,6 +414,18 @@ const DETECTOR_REGLAS = [
     peso: 5
   },
   {
+    tipo: 'acuerdo_consejo',
+    nombre: 'Acuerdo del Consejo Directivo / Aprobación',
+    palabras: ['pre-14', 'acuerdo del consejo directivo', 'acuerdo consejo directivo', 'acuerdo n° del consejo', 'acuerdo no. del consejo', 'aprobación del consejo directivo', 'aprobacion del consejo directivo', 'acuerdo de aprobación', 'acuerdo de aprobacion', 'acuerdo del consejo', 'sesión del consejo directivo', 'sesion del consejo directivo', 'aprueba la contratación', 'aprueba la contratacion', 'autoriza la contratación', 'autoriza la contratacion'],
+    peso: 5
+  },
+  {
+    tipo: 'acta_aclaratoria',
+    nombre: 'Acta(s) Aclaratoria(s)',
+    palabras: ['eje-07', 'acta aclaratoria', 'actas aclaratorias', 'acta de aclaración', 'acta de aclaracion', 'aclaración del contrato', 'aclaracion del contrato', 'modificación aclaratoria', 'modificacion aclaratoria', 'acta de precisión', 'acta de precision', 'acta complementaria', 'aclaratoria de obligaciones', 'acta de corrección', 'acta de correccion'],
+    peso: 5
+  },
+  {
     tipo: 'acta_liquidacion',
     nombre: 'Acta de Liquidación / Cierre del Contrato',
     palabras: ['pag-03', 'pag-05', 'acta de liquidación', 'acta de liquidacion', 'liquidación del contrato', 'liquidacion del contrato', 'balance financiero del contrato', 'liquidación bilateral', 'liquidacion bilateral', 'acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo del contrato', 'archivo definitivo del contrato', 'acta de archivo', 'archivo del expediente', 'expediente cerrado', 'expediente finalizado', 'cierre y archivo', 'paz y salvo final del contrato', 'cierre de la relación contractual', 'cierre de la relacion contractual'],
