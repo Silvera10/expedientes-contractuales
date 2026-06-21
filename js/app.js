@@ -1943,7 +1943,8 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['acta de liquidacion', 'acta de liquidación', 'liquidacion', 'liquidación'], tipo: 'acta_liquidacion' },
         // IMPORTANTE: Acta de Cierre del PROCESO va ANTES porque es más específico
         { pats: ['acta de cierre del proceso', 'cierre del proceso', 'cierre proceso de seleccion', 'cierre proceso de selección', 'cierre recepcion ofertas', 'cierre recepción ofertas', 'cierre invitacion', 'cierre invitación'], tipo: 'acta_cierre_proceso' },
-        { pats: ['acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo', 'acta de archivo', 'expediente cerrado', 'cierre y archivo', 'acta de cierre', 'acta cierre'], tipo: 'acta_cierre' }
+        // Acta de Cierre del Contrato = Acta de Liquidación (mismo documento)
+        { pats: ['acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo', 'acta de archivo', 'expediente cerrado', 'cierre y archivo', 'acta de cierre', 'acta cierre'], tipo: 'acta_liquidacion' }
       ];
 
       for(const rango of rangosArchivo){

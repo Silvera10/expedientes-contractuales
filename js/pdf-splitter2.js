@@ -375,21 +375,15 @@ const DETECTOR_REGLAS = [
   },
   {
     tipo: 'acta_liquidacion',
-    nombre: 'Acta de Liquidación',
-    palabras: ['pag-03', 'acta de liquidación', 'acta de liquidacion', 'liquidación del contrato', 'liquidacion del contrato', 'balance financiero del contrato', 'liquidación bilateral', 'liquidacion bilateral'],
-    peso: 3
+    nombre: 'Acta de Liquidación / Cierre del Contrato',
+    palabras: ['pag-03', 'pag-05', 'acta de liquidación', 'acta de liquidacion', 'liquidación del contrato', 'liquidacion del contrato', 'balance financiero del contrato', 'liquidación bilateral', 'liquidacion bilateral', 'acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo del contrato', 'archivo definitivo del contrato', 'acta de archivo', 'archivo del expediente', 'expediente cerrado', 'expediente finalizado', 'cierre y archivo', 'paz y salvo final del contrato', 'cierre de la relación contractual', 'cierre de la relacion contractual'],
+    peso: 4
   },
   {
     tipo: 'acta_cierre_proceso',
     nombre: 'Acta de Cierre del Proceso de Selección',
     palabras: ['pre-13', 'acta de cierre del proceso', 'acta cierre del proceso', 'cierre del proceso de seleccion', 'cierre del proceso de selección', 'cierre proceso de seleccion', 'cierre del plazo de cotizaciones', 'cierre recepcion de ofertas', 'cierre recepción de ofertas', 'cierre de invitacion', 'cierre de invitación', 'numero de oferentes recibidos', 'número de oferentes recibidos'],
     peso: 5
-  },
-  {
-    tipo: 'acta_cierre',
-    nombre: 'Acta de Cierre del Contrato',
-    palabras: ['pag-05', 'acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo del contrato', 'archivo definitivo del contrato', 'acta de archivo', 'archivo del expediente', 'expediente cerrado', 'expediente finalizado', 'cierre y archivo', 'paz y salvo final del contrato', 'cierre de la relación contractual', 'cierre de la relacion contractual'],
-    peso: 4
   },
 
   // ═══════════════════════════════════════
