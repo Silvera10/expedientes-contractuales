@@ -1941,10 +1941,12 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['comprobante de egreso', 'comprobante egreso', 'egreso'], tipo: 'egreso' },
         { pats: ['soporte de pago', 'soporte pago', 'comprobante de pago', 'comprobante bancario', 'transferencia bancaria', 'transferencia electronica', 'transferencia electrónica', 'consignacion', 'consignación', 'recibo bancario', 'soporte bancario', 'pago bancolombia', 'pago davivienda', 'pago bbva', 'pago popular', 'pago bogota', 'pago bogotá', 'pago avvillas', 'pago av villas', 'pago colpatria', 'pago caja social', 'pago agrario', 'pse', 'transferencia ach', 'soporte transferencia', 'comprobante transferencia', 'pago.pdf', 'pago pdf', 'nominaproveedoreslibranzas', 'nomina proveedores libranzas', 'nómina proveedores libranzas', 'nomina proveedores', 'nómina proveedores', 'libranzas', 'proveedoreslibranzas'], tipo: 'soporte_pago' },
         { pats: ['acta de liquidacion', 'acta de liquidación', 'liquidacion', 'liquidación'], tipo: 'acta_liquidacion' },
-        // IMPORTANTE: Acta de Cierre del PROCESO va ANTES porque es más específico
-        { pats: ['acta de cierre del proceso', 'cierre del proceso', 'cierre proceso de seleccion', 'cierre proceso de selección', 'cierre recepcion ofertas', 'cierre recepción ofertas', 'cierre invitacion', 'cierre invitación'], tipo: 'acta_cierre_proceso' },
-        // Acta de Cierre del Contrato = Acta de Liquidación (mismo documento)
-        { pats: ['acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo', 'acta de archivo', 'expediente cerrado', 'cierre y archivo', 'acta de cierre', 'acta cierre'], tipo: 'acta_liquidacion' }
+        // IMPORTANTE: orden estricto - primero las MÁS ESPECÍFICAS
+        // Acta de Cierre del CONTRATO = Acta de Liquidación (cierre del contrato)
+        { pats: ['acta de cierre del contrato', 'acta cierre del contrato', 'cierre del contrato', 'cierre contractual', 'cierre definitivo del contrato', 'acta de archivo', 'expediente cerrado', 'cierre y archivo', 'acta de liquidacion', 'acta de liquidación', 'balance financiero del contrato'], tipo: 'acta_liquidacion' },
+        // Acta de Cierre del PROCESO de selección (lo común en FOSE)
+        // El nombre genérico 'acta de cierre' o 'acta cierre' se asume como cierre del proceso
+        { pats: ['acta de cierre del proceso', 'cierre del proceso', 'cierre proceso de seleccion', 'cierre proceso de selección', 'cierre recepcion ofertas', 'cierre recepción ofertas', 'cierre invitacion', 'cierre invitación', 'acta de cierre', 'acta cierre'], tipo: 'acta_cierre_proceso' }
       ];
 
       for(const rango of rangosArchivo){
