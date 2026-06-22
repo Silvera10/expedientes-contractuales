@@ -1854,9 +1854,8 @@ async function foliarYOrganizarPDF(expId, inputEl){
     });
     const paginasSinTexto = paginasPrincipales.filter(p => p.chars < 20).length;
     if(paginasSinTexto > paginasPrincipales.length * 0.5){
-      toast('Este PDF es escaneado (im\u00e1genes). Use "Foliar PDF Completo" en su lugar \u2014 ese bot\u00f3n no necesita leer texto.', 'warning');
-      _generandoPDF = false;
-      return;
+      toast('PDF escaneado detectado \u2014 se clasificar\u00e1 por nombre de archivo (sin lectura de contenido).', 'info');
+      console.log(`\u26a0\ufe0f ${paginasSinTexto}/${paginasPrincipales.length} p\u00e1ginas sin texto extra\u00edble \u2014 continuando con clasificaci\u00f3n por nombre`);
     }
 
     // 2. Clasificar cada página individualmente
