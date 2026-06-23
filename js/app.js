@@ -1932,6 +1932,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         // IMPORTANTE: 'cuenta de cobro' y 'factura' ANTES de 'contrato' para evitar false positive
         { pats: ['cuenta de cobro', 'cta de cobro', 'cta cobro', 'cuenta cobro', 'factura', 'factura electronica', 'factura electrónica'], tipo: 'factura' },
         { pats: ['contrato firmado', 'contrato de prestacion', 'contrato de prestación', 'contrato de compraventa', 'contrato de suministro', 'contrato laboral', 'contrato pdf', 'contrato.pdf'], tipo: 'contrato' },
+        { pats: ['resolucion rectificacion rp', 'resolución rectificación rp', 'rectificacion rp', 'rectificación rp', 'rectificacion del rp', 'rectificación del rp', 'rectificacion registro presupuestal', 'rectificación registro presupuestal', 'rectifica rp', 'rectifica el rp', 'corrige rp', 'corrige el rp', 'modificacion rp', 'modificación rp', 'resolucion rp', 'resolución rp'], tipo: 'resolucion_rect_rp' },
         { pats: ['registro presupuestal', 'rp '], tipo: 'rp' },
         { pats: ['acta de inicio'], tipo: 'acta_inicio' },
         { pats: ['orden de compra', 'orden compra'], tipo: 'orden_compra' },

@@ -306,6 +306,12 @@ const DETECTOR_REGLAS = [
     peso: 3
   },
   {
+    tipo: 'resolucion_rect_rp',
+    nombre: 'Resolución Rectificación RP',
+    palabras: ['con-04', 'rectifica la asignación de la numeración de registros presupuestales', 'rectifica la asignacion de la numeracion de registros presupuestales', 'rectifica la numeración de los rp', 'rectifica la numeracion de los rp', 'rectificación de la numeración del rp', 'rectificacion de la numeracion del rp', 'rectificación del registro presupuestal', 'rectificacion del registro presupuestal', 'rectifica el registro presupuestal', 'rectificación rp', 'rectificacion rp', 'corregir el rp', 'corregir la numeracion del rp', 'corregir la numeración del rp', 'modificar la numeración del rp', 'modificar la numeracion del rp', 'resolución rectificación', 'resolucion rectificacion'],
+    peso: 5
+  },
+  {
     tipo: 'acta_inicio',
     nombre: 'Acta de Inicio',
     palabras: ['con-03', 'acta de inicio', 'acta de iniciación', 'acta de iniciacion', 'inicio del contrato', 'se da inicio', 'fecha de inicio del contrato'],
