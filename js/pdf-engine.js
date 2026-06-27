@@ -183,7 +183,7 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
   datos.push({ label: 'VALOR', valor: exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : 'N/A' });
   datos.push({ label: 'OBJETO', valor: exp.objeto || 'N/A' });
   if(esAnterior){
-    datos.push({ label: 'TIPO', valor: `ADICI\u00d3N - Vigencia original ${exp.datos.anio_original || '?'}, Pago vigencia ${exp.datos.anio_pago || '?'}` });
+    datos.push({ label: 'TIPO', valor: `Vigencia original ${exp.datos.anio_original || '?'}, Pago vigencia ${exp.datos.anio_pago || '?'}` });
   }
   datos.push({ label: 'TOTAL FOLIOS', valor: String(totalFolios) });
 
