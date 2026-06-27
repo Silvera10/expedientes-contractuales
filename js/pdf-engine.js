@@ -182,9 +182,6 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
   datos.push({ label: 'NIT / C\u00c9DULA CONTRATISTA', valor: exp.nit || 'N/A' });
   datos.push({ label: 'VALOR', valor: exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : 'N/A' });
   datos.push({ label: 'OBJETO', valor: exp.objeto || 'N/A' });
-  if(esAnterior){
-    datos.push({ label: 'TIPO', valor: `Vigencia original ${exp.datos.anio_original || '?'}, Pago vigencia ${exp.datos.anio_pago || '?'}` });
-  }
   datos.push({ label: 'TOTAL FOLIOS', valor: String(totalFolios) });
 
   // Helper: word-wrap a string into lines that fit within maxWidth points
