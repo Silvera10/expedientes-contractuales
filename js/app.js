@@ -1203,13 +1203,23 @@ async function editarPagoPeriodo(expId, pagoId){
   const pago = exp.datos.pagos_periodicos.find(p => p.id === pagoId);
   if(!pago) return;
 
+  const conceptoActual = pago.concepto || `Pago correspondiente al ${pago.periodo} del contrato ${exp.contrato_numero || 'S/N'} de ${exp.anio || ''} - ${exp.objeto || ''}`.substring(0, 200);
+  const nuevoConcepto = prompt(`Concepto del pago (${pago.periodo}):\nEj: "Servicios de aseo prestados durante enero-marzo 2026"`, conceptoActual);
+  if(nuevoConcepto === null) return;
+
   const nuevaFecha = prompt(`Fecha del pago (${pago.periodo}):\nFormato AAAA-MM-DD`, pago.fecha_pago || '');
   if(nuevaFecha === null) return;
+
   const nuevoValor = prompt(`Valor pagado ${pago.periodo} (solo números, sin puntos):`, pago.valor_pagado || '');
   if(nuevoValor === null) return;
 
+  const nuevaFactura = prompt(`N° de Factura o Cuenta de Cobro (${pago.periodo}) - opcional:`, pago.numero_factura || '');
+  if(nuevaFactura === null) return;
+
+  pago.concepto = nuevoConcepto.trim() || null;
   pago.fecha_pago = nuevaFecha.trim() || null;
   pago.valor_pagado = nuevoValor.trim() ? Number(nuevoValor.replace(/[^\d]/g,'')) : null;
+  pago.numero_factura = nuevaFactura.trim() || null;
   exp.updated_at = new Date().toISOString();
   await DB.saveExpediente(exp);
   renderDetalleExpediente(expId);

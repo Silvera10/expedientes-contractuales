@@ -10,8 +10,29 @@ const { PDFDocument, rgb, StandardFonts, PageSizes } = PDFLib;
 ══════════════════════════════════════════ */
 async function generarPDFExpediente(expediente, documentos){
 
-  // Ordenar documentos por orden
-  documentos.sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  // Ordenar documentos:
+  // 1. Docs SIN pago_id → orden natural (por orden)
+  // 2. Docs CON pago_id → agrupados por pago (según numero del pago), y dentro
+  //    de cada pago en el orden estándar de DOCS_POR_PAGO
+  const pagosPeriodicos = (expediente.datos && expediente.datos.pagos_periodicos) || [];
+  const pagoById = {};
+  pagosPeriodicos.forEach(p => pagoById[p.id] = p);
+  const ordenDocsPorPago = (typeof DOCS_POR_PAGO !== 'undefined')
+    ? DOCS_POR_PAGO.reduce((acc, dt, i) => { acc[dt.id] = i; return acc; }, {})
+    : {};
+
+  const docsSinPago = documentos.filter(d => !d.pago_id);
+  const docsConPago = documentos.filter(d => d.pago_id);
+
+  docsSinPago.sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  docsConPago.sort((a, b) => {
+    const pa = pagoById[a.pago_id]?.numero || 999;
+    const pb = pagoById[b.pago_id]?.numero || 999;
+    if(pa !== pb) return pa - pb;
+    return (ordenDocsPorPago[a.tipo] ?? 99) - (ordenDocsPorPago[b.tipo] ?? 99);
+  });
+
+  documentos = [...docsSinPago, ...docsConPago];
 
   // 1. Crear PDF final
   const pdfFinal = await PDFDocument.create();
@@ -63,7 +84,7 @@ async function generarPDFExpediente(expediente, documentos){
   await generarPortada(pdfFinal, expediente, totalPaginas, fontBold, fontNormal);
 
   // 4. Generar INDICE (multi-página)
-  await generarIndice(pdfFinal, pdfDocs, fontBold, fontNormal);
+  await generarIndice(pdfFinal, pdfDocs, fontBold, fontNormal, expediente);
 
   // Verificar que el índice ocupó la cantidad de páginas estimada
   const paginasIndiceReal = pdfFinal.getPageCount() - 1; // menos la portada
@@ -278,7 +299,7 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
 /* ══════════════════════════════════════════
    INDICE CON HIPERVINCULOS
 ══════════════════════════════════════════ */
-async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal){
+async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
   // Helper para dibujar el encabezado del índice en una página
   function dibujarCabecera(page, esContinuacion){
     const { width, height } = page.getSize();
@@ -348,16 +369,83 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal){
     y -= 22;
   }
 
-  // Items (paginar automáticamente y agrupar por fase)
+  // Mapa de pagos periódicos (para mostrar header por cada pago)
+  const pagosPeriodicos = (expediente && expediente.datos && expediente.datos.pagos_periodicos) || [];
+  const pagoById = {};
+  pagosPeriodicos.forEach(p => pagoById[p.id] = p);
+
+  // Función para dibujar encabezado de PAGO PERIÓDICO
+  function dibujarHeaderPago(pago){
+    if(y < 110){
+      page = pdfDoc.addPage(PageSizes.Letter);
+      y = dibujarCabecera(page, true);
+    }
+    y -= 8;
+    // Fondo verde suave para diferenciar
+    page.drawRectangle({
+      x: 60, y: y - 4,
+      width: width - 120, height: 32,
+      color: rgb(0.85, 0.94, 0.86), // verde muy suave
+      borderColor: rgb(0.30, 0.65, 0.35),
+      borderWidth: 0.8
+    });
+    const titulo = `PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`;
+    page.drawText(titulo, {
+      x: 68, y: y + 18,
+      size: 10, font: fontBold,
+      color: rgb(0.10, 0.40, 0.15)
+    });
+    // Concepto (truncado)
+    if(pago.concepto){
+      const concepto = pago.concepto.length > 75 ? pago.concepto.substring(0, 75) + '...' : pago.concepto;
+      page.drawText(`Concepto: ${concepto}`, {
+        x: 68, y: y + 6,
+        size: 8, font: fontNormal,
+        color: rgb(0.25, 0.25, 0.25)
+      });
+    }
+    // Fecha, valor, factura en la esquina derecha
+    let infoX = width - 68;
+    const infoParts = [];
+    if(pago.fecha_pago) infoParts.push(pago.fecha_pago);
+    if(pago.valor_pagado) infoParts.push('$' + Number(pago.valor_pagado).toLocaleString('es-CO'));
+    if(pago.numero_factura) infoParts.push('Fact. ' + pago.numero_factura);
+    if(infoParts.length){
+      const info = infoParts.join('  |  ');
+      const w = fontNormal.widthOfTextAtSize(info, 8);
+      page.drawText(info, {
+        x: infoX - w, y: y + 18,
+        size: 8, font: fontBold,
+        color: rgb(0.10, 0.40, 0.15)
+      });
+    }
+    y -= 36;
+  }
+
+  // Items (paginar automáticamente, agrupar por fase Y por pago)
   let faseActual = null;
+  let pagoActual = null;
   pdfDocs.forEach((item, idx) => {
     const docTipo = DOC_TIPOS.find(d => d.id === item.doc.tipo) || DOC_TIPOS_ADICION.find(d => d.id === item.doc.tipo);
     const faseDoc = docTipo ? docTipo.etapa : null;
+    const pagoIdDoc = item.doc.pago_id || null;
 
     // Si cambia la fase, dibujar el encabezado
     if(faseDoc && faseDoc !== faseActual){
       dibujarHeaderFase(faseDoc);
       faseActual = faseDoc;
+      pagoActual = null; // reset pago al cambiar de fase
+    }
+
+    // Si es un doc de pago periódico y el pago cambió, dibujar header del PAGO
+    if(pagoIdDoc && pagoIdDoc !== pagoActual){
+      const pago = pagoById[pagoIdDoc];
+      if(pago){
+        dibujarHeaderPago(pago);
+        pagoActual = pagoIdDoc;
+      }
+    } else if(!pagoIdDoc){
+      pagoActual = null;
     }
 
     if(y < 70){
@@ -366,6 +454,10 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal){
       // Re-dibujar header de fase actual al continuar
       if(faseActual){
         dibujarHeaderFase(faseActual);
+      }
+      // Re-dibujar header de pago actual si aplica
+      if(pagoActual && pagoById[pagoActual]){
+        dibujarHeaderPago(pagoById[pagoActual]);
       }
     }
 

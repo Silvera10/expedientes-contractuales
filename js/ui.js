@@ -665,28 +665,32 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
     const completo = pct === 100;
 
     html += `<div class="card mb-2 shadow-sm">
-      <div class="card-header py-2 d-flex justify-content-between align-items-center"
+      <div class="card-header py-2"
            style="background:${completo ? '#d4edda' : '#fff3cd'}">
-        <div>
-          <strong>
-            <i class="bi bi-calendar-check me-1"></i>
-            PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}
-          </strong>
-          ${pago.fecha_pago ? `<span class="ms-2 text-muted small"><i class="bi bi-calendar3 me-1"></i>${pago.fecha_pago}</span>` : ''}
-          ${pago.valor_pagado ? `<span class="ms-2 text-muted small"><i class="bi bi-cash me-1"></i>$${Number(pago.valor_pagado).toLocaleString('es-CO')}</span>` : ''}
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>
+              <i class="bi bi-calendar-check me-1"></i>
+              PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}
+            </strong>
+            ${pago.fecha_pago ? `<span class="ms-2 text-muted small"><i class="bi bi-calendar3 me-1"></i>${pago.fecha_pago}</span>` : ''}
+            ${pago.valor_pagado ? `<span class="ms-2 text-muted small"><i class="bi bi-cash me-1"></i>$${Number(pago.valor_pagado).toLocaleString('es-CO')}</span>` : ''}
+            ${pago.numero_factura ? `<span class="ms-2 text-muted small"><i class="bi bi-receipt me-1"></i>Fact. ${pago.numero_factura}</span>` : ''}
+          </div>
+          <div>
+            <span class="badge ${completo ? 'bg-success' : 'bg-warning text-dark'}">${cargados}/${total} (${pct}%)</span>
+            ${!bloqueado ? `
+            <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editarPagoPeriodo('${exp.id}','${pago.id}')" title="Editar concepto, fecha, valor y factura">
+              <i class="bi bi-pencil"></i>
+            </button>
+            ${(FORMAS_PAGO[exp.datos.forma_pago].numPagos === 0) ? `
+            <button class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPagoPeriodo('${exp.id}','${pago.id}')" title="Eliminar este pago">
+              <i class="bi bi-trash"></i>
+            </button>` : ''}
+            ` : ''}
+          </div>
         </div>
-        <div>
-          <span class="badge ${completo ? 'bg-success' : 'bg-warning text-dark'}">${cargados}/${total} (${pct}%)</span>
-          ${!bloqueado ? `
-          <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editarPagoPeriodo('${exp.id}','${pago.id}')" title="Editar fecha y valor">
-            <i class="bi bi-pencil"></i>
-          </button>
-          ${(FORMAS_PAGO[exp.datos.forma_pago].numPagos === 0) ? `
-          <button class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPagoPeriodo('${exp.id}','${pago.id}')" title="Eliminar este pago">
-            <i class="bi bi-trash"></i>
-          </button>` : ''}
-          ` : ''}
-        </div>
+        ${pago.concepto ? `<div class="small text-dark mt-1 fst-italic"><i class="bi bi-quote me-1"></i>${pago.concepto}</div>` : `<div class="small text-danger mt-1"><i class="bi bi-exclamation-circle me-1"></i>Falta concepto del pago — haz click en ✏️ para agregarlo</div>`}
       </div>
       <div class="card-body p-2">
         <div class="row g-2">`;
