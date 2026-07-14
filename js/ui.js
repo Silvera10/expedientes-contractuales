@@ -145,6 +145,113 @@ const ETAPAS_ADICION = [
   { key:'adi', label:'Adici\u00f3n / Vigencia Actual',       icon:'bi-plus-circle-fill', css:'etapa-adi' }
 ];
 
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   MODALIDADES DE PAGO (Ley 80/1993, Ley 1150/2007, Decreto 1082/2015)
+\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+const FORMAS_PAGO = {
+  pago_unico: {
+    nombre: 'Pago \u00fanico',
+    icon: 'bi-cash',
+    descripcion: 'Un \u00fanico pago al finalizar la ejecuci\u00f3n del contrato.',
+    numPagos: 1,
+    generarPeriodos: () => [{ id:'pago_1', numero:1, periodo:'Pago \u00danico', tipo:'unico' }]
+  },
+  mensual: {
+    nombre: 'Pagos mensuales',
+    icon: 'bi-calendar-month',
+    descripcion: '12 pagos mensuales durante la vigencia del contrato (Enero\u2013Diciembre).',
+    numPagos: 12,
+    generarPeriodos: (n) => {
+      const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      const cnt = n || 12;
+      return Array.from({length: cnt}, (_,i) => ({
+        id:`pago_${i+1}`, numero:i+1, periodo:meses[i] || `Mes ${i+1}`, tipo:'mensual'
+      }));
+    }
+  },
+  bimestral: {
+    nombre: 'Pagos bimestrales',
+    icon: 'bi-calendar2',
+    descripcion: '6 pagos bimestrales durante la vigencia (Ene-Feb, Mar-Abr, May-Jun, Jul-Ago, Sep-Oct, Nov-Dic).',
+    numPagos: 6,
+    generarPeriodos: (n) => {
+      const bims = ['Ene-Feb','Mar-Abr','May-Jun','Jul-Ago','Sep-Oct','Nov-Dic'];
+      const cnt = n || 6;
+      return Array.from({length: cnt}, (_,i) => ({
+        id:`pago_${i+1}`, numero:i+1, periodo:`Bimestre ${i+1} (${bims[i] || '?'})`, tipo:'bimestral'
+      }));
+    }
+  },
+  trimestral: {
+    nombre: 'Pagos trimestrales',
+    icon: 'bi-calendar3',
+    descripcion: '4 pagos trimestrales durante la vigencia (T-I, T-II, T-III, T-IV).',
+    numPagos: 4,
+    generarPeriodos: (n) => {
+      const trims = ['Ene-Mar','Abr-Jun','Jul-Sep','Oct-Dic'];
+      const romanos = ['I','II','III','IV','V','VI','VII','VIII'];
+      const cnt = n || 4;
+      return Array.from({length: cnt}, (_,i) => ({
+        id:`pago_${i+1}`, numero:i+1, periodo:`Trimestre ${romanos[i]} (${trims[i] || '?'})`, tipo:'trimestral'
+      }));
+    }
+  },
+  semestral: {
+    nombre: 'Pagos semestrales',
+    icon: 'bi-calendar-range',
+    descripcion: '2 pagos semestrales (Ene-Jun, Jul-Dic).',
+    numPagos: 2,
+    generarPeriodos: (n) => {
+      const sems = ['Ene-Jun','Jul-Dic'];
+      const cnt = n || 2;
+      return Array.from({length: cnt}, (_,i) => ({
+        id:`pago_${i+1}`, numero:i+1, periodo:`Semestre ${['I','II'][i] || (i+1)} (${sems[i] || '?'})`, tipo:'semestral'
+      }));
+    }
+  },
+  anticipo_saldo: {
+    nombre: 'Anticipos y saldo',
+    icon: 'bi-cash-coin',
+    descripcion: 'Un anticipo al inicio y saldo contra entrega/liquidaci\u00f3n (Art. 40 Ley 80/1993).',
+    numPagos: 2,
+    generarPeriodos: (n, pct) => {
+      const anticipo = pct || 50;
+      return [
+        { id:'pago_1', numero:1, periodo:`Anticipo (${anticipo}%)`, tipo:'anticipo' },
+        { id:'pago_2', numero:2, periodo:`Saldo (${100-anticipo}%)`, tipo:'saldo' }
+      ];
+    }
+  },
+  avance: {
+    nombre: 'Pagos parciales por avance',
+    icon: 'bi-graph-up-arrow',
+    descripcion: 'Pagos seg\u00fan avance f\u00edsico/porcentual de la obra o servicio. Se agregan manualmente.',
+    numPagos: 0,
+    generarPeriodos: () => []
+  },
+  otro: {
+    nombre: 'Otra forma de pago',
+    icon: 'bi-three-dots',
+    descripcion: 'Modalidad especial. Los pagos se agregan libremente.',
+    numPagos: 0,
+    generarPeriodos: () => []
+  }
+};
+
+// Documentos que se repiten POR CADA PAGO (soportes contables/legales)
+// Base legal: Art. 617 ET (factura), Ley 42/1993 (control fiscal), Ley 100 Art.282 (PILA),
+// Ley 1474/2011 Art. 82-84 (supervisi\u00f3n), Decreto 1082/2015 (acta recibo)
+const DOCS_POR_PAGO = [
+  { id:'factura',            nombre:'Factura / Cuenta de Cobro', icon:'bi-receipt-cutoff', color:'#dc3545', codigo:'EJE-02', requerido:true },
+  { id:'informe_contratista',nombre:'Informe del Contratista',   icon:'bi-file-earmark-person', color:'#dc3545', codigo:'EJE-03', requerido:true },
+  { id:'informe_supervisor', nombre:'Informe de Supervisi\u00f3n',    icon:'bi-clipboard-check', color:'#6c757d', codigo:'EJE-04', requerido:true },
+  { id:'acta_recibido',      nombre:'Acta de Recibo a Satisfacci\u00f3n', icon:'bi-check2-square', color:'#6c757d', codigo:'EJE-05', requerido:true },
+  { id:'seguridad_social',   nombre:'Seguridad Social (PILA)',   icon:'bi-heart-pulse', color:'#20c997', codigo:'DOC-10', requerido:true },
+  { id:'orden_pago',         nombre:'Orden de Pago',             icon:'bi-cash-coin', color:'#343a40', codigo:'PAG-01', requerido:true },
+  { id:'egreso',             nombre:'Comprobante de Egreso',     icon:'bi-receipt', color:'#343a40', codigo:'PAG-02', requerido:true },
+  { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',  icon:'bi-bank', color:'#198754', codigo:'PAG-04', requerido:true }
+];
+
 /* ══════════════════════════════════════════
    VALIDACION DE FECHAS Y VIGENCIAS
 ══════════════════════════════════════════ */
@@ -441,6 +548,15 @@ async function renderDetalleExpediente(expId){
     html += `</div></div>`;
   });
 
+  // ═══════════════════════════════════════
+  // SECCIÓN: PAGOS PERIÓDICOS (si aplica)
+  // ═══════════════════════════════════════
+  const formaPago = exp.datos?.forma_pago;
+  const cfgFormaPago = formaPago ? FORMAS_PAGO[formaPago] : null;
+  if(cfgFormaPago && formaPago !== 'pago_unico'){
+    html += renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado);
+  }
+
   // Secciones de vigencia anterior (si aplica)
   if(esAnterior){
     html += `<div class="alert alert-warning py-2 small mb-3">
@@ -495,6 +611,129 @@ async function renderDetalleExpediente(expId){
 }
 
 /* ── Render un slot de documento (con validaci\u00f3n) ── */
+/* ══════════════════════════════════════════
+   PAGOS PERIÓDICOS — Render de sección
+══════════════════════════════════════════ */
+function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
+  const formaPago = exp.datos.forma_pago;
+  const cfg = FORMAS_PAGO[formaPago];
+  const periodos = exp.datos.pagos_periodicos || [];
+
+  const docsPorPago = {};
+  docsSubidos.forEach(d => {
+    if(d.pago_id){
+      if(!docsPorPago[d.pago_id]) docsPorPago[d.pago_id] = {};
+      docsPorPago[d.pago_id][d.tipo] = d;
+    }
+  });
+
+  const totalDocsEsperados = periodos.length * DOCS_POR_PAGO.length;
+  const totalDocsSubidos = periodos.reduce((sum, p) => {
+    const pd = docsPorPago[p.id] || {};
+    return sum + DOCS_POR_PAGO.filter(dt => pd[dt.id]).length;
+  }, 0);
+
+  let html = `<div class="mb-3">
+    <div class="etapa-header etapa-pag" style="background:linear-gradient(90deg,#e8f5e9,#c8e6c9)">
+      <i class="bi ${cfg.icon} me-1"></i>
+      <strong>PAGOS PERIÓDICOS</strong> — ${cfg.nombre}
+      <span class="float-end">${totalDocsSubidos}/${totalDocsEsperados} docs</span>
+    </div>
+    <div class="alert alert-info small py-2 mb-2">
+      <i class="bi bi-info-circle me-1"></i>
+      Cada pago debe tener sus soportes: factura, orden de pago, egreso, soporte bancario, seguridad social, informes y acta de recibo.
+      ${(formaPago === 'avance' || formaPago === 'otro') ? `
+      <br><button class="btn btn-outline-primary btn-sm mt-2" onclick="agregarPagoManual('${exp.id}')" ${bloqueado ? 'disabled' : ''}>
+        <i class="bi bi-plus-circle me-1"></i>Agregar nuevo pago
+      </button>` : ''}
+    </div>`;
+
+  if(periodos.length === 0){
+    html += `<div class="alert alert-warning small py-2">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      No hay pagos definidos. ${formaPago === 'avance' || formaPago === 'otro'
+        ? 'Haz clic en <strong>Agregar nuevo pago</strong> para crear el primero.'
+        : 'Reabre el expediente y guarda la modalidad para generar los pagos.'}
+    </div>`;
+  }
+
+  periodos.forEach(pago => {
+    const docsDelPago = docsPorPago[pago.id] || {};
+    const cargados = DOCS_POR_PAGO.filter(dt => docsDelPago[dt.id]).length;
+    const total = DOCS_POR_PAGO.length;
+    const pct = Math.round((cargados / total) * 100);
+    const completo = pct === 100;
+
+    html += `<div class="card mb-2 shadow-sm">
+      <div class="card-header py-2 d-flex justify-content-between align-items-center"
+           style="background:${completo ? '#d4edda' : '#fff3cd'}">
+        <div>
+          <strong>
+            <i class="bi bi-calendar-check me-1"></i>
+            PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}
+          </strong>
+          ${pago.fecha_pago ? `<span class="ms-2 text-muted small"><i class="bi bi-calendar3 me-1"></i>${pago.fecha_pago}</span>` : ''}
+          ${pago.valor_pagado ? `<span class="ms-2 text-muted small"><i class="bi bi-cash me-1"></i>$${Number(pago.valor_pagado).toLocaleString('es-CO')}</span>` : ''}
+        </div>
+        <div>
+          <span class="badge ${completo ? 'bg-success' : 'bg-warning text-dark'}">${cargados}/${total} (${pct}%)</span>
+          ${!bloqueado ? `
+          <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editarPagoPeriodo('${exp.id}','${pago.id}')" title="Editar fecha y valor">
+            <i class="bi bi-pencil"></i>
+          </button>
+          ${(FORMAS_PAGO[exp.datos.forma_pago].numPagos === 0) ? `
+          <button class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPagoPeriodo('${exp.id}','${pago.id}')" title="Eliminar este pago">
+            <i class="bi bi-trash"></i>
+          </button>` : ''}
+          ` : ''}
+        </div>
+      </div>
+      <div class="card-body p-2">
+        <div class="row g-2">`;
+
+    DOCS_POR_PAGO.forEach(docTipo => {
+      const subido = docsDelPago[docTipo.id];
+      html += renderDocSlotPago(docTipo, subido, exp.id, pago.id, bloqueado);
+    });
+
+    html += `</div></div></div>`;
+  });
+
+  html += `</div>`;
+  return html;
+}
+
+function renderDocSlotPago(docTipo, subido, expId, pagoId, bloqueado){
+  const uploaded = subido ? ' uploaded' : '';
+  const inputId = `input-pago-${pagoId}-${docTipo.id}`;
+  return `
+    <div class="col-md-6 col-lg-3">
+      <div class="doc-slot p-2 border rounded${uploaded}" style="min-height:70px;background:${subido ? '#e8f5e9' : '#f8f9fa'}">
+        <div class="d-flex align-items-start" style="gap:6px">
+          <i class="bi ${docTipo.icon}" style="color:${docTipo.color};font-size:1.2rem"></i>
+          <div class="flex-grow-1" style="min-width:0">
+            <div class="fw-bold small text-truncate" title="${docTipo.nombre}">${docTipo.nombre}</div>
+            <div class="small text-muted">${docTipo.codigo}</div>
+            ${subido ? `
+              <div class="mt-1">
+                <span class="badge bg-success small"><i class="bi bi-check-circle me-1"></i>Cargado</span>
+                ${!bloqueado ? `<button class="btn btn-sm btn-link text-danger p-0 ms-1"
+                  onclick="quitarDocPago('${expId}','${pagoId}','${docTipo.id}')" title="Quitar"><i class="bi bi-x-circle"></i></button>` : ''}
+              </div>
+            ` : (!bloqueado ? `
+              <label for="${inputId}" class="btn btn-sm btn-outline-primary mt-1 py-0 px-2" style="font-size:0.75rem">
+                <i class="bi bi-upload me-1"></i>Subir
+              </label>
+              <input type="file" id="${inputId}" style="display:none"
+                     accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp"
+                     onchange="subirDocPago('${expId}','${pagoId}','${docTipo.id}',this.files[0])">
+            ` : '<span class="badge bg-secondary small">Bloqueado</span>')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderDocSlot(docTipo, subido, expId, bloqueado, exp){
   const uploaded = subido ? ' uploaded' : '';
 

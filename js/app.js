@@ -773,6 +773,10 @@ function nuevoExpediente(){
   document.getElementById('exp-anio-original').value = new Date().getFullYear() - 1;
   document.getElementById('exp-anio-pago').value = new Date().getFullYear();
   document.getElementById('campos-vigencia-anterior').style.display = 'none';
+  document.getElementById('exp-forma-pago').value = 'pago_unico';
+  document.getElementById('exp-num-pagos').value = 1;
+  document.getElementById('exp-pct-anticipo').value = 50;
+  onFormaPagoChange();
   document.getElementById('modal-titulo').textContent = 'Nuevo Expediente';
   new bootstrap.Modal(document.getElementById('modalExpediente')).show();
 }
@@ -780,6 +784,41 @@ function nuevoExpediente(){
 function toggleVigenciaAnterior(){
   const tipo = document.getElementById('exp-tipo-vigencia').value;
   document.getElementById('campos-vigencia-anterior').style.display = tipo === 'anterior' ? '' : 'none';
+}
+
+function onFormaPagoChange(){
+  const forma = document.getElementById('exp-forma-pago').value;
+  const cfg = FORMAS_PAGO[forma];
+  const desc = document.getElementById('forma-pago-desc');
+  const detalles = document.getElementById('forma-pago-detalles');
+  const colNumPagos = document.getElementById('col-num-pagos');
+  const colPctAnticipo = document.getElementById('col-pct-anticipo');
+  const inputNumPagos = document.getElementById('exp-num-pagos');
+
+  if(!cfg){ return; }
+  desc.innerHTML = `<i class="bi ${cfg.icon} me-1"></i>${cfg.descripcion}`;
+
+  // Mostrar/ocultar campos condicionales
+  if(forma === 'pago_unico'){
+    detalles.style.display = 'none';
+  } else if(forma === 'anticipo_saldo'){
+    detalles.style.display = '';
+    colNumPagos.style.display = 'none';
+    colPctAnticipo.style.display = '';
+  } else if(forma === 'avance' || forma === 'otro'){
+    detalles.style.display = '';
+    colNumPagos.style.display = '';
+    colPctAnticipo.style.display = 'none';
+    inputNumPagos.value = 0;
+    inputNumPagos.placeholder = 'Se agregan manualmente';
+  } else {
+    // mensual/bimestral/trimestral/semestral
+    detalles.style.display = '';
+    colNumPagos.style.display = '';
+    colPctAnticipo.style.display = 'none';
+    inputNumPagos.value = cfg.numPagos;
+    inputNumPagos.max = cfg.numPagos;
+  }
 }
 
 function editarExpediente(id){
@@ -811,6 +850,16 @@ function editarExpediente(id){
   document.getElementById('exp-anio-original').value = (exp.datos && exp.datos.anio_original) || exp.anio - 1 || '';
   document.getElementById('exp-anio-pago').value = (exp.datos && exp.datos.anio_pago) || exp.anio || '';
   document.getElementById('campos-vigencia-anterior').style.display = tipoVig === 'anterior' ? '' : 'none';
+  // Cargar forma de pago
+  const formaPago = (exp.datos && exp.datos.forma_pago) || 'pago_unico';
+  document.getElementById('exp-forma-pago').value = formaPago;
+  if(exp.datos && exp.datos.num_pagos){
+    document.getElementById('exp-num-pagos').value = exp.datos.num_pagos;
+  }
+  if(exp.datos && exp.datos.pct_anticipo){
+    document.getElementById('exp-pct-anticipo').value = exp.datos.pct_anticipo;
+  }
+  onFormaPagoChange();
   document.getElementById('modal-titulo').textContent = 'Editar Expediente';
   new bootstrap.Modal(document.getElementById('modalExpediente')).show();
 }
@@ -887,6 +936,35 @@ async function guardarExpediente(){
   if(tipoVigencia === 'anterior'){
     datos.anio_original = Number(document.getElementById('exp-anio-original').value) || null;
     datos.anio_pago = Number(document.getElementById('exp-anio-pago').value) || null;
+  }
+
+  // Forma de pago + generación de periodos
+  const formaPago = document.getElementById('exp-forma-pago').value || 'pago_unico';
+  const numPagos = Number(document.getElementById('exp-num-pagos').value) || 1;
+  const pctAnticipo = Number(document.getElementById('exp-pct-anticipo').value) || 50;
+  datos.forma_pago = formaPago;
+  datos.num_pagos = numPagos;
+  datos.pct_anticipo = pctAnticipo;
+  // Solo regenerar periodos si NO existen o si cambió la modalidad
+  const modalidadCambio = existing?.datos?.forma_pago !== formaPago
+                       || existing?.datos?.num_pagos !== numPagos
+                       || existing?.datos?.pct_anticipo !== pctAnticipo;
+  if(!datos.pagos_periodicos || datos.pagos_periodicos.length === 0 || modalidadCambio){
+    const cfg = FORMAS_PAGO[formaPago];
+    if(cfg){
+      const periodosNuevos = cfg.generarPeriodos(numPagos, pctAnticipo);
+      // Preservar fecha_pago y valor de periodos existentes si el ID coincide
+      if(datos.pagos_periodicos){
+        periodosNuevos.forEach(p => {
+          const anterior = datos.pagos_periodicos.find(x => x.id === p.id);
+          if(anterior){
+            p.fecha_pago = anterior.fecha_pago;
+            p.valor_pagado = anterior.valor_pagado;
+          }
+        });
+      }
+      datos.pagos_periodicos = periodosNuevos;
+    }
   }
 
   const exp = {
@@ -1038,6 +1116,153 @@ async function actualizarFechaDoc(docId, expId, fecha){
   doc.fecha_expedicion = fecha || null;
   await DB.saveDocumento(doc);
   renderDetalleExpediente(expId);
+}
+
+/* ══════════════════════════════════════════
+   PAGOS PERIÓDICOS — Handlers
+══════════════════════════════════════════ */
+async function subirDocPago(expId, pagoId, tipoId, file){
+  if(!file) return;
+
+  const validExt = /\.(pdf|jpg|jpeg|png|heic|heif|webp)$/i;
+  if(!validExt.test(file.name)){
+    toast('Formato no soportado. Use PDF, JPG, PNG o HEIC.', 'danger');
+    return;
+  }
+  if(file.size > 15 * 1024 * 1024){
+    toast('Archivo demasiado grande (máx 15MB)', 'danger');
+    return;
+  }
+
+  try {
+    toast(`Subiendo ${file.name}...`, 'info');
+    let arrayBuffer = await file.arrayBuffer();
+    let mimeType = file.type || 'application/octet-stream';
+
+    // Si es imagen, convertir a PDF
+    if(/\.(jpg|jpeg|png|heic|heif|webp)$/i.test(file.name)){
+      arrayBuffer = await convertirImagenaPDF(file);
+      mimeType = 'application/pdf';
+    }
+
+    // Contar páginas
+    let paginas = 1;
+    try {
+      const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+      paginas = pdfDoc.getPageCount();
+    } catch(e){ console.warn('No se pudo contar páginas:', e); }
+
+    const storagePath = `${expId}/pago_${pagoId}_${tipoId}_${Date.now()}.pdf`;
+    await DB.saveArchivo(storagePath, arrayBuffer);
+    if(SB.isActive()){ await SB.uploadPDF(storagePath, new Blob([arrayBuffer], {type: mimeType})); }
+
+    const docId = `${expId}_${pagoId}_${tipoId}`;
+    const doc = {
+      id: docId,
+      expediente_id: expId,
+      tipo: tipoId,
+      pago_id: pagoId,
+      orden: 99,
+      nombre_archivo: file.name,
+      storage_path: storagePath,
+      paginas,
+      created_at: new Date().toISOString()
+    };
+    await DB.saveDocumento(doc);
+    await actualizarEstadoExpediente(expId);
+    renderDetalleExpediente(expId);
+    toast(`${file.name} agregado al PAGO`);
+  } catch(e){
+    console.error('subirDocPago error:', e);
+    toast('Error al subir: ' + e.message, 'danger');
+  }
+}
+
+async function quitarDocPago(expId, pagoId, tipoId){
+  if(!confirm('¿Quitar este documento del pago?')) return;
+  const docId = `${expId}_${pagoId}_${tipoId}`;
+  try {
+    const doc = await DB.getDocumento(docId);
+    if(doc && doc.storage_path){
+      await DB.deleteArchivo(doc.storage_path);
+      if(SB.isActive()) await SB.deletePDF(doc.storage_path);
+    }
+    await DB.deleteDocumento(docId);
+    await actualizarEstadoExpediente(expId);
+    renderDetalleExpediente(expId);
+    toast('Documento eliminado');
+  } catch(e){
+    console.error('quitarDocPago error:', e);
+    toast('Error: ' + e.message, 'danger');
+  }
+}
+
+async function editarPagoPeriodo(expId, pagoId){
+  const exp = DB.getExpediente(expId);
+  if(!exp || !exp.datos || !exp.datos.pagos_periodicos) return;
+  const pago = exp.datos.pagos_periodicos.find(p => p.id === pagoId);
+  if(!pago) return;
+
+  const nuevaFecha = prompt(`Fecha del pago (${pago.periodo}):\nFormato AAAA-MM-DD`, pago.fecha_pago || '');
+  if(nuevaFecha === null) return;
+  const nuevoValor = prompt(`Valor pagado ${pago.periodo} (solo números, sin puntos):`, pago.valor_pagado || '');
+  if(nuevoValor === null) return;
+
+  pago.fecha_pago = nuevaFecha.trim() || null;
+  pago.valor_pagado = nuevoValor.trim() ? Number(nuevoValor.replace(/[^\d]/g,'')) : null;
+  exp.updated_at = new Date().toISOString();
+  await DB.saveExpediente(exp);
+  renderDetalleExpediente(expId);
+  toast('Pago actualizado');
+}
+
+async function agregarPagoManual(expId){
+  const exp = DB.getExpediente(expId);
+  if(!exp || !exp.datos) return;
+  if(!exp.datos.pagos_periodicos) exp.datos.pagos_periodicos = [];
+
+  const nombrePeriodo = prompt('Nombre del pago (ej: "Avance 30%", "Pago Enero", "Cuota 1"):');
+  if(!nombrePeriodo || !nombrePeriodo.trim()) return;
+
+  const numero = exp.datos.pagos_periodicos.length + 1;
+  const nuevoPago = {
+    id: `pago_${Date.now()}`,
+    numero,
+    periodo: nombrePeriodo.trim(),
+    tipo: 'manual'
+  };
+  exp.datos.pagos_periodicos.push(nuevoPago);
+  exp.updated_at = new Date().toISOString();
+  await DB.saveExpediente(exp);
+  renderDetalleExpediente(expId);
+  toast(`Pago "${nombrePeriodo}" agregado`);
+}
+
+async function eliminarPagoPeriodo(expId, pagoId){
+  const exp = DB.getExpediente(expId);
+  if(!exp || !exp.datos || !exp.datos.pagos_periodicos) return;
+  const pago = exp.datos.pagos_periodicos.find(p => p.id === pagoId);
+  if(!pago) return;
+  if(!confirm(`¿Eliminar el PAGO "${pago.periodo}" y todos sus documentos?`)) return;
+
+  // Borrar todos los docs de este pago
+  const docs = await DB.loadDocumentos(expId);
+  const docsDelPago = docs.filter(d => d.pago_id === pagoId);
+  for(const d of docsDelPago){
+    if(d.storage_path){
+      await DB.deleteArchivo(d.storage_path);
+      if(SB.isActive()) await SB.deletePDF(d.storage_path);
+    }
+    await DB.deleteDocumento(d.id);
+  }
+
+  // Eliminar el pago del array y re-numerar
+  exp.datos.pagos_periodicos = exp.datos.pagos_periodicos.filter(p => p.id !== pagoId);
+  exp.datos.pagos_periodicos.forEach((p, i) => p.numero = i + 1);
+  exp.updated_at = new Date().toISOString();
+  await DB.saveExpediente(exp);
+  renderDetalleExpediente(expId);
+  toast(`PAGO "${pago.periodo}" eliminado`);
 }
 
 async function descargarDocumento(docId){

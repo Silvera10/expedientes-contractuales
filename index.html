@@ -269,6 +269,38 @@
           <label class="form-label small fw-bold">Objeto del contrato</label>
           <textarea id="exp-objeto" class="form-control" rows="2" placeholder="Descripci&oacute;n breve del objeto contractual"></textarea>
         </div>
+        <!-- Modalidad de Pago -->
+        <div class="mb-3 p-3 border rounded" style="background:#f8f9fa">
+          <label class="form-label small fw-bold text-primary">
+            <i class="bi bi-cash-stack me-1"></i>Modalidad / Forma de Pago
+          </label>
+          <select id="exp-forma-pago" class="form-select" onchange="onFormaPagoChange()">
+            <option value="pago_unico">Pago &uacute;nico</option>
+            <option value="mensual">Pagos mensuales</option>
+            <option value="bimestral">Pagos bimestrales</option>
+            <option value="trimestral">Pagos trimestrales</option>
+            <option value="semestral">Pagos semestrales</option>
+            <option value="anticipo_saldo">Anticipos y saldo</option>
+            <option value="avance">Pagos parciales por avance</option>
+            <option value="otro">Otra forma de pago</option>
+          </select>
+          <div class="small text-muted mt-1" id="forma-pago-desc">
+            <i class="bi bi-info-circle me-1"></i>Un &uacute;nico pago al finalizar la ejecuci&oacute;n del contrato.
+          </div>
+          <!-- Campos condicionales -->
+          <div id="forma-pago-detalles" class="mt-2" style="display:none">
+            <div class="row">
+              <div class="col-6" id="col-num-pagos">
+                <label class="form-label small">N&uacute;mero de pagos</label>
+                <input type="number" id="exp-num-pagos" class="form-control form-control-sm" value="1" min="1" max="52">
+              </div>
+              <div class="col-6" id="col-pct-anticipo" style="display:none">
+                <label class="form-label small">% Anticipo</label>
+                <input type="number" id="exp-pct-anticipo" class="form-control form-control-sm" value="50" min="0" max="100">
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer py-2">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
@@ -362,9 +394,9 @@
 <script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script src="js/supabase.js?v=15"></script>
 <script src="js/db.js?v=16"></script>
-<script src="js/ui.js?v=63"></script>
+<script src="js/ui.js?v=64"></script>
 <script src="js/pdf-splitter.js?v=54"></script>
 <script src="js/pdf-engine.js?v=42"></script>
-<script src="js/app.js?v=89"></script>
+<script src="js/app.js?v=90"></script>
 </body>
 </html>
