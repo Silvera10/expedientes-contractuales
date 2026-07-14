@@ -252,6 +252,20 @@ const DOCS_POR_PAGO = [
   { id:'soporte_pago',       nombre:'Soporte de Pago Bancario',  icon:'bi-bank', color:'#198754', codigo:'PAG-04', requerido:true }
 ];
 
+// Habilitantes OPCIONALES por pago (renovaci\u00f3n cuando venza la vigencia de 3 meses)
+// Se usan cuando: contrato > 3 meses, o cuando la entidad los pide por cada pago,
+// o cuando el certificado inicial expir\u00f3 y se debe renovar.
+// Base legal: Ley 190/1995 (Polic\u00eda), Ley 734/2002 (Procuradur\u00eda), Ley 610/2000 (Contralor\u00eda),
+// Ley 1266/2008 (REDAM), Ley 1918/2018 (Delitos Sexuales), CNP (RNMC)
+const HABILITANTES_POR_PAGO = [
+  { id:'antec_procuraduria', nombre:'Antecedentes Procuradur\u00eda', icon:'bi-file-earmark-check', color:'#e83e8c', codigo:'DOC-05', vigencia:'3 meses' },
+  { id:'antec_contraloria',  nombre:'Antecedentes Contralor\u00eda',  icon:'bi-file-earmark-check', color:'#0d6efd', codigo:'DOC-06', vigencia:'3 meses' },
+  { id:'antec_policia',      nombre:'Antecedentes Polic\u00eda',      icon:'bi-shield-check',       color:'#198754', codigo:'DOC-04', vigencia:'3 meses' },
+  { id:'redam',              nombre:'REDAM',                     icon:'bi-people',              color:'#6f42c1', codigo:'DOC-08', vigencia:'3 meses' },
+  { id:'rnmc',               nombre:'RNMC',                      icon:'bi-exclamation-triangle',color:'#fd7e14', codigo:'DOC-08', vigencia:'3 meses' },
+  { id:'delitos_sexuales',   nombre:'Delitos Sexuales',          icon:'bi-shield-x',            color:'#dc3545', codigo:'DOC-07', vigencia:'3 meses' }
+];
+
 /* ══════════════════════════════════════════
    VALIDACION DE FECHAS Y VIGENCIAS
 ══════════════════════════════════════════ */
@@ -700,11 +714,78 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
       html += renderDocSlotPago(docTipo, subido, exp.id, pago.id, bloqueado);
     });
 
-    html += `</div></div></div>`;
+    html += `</div>`;
+
+    // ─── Sección OPCIONAL: Habilitantes actualizados ───
+    const habilitantesCargados = HABILITANTES_POR_PAGO.filter(dt => docsDelPago[dt.id]).length;
+    html += `<div class="mt-3 pt-2 border-top">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="small fw-bold text-muted">
+          <i class="bi bi-shield-lock me-1"></i>HABILITANTES ACTUALIZADOS (opcional)
+          <span class="badge bg-info ms-1" style="font-weight:normal">${habilitantesCargados}/${HABILITANTES_POR_PAGO.length}</span>
+        </div>
+        <button class="btn btn-sm btn-link p-0 text-decoration-none small"
+                onclick="toggleHabilitantesPago('${pago.id}')" id="btn-hab-${pago.id}">
+          ${habilitantesCargados > 0 ? '▼ Ocultar' : '▶ Mostrar'}
+        </button>
+      </div>
+      <div class="small text-muted mb-2" style="font-size:0.75rem">
+        <i class="bi bi-info-circle me-1"></i>Solo requeridos si el contrato dura más de 3 meses (vigencia de certificados)
+        o si tu entidad los exige por cada pago.
+      </div>
+      <div id="habilitantes-${pago.id}" class="row g-2" style="display:${habilitantesCargados > 0 ? 'flex' : 'none'}">`;
+
+    HABILITANTES_POR_PAGO.forEach(docTipo => {
+      const subido = docsDelPago[docTipo.id];
+      html += renderDocSlotPagoOpcional(docTipo, subido, exp.id, pago.id, bloqueado);
+    });
+
+    html += `</div></div>`;
+    html += `</div></div>`;
   });
 
   html += `</div>`;
   return html;
+}
+
+function renderDocSlotPagoOpcional(docTipo, subido, expId, pagoId, bloqueado){
+  const uploaded = subido ? ' uploaded' : '';
+  const inputId = `input-hab-${pagoId}-${docTipo.id}`;
+  return `
+    <div class="col-md-6 col-lg-4">
+      <div class="doc-slot p-2 border rounded${uploaded}" style="min-height:60px;background:${subido ? '#e8f5e9' : '#fdfdfd'};border-style:dashed !important">
+        <div class="d-flex align-items-start" style="gap:6px">
+          <i class="bi ${docTipo.icon}" style="color:${docTipo.color};font-size:1rem"></i>
+          <div class="flex-grow-1" style="min-width:0">
+            <div class="fw-bold small text-truncate" title="${docTipo.nombre}">${docTipo.nombre}</div>
+            <div class="small text-muted" style="font-size:0.7rem">${docTipo.codigo} • Vig. ${docTipo.vigencia}</div>
+            ${subido ? `
+              <div class="mt-1">
+                <span class="badge bg-success small"><i class="bi bi-check-circle me-1"></i>Actualizado</span>
+                ${!bloqueado ? `<button class="btn btn-sm btn-link text-danger p-0 ms-1"
+                  onclick="quitarDocPago('${expId}','${pagoId}','${docTipo.id}')" title="Quitar"><i class="bi bi-x-circle"></i></button>` : ''}
+              </div>
+            ` : (!bloqueado ? `
+              <label for="${inputId}" class="btn btn-sm btn-outline-secondary mt-1 py-0 px-2" style="font-size:0.7rem">
+                <i class="bi bi-upload me-1"></i>Subir
+              </label>
+              <input type="file" id="${inputId}" style="display:none"
+                     accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp"
+                     onchange="subirDocPago('${expId}','${pagoId}','${docTipo.id}',this.files[0])">
+            ` : '')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleHabilitantesPago(pagoId){
+  const div = document.getElementById(`habilitantes-${pagoId}`);
+  const btn = document.getElementById(`btn-hab-${pagoId}`);
+  if(!div || !btn) return;
+  const visible = div.style.display !== 'none';
+  div.style.display = visible ? 'none' : 'flex';
+  btn.textContent = visible ? '▶ Mostrar' : '▼ Ocultar';
 }
 
 function renderDocSlotPago(docTipo, subido, expId, pagoId, bloqueado){

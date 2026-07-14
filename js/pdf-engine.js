@@ -17,9 +17,15 @@ async function generarPDFExpediente(expediente, documentos){
   const pagosPeriodicos = (expediente.datos && expediente.datos.pagos_periodicos) || [];
   const pagoById = {};
   pagosPeriodicos.forEach(p => pagoById[p.id] = p);
-  const ordenDocsPorPago = (typeof DOCS_POR_PAGO !== 'undefined')
-    ? DOCS_POR_PAGO.reduce((acc, dt, i) => { acc[dt.id] = i; return acc; }, {})
-    : {};
+  // Orden dentro de cada pago: primero requeridos, luego habilitantes opcionales
+  const ordenDocsPorPago = {};
+  if(typeof DOCS_POR_PAGO !== 'undefined'){
+    DOCS_POR_PAGO.forEach((dt, i) => { ordenDocsPorPago[dt.id] = i; });
+  }
+  if(typeof HABILITANTES_POR_PAGO !== 'undefined'){
+    const offset = Object.keys(ordenDocsPorPago).length;
+    HABILITANTES_POR_PAGO.forEach((dt, i) => { ordenDocsPorPago[dt.id] = offset + i; });
+  }
 
   const docsSinPago = documentos.filter(d => !d.pago_id);
   const docsConPago = documentos.filter(d => d.pago_id);
