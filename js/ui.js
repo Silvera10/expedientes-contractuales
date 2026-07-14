@@ -656,6 +656,8 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
     <div class="alert alert-info small py-2 mb-2">
       <i class="bi bi-info-circle me-1"></i>
       Cada pago debe tener sus soportes: factura, orden de pago, egreso, soporte bancario, seguridad social, informes y acta de recibo.
+      <br><strong><i class="bi bi-arrow-down-square me-1"></i>Arrastra archivos:</strong>
+      a un <strong>slot específico</strong> para subirlo ahí, o al <strong>bloque completo del pago</strong> para que se auto-clasifiquen por nombre.
       ${(formaPago === 'avance' || formaPago === 'otro') ? `
       <br><button class="btn btn-outline-primary btn-sm mt-2" onclick="agregarPagoManual('${exp.id}')" ${bloqueado ? 'disabled' : ''}>
         <i class="bi bi-plus-circle me-1"></i>Agregar nuevo pago
@@ -678,7 +680,10 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
     const pct = Math.round((cargados / total) * 100);
     const completo = pct === 100;
 
-    html += `<div class="card mb-2 shadow-sm">
+    html += `<div class="card mb-2 shadow-sm pago-card" data-exp-id="${exp.id}" data-pago-id="${pago.id}"
+      ondragover="event.preventDefault();this.classList.add('drag-over');"
+      ondragleave="this.classList.remove('drag-over');"
+      ondrop="event.preventDefault();this.classList.remove('drag-over');manejarDropEnPago('${exp.id}','${pago.id}',event);">
       <div class="card-header py-2"
            style="background:${completo ? '#d4edda' : '#fff3cd'}">
         <div class="d-flex justify-content-between align-items-center">
@@ -751,9 +756,14 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
 function renderDocSlotPagoOpcional(docTipo, subido, expId, pagoId, bloqueado){
   const uploaded = subido ? ' uploaded' : '';
   const inputId = `input-hab-${pagoId}-${docTipo.id}`;
+  const dropAttrs = !bloqueado && !subido
+    ? `ondragover="event.preventDefault();event.stopPropagation();this.classList.add('drag-slot');"
+       ondragleave="this.classList.remove('drag-slot');"
+       ondrop="event.preventDefault();event.stopPropagation();this.classList.remove('drag-slot');manejarDropEnSlot('${expId}','${pagoId}','${docTipo.id}',event);"`
+    : '';
   return `
     <div class="col-md-6 col-lg-4">
-      <div class="doc-slot p-2 border rounded${uploaded}" style="min-height:60px;background:${subido ? '#e8f5e9' : '#fdfdfd'};border-style:dashed !important">
+      <div class="doc-slot p-2 border rounded${uploaded}" style="min-height:60px;background:${subido ? '#e8f5e9' : '#fdfdfd'};border-style:dashed !important" ${dropAttrs}>
         <div class="d-flex align-items-start" style="gap:6px">
           <i class="bi ${docTipo.icon}" style="color:${docTipo.color};font-size:1rem"></i>
           <div class="flex-grow-1" style="min-width:0">
@@ -791,9 +801,14 @@ function toggleHabilitantesPago(pagoId){
 function renderDocSlotPago(docTipo, subido, expId, pagoId, bloqueado){
   const uploaded = subido ? ' uploaded' : '';
   const inputId = `input-pago-${pagoId}-${docTipo.id}`;
+  const dropAttrs = !bloqueado && !subido
+    ? `ondragover="event.preventDefault();event.stopPropagation();this.classList.add('drag-slot');"
+       ondragleave="this.classList.remove('drag-slot');"
+       ondrop="event.preventDefault();event.stopPropagation();this.classList.remove('drag-slot');manejarDropEnSlot('${expId}','${pagoId}','${docTipo.id}',event);"`
+    : '';
   return `
     <div class="col-md-6 col-lg-3">
-      <div class="doc-slot p-2 border rounded${uploaded}" style="min-height:70px;background:${subido ? '#e8f5e9' : '#f8f9fa'}">
+      <div class="doc-slot p-2 border rounded${uploaded}" style="min-height:70px;background:${subido ? '#e8f5e9' : '#f8f9fa'}" ${dropAttrs}>
         <div class="d-flex align-items-start" style="gap:6px">
           <i class="bi ${docTipo.icon}" style="color:${docTipo.color};font-size:1.2rem"></i>
           <div class="flex-grow-1" style="min-width:0">

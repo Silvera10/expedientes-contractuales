@@ -1248,6 +1248,107 @@ async function agregarPagoManual(expId){
   toast(`Pago "${nombrePeriodo}" agregado`);
 }
 
+/* ══════════════════════════════════════════
+   DRAG & DROP en pagos periódicos
+══════════════════════════════════════════ */
+
+// Patrones para detectar tipo de documento por nombre de archivo
+// Retorna el id del tipo de doc que corresponde, o null si no se detecta
+function detectarTipoDocPago(nombreArchivo){
+  const n = nombreArchivo.toLowerCase()
+    .replace(/[_\-\.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Orden: primero patrones más específicos
+  const patrones = [
+    { pats: ['factura', 'cta cobro', 'cuenta cobro', 'cuenta de cobro'], tipo: 'factura' },
+    { pats: ['pila', 'seguridad social', 'planilla', 'aportes'], tipo: 'seguridad_social' },
+    { pats: ['informe supervis', 'inf supervisor', 'informe del supervisor'], tipo: 'informe_supervisor' },
+    { pats: ['informe contratista', 'inf contratista', 'informe del contratista', 'informe actividades'], tipo: 'informe_contratista' },
+    { pats: ['acta recibo', 'acta de recibo', 'recibo satisfaccion', 'recibo a satisfaccion', 'acta entrega'], tipo: 'acta_recibido' },
+    { pats: ['orden pago', 'orden de pago'], tipo: 'orden_pago' },
+    { pats: ['egreso', 'comprobante egreso', 'comprobante de egreso'], tipo: 'egreso' },
+    { pats: ['soporte pago', 'soporte bancario', 'soporte banco', 'comprobante transferencia', 'transferencia', 'consignacion'], tipo: 'soporte_pago' },
+    // Habilitantes opcionales
+    { pats: ['procuraduria', 'procuraduría'], tipo: 'antec_procuraduria' },
+    { pats: ['contraloria', 'contraloría'], tipo: 'antec_contraloria' },
+    { pats: ['policia', 'policía', 'antecedentes judiciales'], tipo: 'antec_policia' },
+    { pats: ['redam', 'deudores alimentarios'], tipo: 'redam' },
+    { pats: ['rnmc', 'medidas correctivas'], tipo: 'rnmc' },
+    { pats: ['delitos sexuales', 'inhabilidad sexual'], tipo: 'delitos_sexuales' }
+  ];
+
+  for(const p of patrones){
+    for(const pat of p.pats){
+      if(n.includes(pat)) return p.tipo;
+    }
+  }
+  return null;
+}
+
+async function manejarDropEnSlot(expId, pagoId, tipoId, event){
+  const files = event.dataTransfer?.files;
+  if(!files || files.length === 0) return;
+  if(files.length > 1){
+    toast('Solo se puede arrastrar UN archivo a este slot. Usa el bloque completo del pago para varios.', 'warning');
+    return;
+  }
+  await subirDocPago(expId, pagoId, tipoId, files[0]);
+}
+
+async function manejarDropEnPago(expId, pagoId, event){
+  const files = event.dataTransfer?.files;
+  if(!files || files.length === 0) return;
+
+  // Cargar docs ya subidos a este pago para evitar sobreescritura
+  const docsSubidos = await DB.loadDocumentos(expId);
+  const tiposCargadosEnPago = new Set(
+    docsSubidos.filter(d => d.pago_id === pagoId).map(d => d.tipo)
+  );
+
+  const resultados = {
+    exitosos: [],
+    duplicados: [],
+    sinDetectar: []
+  };
+
+  for(const file of files){
+    const tipoDetectado = detectarTipoDocPago(file.name);
+
+    if(!tipoDetectado){
+      resultados.sinDetectar.push(file.name);
+      continue;
+    }
+
+    if(tiposCargadosEnPago.has(tipoDetectado)){
+      resultados.duplicados.push({ nombre: file.name, tipo: tipoDetectado });
+      continue;
+    }
+
+    try {
+      await subirDocPago(expId, pagoId, tipoDetectado, file);
+      tiposCargadosEnPago.add(tipoDetectado);
+      resultados.exitosos.push({ nombre: file.name, tipo: tipoDetectado });
+    } catch(e){
+      console.error('Error subiendo', file.name, e);
+    }
+  }
+
+  // Resumen final
+  let msg = '';
+  if(resultados.exitosos.length){
+    msg += `✅ ${resultados.exitosos.length} clasificados: ${resultados.exitosos.map(r=>r.tipo).join(', ')}. `;
+  }
+  if(resultados.duplicados.length){
+    msg += `⚠️ ${resultados.duplicados.length} ya existían: ${resultados.duplicados.map(r=>r.tipo).join(', ')}. `;
+  }
+  if(resultados.sinDetectar.length){
+    msg += `❓ ${resultados.sinDetectar.length} sin clasificar (arrástralos a su slot): ${resultados.sinDetectar.join(', ')}.`;
+  }
+  toast(msg || 'Sin archivos procesados', resultados.sinDetectar.length ? 'warning' : 'success');
+}
+
 async function eliminarPagoPeriodo(expId, pagoId){
   const exp = DB.getExpediente(expId);
   if(!exp || !exp.datos || !exp.datos.pagos_periodicos) return;
