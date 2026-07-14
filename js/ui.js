@@ -698,6 +698,10 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
           </div>
           <div>
             <span class="badge ${completo ? 'bg-success' : 'bg-warning text-dark'}">${cargados}/${total} (${pct}%)</span>
+            <button class="btn btn-sm btn-outline-primary ms-1" onclick="imprimirPagoIndividual('${exp.id}','${pago.id}')" title="Generar PDF solo de este pago (portada + índice + soportes foliados)"
+                    ${cargados === 0 ? 'disabled' : ''}>
+              <i class="bi bi-printer"></i>
+            </button>
             ${!bloqueado ? `
             <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editarPagoPeriodo('${exp.id}','${pago.id}')" title="Editar concepto, fecha, valor y factura">
               <i class="bi bi-pencil"></i>

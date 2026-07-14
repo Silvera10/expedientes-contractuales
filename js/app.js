@@ -1297,6 +1297,36 @@ async function manejarDropEnSlot(expId, pagoId, tipoId, event){
   await subirDocPago(expId, pagoId, tipoId, files[0]);
 }
 
+async function imprimirPagoIndividual(expId, pagoId){
+  try {
+    const exp = DB.getExpediente(expId);
+    if(!exp) { toast('Expediente no encontrado', 'danger'); return; }
+    const pago = (exp.datos && exp.datos.pagos_periodicos || []).find(p => p.id === pagoId);
+    if(!pago) { toast('Pago no encontrado', 'danger'); return; }
+
+    const allDocs = await DB.loadDocumentos(expId);
+    const docsDelPago = allDocs.filter(d => d.pago_id === pagoId);
+
+    if(docsDelPago.length === 0){
+      toast('Este pago no tiene documentos cargados', 'warning');
+      return;
+    }
+
+    // Ordenar: primero requeridos, luego habilitantes (según orden estándar)
+    const ordenTipos = {};
+    DOCS_POR_PAGO.forEach((dt, i) => ordenTipos[dt.id] = i);
+    HABILITANTES_POR_PAGO.forEach((dt, i) => ordenTipos[dt.id] = DOCS_POR_PAGO.length + i);
+    docsDelPago.sort((a, b) => (ordenTipos[a.tipo] ?? 99) - (ordenTipos[b.tipo] ?? 99));
+
+    toast(`Generando PDF del PAGO ${String(pago.numero).padStart(2,'0')}...`, 'info');
+    await generarPDFPago(exp, pago, docsDelPago);
+    toast(`PDF del PAGO ${String(pago.numero).padStart(2,'0')} generado`);
+  } catch(e){
+    console.error('imprimirPagoIndividual error:', e);
+    toast('Error generando PDF: ' + e.message, 'danger');
+  }
+}
+
 async function manejarDropEnPago(expId, pagoId, event){
   const files = event.dataTransfer?.files;
   if(!files || files.length === 0) return;

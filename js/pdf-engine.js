@@ -136,6 +136,251 @@ async function generarPDFExpediente(expediente, documentos){
 }
 
 /* ══════════════════════════════════════════
+   GENERAR PDF DE UN PAGO INDIVIDUAL
+   Portada + índice + soportes foliados de UN solo pago
+══════════════════════════════════════════ */
+async function generarPDFPago(expediente, pago, docsDelPago){
+  const pdfFinal = await PDFDocument.create();
+  const fontBold = await pdfFinal.embedFont(StandardFonts.HelveticaBold);
+  const fontNormal = await pdfFinal.embedFont(StandardFonts.Helvetica);
+
+  // Cargar todos los PDFs de este pago
+  const pdfDocs = [];
+  for(const doc of docsDelPago){
+    try {
+      const arrayBuffer = await DB.getArchivo(doc.storage_path);
+      if(!arrayBuffer) continue;
+      const srcPdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+      pdfDocs.push({ doc, srcPdf, paginas: srcPdf.getPageCount(), folioInicio: 0 });
+    } catch(e){
+      console.warn('Error cargando PDF del pago:', doc.nombre_archivo, e);
+    }
+  }
+  if(!pdfDocs.length){ throw new Error('No se pudieron cargar documentos del pago'); }
+
+  // Calcular folios: portada (1) + índice (1) + docs
+  let folioContador = 3;
+  let totalPaginas = 2;
+  for(const item of pdfDocs){
+    item.folioInicio = folioContador;
+    folioContador += item.paginas;
+    totalPaginas += item.paginas;
+  }
+
+  // 1. PORTADA del pago
+  await generarPortadaPago(pdfFinal, expediente, pago, totalPaginas, fontBold, fontNormal);
+
+  // 2. ÍNDICE del pago
+  await generarIndicePago(pdfFinal, pago, pdfDocs, fontBold, fontNormal);
+
+  // 3. Copiar cada doc y estampar folio
+  let folioActual = 3;
+  for(const item of pdfDocs){
+    const copiedPages = await pdfFinal.copyPages(item.srcPdf, item.srcPdf.getPageIndices());
+    for(const page of copiedPages){
+      const added = pdfFinal.addPage(page);
+      estamparFolio(added, folioActual, totalPaginas, fontBold);
+      folioActual++;
+    }
+  }
+
+  // 4. Estampar folio en portada e índice
+  const allPages = pdfFinal.getPages();
+  estamparFolio(allPages[0], 1, totalPaginas, fontBold);
+  estamparFolio(allPages[1], 2, totalPaginas, fontBold);
+
+  // 5. Descargar
+  const pdfBytes = await pdfFinal.save();
+  const nombreArchivo = `Pago_${String(pago.numero).padStart(2,'0')}_${pago.periodo.replace(/[^a-zA-Z0-9]+/g,'_')}_Cto_${expediente.contrato_numero}_${expediente.anio}.pdf`;
+  descargarPDF(pdfBytes, nombreArchivo);
+}
+
+async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, fontNormal){
+  const page = pdfDoc.addPage(PageSizes.Letter);
+  const { width, height } = page.getSize();
+
+  // Header decorativo
+  page.drawRectangle({
+    x: 0, y: height - 80,
+    width: width, height: 80,
+    color: rgb(0.15, 0.45, 0.20) // verde oscuro
+  });
+  page.drawText('SOPORTES DE PAGO', {
+    x: width / 2 - fontBold.widthOfTextAtSize('SOPORTES DE PAGO', 20) / 2,
+    y: height - 45,
+    size: 20, font: fontBold,
+    color: rgb(1, 1, 1)
+  });
+  page.drawText('EXPEDIENTE CONTRACTUAL', {
+    x: width / 2 - fontNormal.widthOfTextAtSize('EXPEDIENTE CONTRACTUAL', 10) / 2,
+    y: height - 65,
+    size: 10, font: fontNormal,
+    color: rgb(0.9, 0.95, 0.9)
+  });
+
+  // Bloque del pago (grande y destacado)
+  const pagoBoxY = height - 180;
+  page.drawRectangle({
+    x: 60, y: pagoBoxY,
+    width: width - 120, height: 90,
+    color: rgb(0.90, 0.96, 0.91),
+    borderColor: rgb(0.15, 0.45, 0.20),
+    borderWidth: 1.5
+  });
+  const tituloPago = `PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`;
+  page.drawText(tituloPago, {
+    x: 75, y: pagoBoxY + 68,
+    size: 14, font: fontBold,
+    color: rgb(0.10, 0.35, 0.15)
+  });
+  let py = pagoBoxY + 48;
+  if(pago.concepto){
+    const concepto = pago.concepto.length > 95 ? pago.concepto.substring(0, 95) + '...' : pago.concepto;
+    page.drawText(`Concepto: ${concepto}`, {
+      x: 75, y: py, size: 9, font: fontNormal,
+      color: rgb(0.25, 0.25, 0.25)
+    });
+    py -= 14;
+  }
+  const info = [];
+  if(pago.fecha_pago) info.push(`Fecha: ${pago.fecha_pago}`);
+  if(pago.valor_pagado) info.push(`Valor: $${Number(pago.valor_pagado).toLocaleString('es-CO')}`);
+  if(pago.numero_factura) info.push(`Factura N°: ${pago.numero_factura}`);
+  if(info.length){
+    page.drawText(info.join('   |   '), {
+      x: 75, y: py, size: 10, font: fontBold,
+      color: rgb(0.10, 0.35, 0.15)
+    });
+  }
+
+  // Datos del contrato
+  const instData = (typeof _instituciones !== 'undefined')
+    ? _instituciones.find(i => i.nombre === exp.institucion)
+    : null;
+
+  const datos = [
+    { label: 'INSTITUCIÓN', valor: (exp.institucion || '').toUpperCase() },
+    { label: 'CONTRATO N°', valor: `${exp.contrato_numero || 'S/N'} DE ${exp.anio || ''}` },
+    { label: 'CONTRATISTA', valor: (exp.contratista || '').toUpperCase() },
+    { label: 'NIT / CÉDULA', valor: exp.nit || 'N/A' },
+    { label: 'VALOR TOTAL CONTRATO', valor: exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : 'N/A' },
+    { label: 'OBJETO', valor: exp.objeto || 'N/A' }
+  ];
+  if(instData && instData.rector){
+    datos.push({ label: 'RECTOR - ORD. GASTO', valor: instData.rector.toUpperCase() + (instData.cedulaRector ? ' - C.C. ' + instData.cedulaRector : '') });
+  }
+  datos.push({ label: 'TOTAL SOPORTES', valor: `${totalFolios} folios (${(await Promise.resolve(0)) + 0 || totalFolios - 2} páginas de documentos + portada + índice)`.replace(/\(0\+ 0.*\)/, `(${totalFolios} folios totales)`) });
+
+  let dy = pagoBoxY - 25;
+  const boxX = 60;
+  const boxW = width - 120;
+
+  for(const d of datos){
+    // Label
+    page.drawText(d.label + ':', {
+      x: boxX + 5, y: dy,
+      size: 8, font: fontBold,
+      color: rgb(0.4, 0.4, 0.4)
+    });
+    // Valor (truncar si es muy largo)
+    const maxW = boxW - 15;
+    let valorTexto = String(d.valor);
+    while(fontBold.widthOfTextAtSize(valorTexto, 10) > maxW && valorTexto.length > 5){
+      valorTexto = valorTexto.substring(0, valorTexto.length - 4) + '...';
+    }
+    page.drawText(valorTexto, {
+      x: boxX + 5, y: dy - 13,
+      size: 10, font: fontBold,
+      color: rgb(0.1, 0.1, 0.1)
+    });
+    // Línea separadora
+    page.drawLine({
+      start: { x: boxX + 5, y: dy - 22 },
+      end: { x: boxX + boxW - 5, y: dy - 22 },
+      color: rgb(0.88, 0.88, 0.88), thickness: 0.5
+    });
+    dy -= 32;
+    if(dy < 100) break;
+  }
+
+  // Footer
+  const marca = 'LR TRIBUTARIAS  |  Expediente digital foliado';
+  page.drawText(marca, {
+    x: width / 2 - fontNormal.widthOfTextAtSize(marca, 8) / 2,
+    y: 40, size: 8, font: fontNormal,
+    color: rgb(0.5, 0.5, 0.5)
+  });
+}
+
+async function generarIndicePago(pdfDoc, pago, pdfDocs, fontBold, fontNormal){
+  const page = pdfDoc.addPage(PageSizes.Letter);
+  const { width, height } = page.getSize();
+
+  const titulo = `SOPORTES DEL PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`;
+  page.drawText(titulo, {
+    x: width / 2 - fontBold.widthOfTextAtSize(titulo, 14) / 2,
+    y: height - 60,
+    size: 14, font: fontBold,
+    color: rgb(0.10, 0.35, 0.15)
+  });
+  page.drawLine({
+    start: { x: 50, y: height - 70 },
+    end: { x: width - 50, y: height - 70 },
+    color: rgb(0.15, 0.45, 0.20), thickness: 2
+  });
+
+  let y = height - 100;
+  page.drawText('N°', { x: 55, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+  page.drawText('CÓDIGO', { x: 85, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+  page.drawText('DOCUMENTO', { x: 145, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+  page.drawText('PÁGS.', { x: 420, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+  page.drawText('FOLIO', { x: 475, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+  y -= 5;
+  page.drawLine({
+    start: { x: 50, y }, end: { x: width - 50, y },
+    color: rgb(0.8, 0.8, 0.8), thickness: 0.5
+  });
+  y -= 20;
+
+  // Combinar catálogos para nombres
+  const catalogo = {};
+  if(typeof DOCS_POR_PAGO !== 'undefined'){
+    DOCS_POR_PAGO.forEach(dt => catalogo[dt.id] = { nombre: dt.nombre, codigo: dt.codigo, tipo: 'req' });
+  }
+  if(typeof HABILITANTES_POR_PAGO !== 'undefined'){
+    HABILITANTES_POR_PAGO.forEach(dt => catalogo[dt.id] = { nombre: dt.nombre, codigo: dt.codigo, tipo: 'hab' });
+  }
+
+  pdfDocs.forEach((item, idx) => {
+    const meta = catalogo[item.doc.tipo] || { nombre: item.doc.nombre_archivo || 'Documento', codigo: '?', tipo: '?' };
+    const num = String(idx + 1).padStart(2, '0');
+    if(idx % 2 === 0){
+      page.drawRectangle({
+        x: 50, y: y - 4, width: width - 100, height: 18,
+        color: rgb(0.96, 0.97, 0.98)
+      });
+    }
+    page.drawText(num, { x: 58, y, size: 10, font: fontBold, color: rgb(0.10, 0.35, 0.15) });
+    page.drawText(meta.codigo, { x: 85, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
+    const nombreCorto = meta.nombre.length > 42 ? meta.nombre.substring(0, 42) + '...' : meta.nombre;
+    page.drawText(nombreCorto, { x: 145, y, size: 10, font: fontNormal, color: rgb(0.2, 0.2, 0.2) });
+    page.drawText(String(item.paginas), { x: 432, y, size: 10, font: fontNormal, color: rgb(0.4, 0.4, 0.4) });
+    page.drawText(String(item.folioInicio), { x: 483, y, size: 10, font: fontBold, color: rgb(0.10, 0.35, 0.15) });
+    y -= 22;
+  });
+
+  // Totales
+  y -= 10;
+  page.drawLine({
+    start: { x: 50, y: y + 8 }, end: { x: width - 50, y: y + 8 },
+    color: rgb(0.15, 0.45, 0.20), thickness: 1
+  });
+  page.drawText(`Total: ${pdfDocs.length} soportes de este pago`, {
+    x: 145, y: y - 8, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3)
+  });
+}
+
+/* ══════════════════════════════════════════
    PORTADA
 ══════════════════════════════════════════ */
 async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
