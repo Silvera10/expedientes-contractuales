@@ -89,6 +89,12 @@ const DETECTOR_REGLAS = [
     peso: 3
   },
   {
+    tipo: 'comunicacion_no_seleccion',
+    nombre: 'Comunicación de No Selección',
+    palabras: ['pre-16', 'comunicación de no selección', 'comunicacion de no seleccion', 'comunicación no selección', 'comunicacion no seleccion', 'oferente no seleccionado', 'proponente no seleccionado', 'no fue seleccionado', 'no fue seleccionada', 'no resultó seleccionado', 'no resulto seleccionado', 'oferta no aceptada', 'oferta descartada', 'notificación de no selección', 'notificacion de no seleccion', 'agradecemos su participación pero', 'agradecemos su participacion pero', 'lamentablemente su oferta', 'no fue la escogida'],
+    peso: 5
+  },
+  {
     tipo: 'recibo_secop',
     nombre: 'Recibo SECOP II / Colombia Compra Eficiente',
     palabras: ['pre-10', 'secop ii', 'secop 2', 'colombia compra eficiente', 'tienda virtual del estado', 'tvec', 'co1.receipt', 'co1.ntc.', 'co1.noc.', 'co1.req.', 'co1.pcons.', 'agencia nacional de contrataci\u00f3n p\u00fablica', 'agencia nacional de contratacion publica', 'comunidad.secop.gov.co', 'www.colombiacompra.gov.co', 'constancia de publicaci\u00f3n secop', 'constancia de publicacion secop', 'proceso de contrataci\u00f3n secop', 'proceso de contratacion secop', 'recibo secop', 'recibo de secop', 'recibo colombia compra'],

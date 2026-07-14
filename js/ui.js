@@ -40,6 +40,7 @@ const DOC_TIPOS = [
   { id:'evaluacion',         nombre:'Evaluaci\u00f3n de Ofertas',            etapa:'pre', orden:8,  icon:'bi-table',               color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-08' },
   { id:'verificacion_requisitos',nombre:'Verificaci\u00f3n de Requisitos',  etapa:'pre', orden:8.5,icon:'bi-clipboard-check',     color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-15' },
   { id:'aceptacion',         nombre:'Aceptaci\u00f3n de Oferta',             etapa:'pre', orden:9,  icon:'bi-check2-circle',       color:'#fd7e14', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-09' },
+  { id:'comunicacion_no_seleccion',nombre:'Comunicaci\u00f3n de No Selecci\u00f3n',etapa:'pre',orden:9.5,icon:'bi-envelope-x',          color:'#6c757d', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-16' },
   { id:'recibo_secop',       nombre:'Recibo SECOP II / Colombia Compra',etapa:'pre', orden:10, icon:'bi-receipt',             color:'#6610f2', vigencia_dias:null, regla:null, codigo:'PRE-10' },
   { id:'anexos_fotos',       nombre:'Anexos / Fotograf\u00edas',              etapa:'pre', orden:11, icon:'bi-images',              color:'#e83e8c', vigencia_dias:null, regla:null, codigo:'PRE-11' },
 
