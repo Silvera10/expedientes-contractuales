@@ -209,6 +209,43 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
   datos.push({ label: 'NIT / C\u00c9DULA CONTRATISTA', valor: exp.nit || 'N/A' });
   datos.push({ label: 'VALOR', valor: exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : 'N/A' });
   datos.push({ label: 'OBJETO', valor: exp.objeto || 'N/A' });
+
+  // Fechas del contrato
+  if(exp.datos && exp.datos.fecha_contrato){
+    datos.push({ label: 'FECHA DEL CONTRATO', valor: exp.datos.fecha_contrato });
+  }
+  if(exp.datos && exp.datos.fecha_inicio){
+    datos.push({ label: 'FECHA ACTA DE INICIO', valor: exp.datos.fecha_inicio });
+  }
+
+  // Forma de pago
+  const formaPagoKey = exp.datos && exp.datos.forma_pago;
+  const formaPagoCfg = (formaPagoKey && typeof FORMAS_PAGO !== 'undefined') ? FORMAS_PAGO[formaPagoKey] : null;
+  if(formaPagoCfg){
+    let formaValor = formaPagoCfg.nombre.toUpperCase();
+    if(formaPagoKey === 'anticipo_saldo' && exp.datos.pct_anticipo){
+      formaValor += ` (${exp.datos.pct_anticipo}% ANTICIPO / ${100 - exp.datos.pct_anticipo}% SALDO)`;
+    } else if(exp.datos.num_pagos && formaPagoKey !== 'pago_unico' && formaPagoKey !== 'anticipo_saldo'){
+      formaValor += ` (${exp.datos.num_pagos} PAGOS)`;
+    }
+    datos.push({ label: 'FORMA DE PAGO', valor: formaValor });
+
+    // Detalle de pagos periódicos (si existen) - una línea por pago
+    const pagos = (exp.datos.pagos_periodicos || []).filter(p => p.fecha_pago || p.valor_pagado || p.numero_factura);
+    if(pagos.length > 0){
+      pagos.forEach((p, idx) => {
+        const partes = [];
+        if(p.fecha_pago) partes.push(p.fecha_pago);
+        if(p.valor_pagado) partes.push('$' + Number(p.valor_pagado).toLocaleString('es-CO'));
+        if(p.numero_factura) partes.push('Fact. ' + p.numero_factura);
+        const label = idx === 0 ? 'PAGOS EJECUTADOS' : '';
+        const nombrePago = `P${String(p.numero).padStart(2,'0')} ${p.periodo}`;
+        const valor = partes.length ? `${nombrePago} — ${partes.join(' | ')}` : nombrePago;
+        datos.push({ label, valor });
+      });
+    }
+  }
+
   datos.push({ label: 'TOTAL FOLIOS', valor: String(totalFolios) });
 
   // Helper: word-wrap a string into lines that fit within maxWidth points
@@ -235,12 +272,14 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
   const lineHeight = 13; // separación entre líneas del mismo valor
 
   for(const d of datos){
-    // Label
-    page.drawText(d.label + ':', {
-      x: marcoX + 25, y,
-      size: 9, font: fontBold,
-      color: rgb(0.4, 0.4, 0.4)
-    });
+    // Label (solo si tiene contenido - permite filas de continuación)
+    if(d.label){
+      page.drawText(d.label + ':', {
+        x: marcoX + 25, y,
+        size: 9, font: fontBold,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+    }
     // Wrap valor para que no se desborde
     const valorLineas = wrapText(d.valor, fontBold, valorFontSize, valorMaxWidth);
     // Limitar a máximo 4 líneas
@@ -259,12 +298,13 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
       valorY -= lineHeight;
     }
 
-    // Bajar 'y' según líneas usadas (mínimo 38, +13 por cada línea extra)
-    const filaAlto = 38 + Math.max(0, lineasMostrar.length - 1) * lineHeight;
+    // Bajar 'y' según líneas usadas (filas de continuación son más compactas)
+    const filaAltoBase = d.label ? 38 : 20;
+    const filaAlto = filaAltoBase + Math.max(0, lineasMostrar.length - 1) * lineHeight;
     y -= filaAlto;
 
-    // Línea separadora
-    if(y > marcoY + 20){
+    // Línea separadora (solo para filas con label - no separar continuaciones)
+    if(d.label && y > marcoY + 20){
       page.drawLine({
         start: { x: marcoX + 25, y: y + 10 },
         end: { x: marcoX + marcoW - 25, y: y + 10 },
