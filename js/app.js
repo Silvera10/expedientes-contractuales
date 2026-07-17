@@ -2927,13 +2927,27 @@ async function descargarBackupZIP(){
       }
     }
 
+    // 3.5 Exportar catálogo de instituciones (y otros metadatos)
+    try {
+      const allMetaKeys = await DB._getAllKeys('meta');
+      const allMeta = {};
+      for(const k of allMetaKeys){
+        const val = await DB._get('meta', k);
+        if(val !== undefined && val !== null) allMeta[k] = val;
+      }
+      zip.file('meta.json', JSON.stringify(allMeta, null, 2));
+    } catch(err){
+      console.warn('No se pudo exportar meta:', err);
+    }
+
     // 4. Metadata del backup
     const meta = {
       fecha: new Date().toISOString(),
-      version: '1.0',
+      version: '1.1',
       totalExpedientes: expedientes.length,
       totalDocumentos: allDocs.length,
-      totalArchivos: archivosExportados
+      totalArchivos: archivosExportados,
+      totalInstituciones: (_instituciones || []).length
     };
     zip.file('backup_info.json', JSON.stringify(meta, null, 2));
 
@@ -3056,12 +3070,26 @@ async function restaurarBackupZIP(input){
       }
     }
 
-    // 5. Recargar app
+    // 4.5 Restaurar meta (instituciones y otros metadatos)
+    const metaFile = zip.file('meta.json');
+    if(metaFile){
+      try {
+        const allMeta = JSON.parse(await metaFile.async('text'));
+        for(const [k, v] of Object.entries(allMeta)){
+          await DB._put('meta', k, v);
+        }
+      } catch(err){
+        console.warn('No se pudo restaurar meta:', err);
+      }
+    }
+
+    // 5. Recargar app (expedientes, instituciones, filtro y lista)
     await DB.loadExpedientes();
+    await cargarInstituciones();
     cargarFiltroInstituciones();
     renderListaExpedientes();
 
-    toast('Backup restaurado: ' + (info.totalExpedientes || 0) + ' expedientes, ' + archivosRestaurados + ' archivos');
+    toast('Backup restaurado: ' + (info.totalExpedientes || 0) + ' expedientes, ' + archivosRestaurados + ' archivos, ' + (_instituciones?.length || 0) + ' instituciones');
 
   } catch(e){
     console.error('Error restaurando backup:', e);
