@@ -1135,6 +1135,33 @@ async function subirDocPago(expId, pagoId, tipoId, file){
   }
 
   try {
+    const docId = `${expId}_${pagoId}_${tipoId}`;
+    const docExistente = await DB.getDocumento(docId);
+
+    // Si YA existe un doc en este slot, preguntar si es reemplazo (versión nueva)
+    let motivoCambio = null;
+    if(docExistente){
+      const versionActual = 1 + (docExistente.versiones_anteriores?.length || 0);
+      const nuevaVersion = versionActual + 1;
+      const confirmar = confirm(
+        `Ya existe un documento en este slot (${docExistente.nombre_archivo}).\n\n` +
+        `¿Deseas reemplazarlo con una NUEVA VERSIÓN?\n\n` +
+        `• El actual pasará a "versiones anteriores" (v${versionActual})\n` +
+        `• El nuevo será la versión activa (v${nuevaVersion})\n` +
+        `• En el PDF final solo aparece la versión activa\n\n` +
+        `Aceptar = crear v${nuevaVersion}\nCancelar = mantener el actual`
+      );
+      if(!confirmar) return;
+      motivoCambio = prompt(
+        `Motivo del cambio (opcional):\n` +
+        `Ej: "Corrección de valor por error tipográfico"\n` +
+        `Ej: "Reemplazo por observación del supervisor"\n` +
+        `Ej: "Actualización de fecha"`,
+        ''
+      );
+      if(motivoCambio === null) return; // canceló
+    }
+
     toast(`Subiendo ${file.name}...`, 'info');
     let arrayBuffer = await file.arrayBuffer();
     let mimeType = file.type || 'application/octet-stream';
@@ -1156,7 +1183,21 @@ async function subirDocPago(expId, pagoId, tipoId, file){
     await DB.saveArchivo(storagePath, arrayBuffer);
     if(SB.isActive()){ await SB.uploadPDF(storagePath, new Blob([arrayBuffer], {type: mimeType})); }
 
-    const docId = `${expId}_${pagoId}_${tipoId}`;
+    // Si es un reemplazo, mover el anterior a versiones_anteriores
+    let versiones_anteriores = [];
+    if(docExistente){
+      versiones_anteriores = docExistente.versiones_anteriores || [];
+      versiones_anteriores.push({
+        num_version: versiones_anteriores.length + 1,
+        storage_path: docExistente.storage_path,
+        nombre_archivo: docExistente.nombre_archivo,
+        paginas: docExistente.paginas,
+        created_at: docExistente.created_at,
+        reemplazado_at: new Date().toISOString(),
+        motivo: motivoCambio || null
+      });
+    }
+
     const doc = {
       id: docId,
       expediente_id: expId,
@@ -1166,31 +1207,282 @@ async function subirDocPago(expId, pagoId, tipoId, file){
       nombre_archivo: file.name,
       storage_path: storagePath,
       paginas,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      versiones_anteriores
     };
     await DB.saveDocumento(doc);
     await actualizarEstadoExpediente(expId);
     renderDetalleExpediente(expId);
-    toast(`${file.name} agregado al PAGO`);
+    const versionActual = 1 + versiones_anteriores.length;
+    toast(docExistente
+      ? `${file.name} guardado como v${versionActual} (anterior conservada)`
+      : `${file.name} agregado al PAGO`);
   } catch(e){
     console.error('subirDocPago error:', e);
     toast('Error al subir: ' + e.message, 'danger');
   }
 }
 
-async function quitarDocPago(expId, pagoId, tipoId){
-  if(!confirm('¿Quitar este documento del pago?')) return;
+/* ══════════════════════════════════════════
+   VERSIONES DE DOCUMENTOS (historial de correcciones)
+══════════════════════════════════════════ */
+async function verVersionesDoc(expId, pagoId, tipoId){
   const docId = `${expId}_${pagoId}_${tipoId}`;
+  const doc = await DB.getDocumento(docId);
+  if(!doc){ toast('Documento no encontrado', 'danger'); return; }
+
+  const versionesAnteriores = doc.versiones_anteriores || [];
+  const versionActualNum = versionesAnteriores.length + 1;
+
+  const catalogoDoc = [...(typeof DOCS_POR_PAGO !== 'undefined' ? DOCS_POR_PAGO : []),
+                       ...(typeof HABILITANTES_POR_PAGO !== 'undefined' ? HABILITANTES_POR_PAGO : [])]
+                       .find(dt => dt.id === tipoId);
+  const nombreDoc = catalogoDoc?.nombre || tipoId;
+
+  // Construir modal HTML
+  const modalId = 'modalVersionesDoc';
+  let existente = document.getElementById(modalId);
+  if(existente) existente.remove();
+
+  let filasVersiones = `
+    <tr class="table-success">
+      <td><strong>v${versionActualNum}</strong> <span class="badge bg-success ms-1">ACTIVA</span></td>
+      <td>${escapeHtml(doc.nombre_archivo)}</td>
+      <td>${doc.paginas || '?'} págs.</td>
+      <td>${formatearFecha(doc.created_at)}</td>
+      <td><em class="text-muted">—</em></td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary" onclick="descargarDocumento('${docId}')" title="Descargar versión actual">
+          <i class="bi bi-download"></i>
+        </button>
+      </td>
+    </tr>`;
+
+  // Ordenar versiones anteriores por num_version desc (más reciente primero)
+  const ordenadas = [...versionesAnteriores].sort((a,b) => (b.num_version||0) - (a.num_version||0));
+  ordenadas.forEach((v, idx) => {
+    filasVersiones += `
+      <tr>
+        <td><strong>v${v.num_version}</strong></td>
+        <td>${escapeHtml(v.nombre_archivo)}</td>
+        <td>${v.paginas || '?'} págs.</td>
+        <td>${formatearFecha(v.created_at)}<br><small class="text-muted">Reemplazada ${formatearFecha(v.reemplazado_at)}</small></td>
+        <td>${v.motivo ? '<em>' + escapeHtml(v.motivo) + '</em>' : '<span class="text-muted">Sin motivo</span>'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" onclick="descargarVersionAnterior('${docId}',${v.num_version})" title="Descargar esta versión">
+            <i class="bi bi-download"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-success" onclick="restaurarVersion('${docId}',${v.num_version})" title="Convertir esta versión en la activa">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" onclick="eliminarVersion('${docId}',${v.num_version})" title="Eliminar permanentemente esta versión">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`;
+  });
+
+  const modalHtml = `
+    <div class="modal fade" id="${modalId}" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">
+              <i class="bi bi-clock-history me-2"></i>
+              Historial de versiones — ${escapeHtml(nombreDoc)}
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info small mb-3">
+              <i class="bi bi-info-circle me-1"></i>
+              <strong>Trazabilidad — Ley 594/2000:</strong>
+              Este slot tiene <strong>${versionActualNum} versiones</strong> (${versionesAnteriores.length} corrección${versionesAnteriores.length!==1?'es':''} anterior${versionesAnteriores.length!==1?'es':''}).
+              En el PDF final del expediente solo aparece la <span class="badge bg-success">ACTIVA</span>.
+              Las versiones anteriores se conservan para auditoría.
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Versión</th>
+                    <th>Archivo</th>
+                    <th>Páginas</th>
+                    <th>Fechas</th>
+                    <th>Motivo del cambio</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>${filasVersiones}</tbody>
+              </table>
+            </div>
+            <div class="small text-muted mt-2">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>
+              <strong>Restaurar:</strong> convierte esa versión en la activa (la actual pasa a anterior).
+              <br>
+              <i class="bi bi-trash me-1"></i>
+              <strong>Eliminar:</strong> borra permanentemente esa versión (no se puede deshacer).
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  new bootstrap.Modal(document.getElementById(modalId)).show();
+}
+
+async function descargarVersionAnterior(docId, numVersion){
+  const doc = await DB.getDocumento(docId);
+  if(!doc || !doc.versiones_anteriores) return;
+  const version = doc.versiones_anteriores.find(v => v.num_version === numVersion);
+  if(!version || !version.storage_path){
+    toast('Versión no encontrada', 'danger');
+    return;
+  }
   try {
-    const doc = await DB.getDocumento(docId);
+    const bytes = await DB.getArchivo(version.storage_path);
+    if(!bytes){ toast('Archivo no encontrado', 'danger'); return; }
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `v${numVersion}_${version.nombre_archivo || 'documento.pdf'}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e){
+    toast('Error al descargar: ' + e.message, 'danger');
+  }
+}
+
+async function restaurarVersion(docId, numVersion){
+  const doc = await DB.getDocumento(docId);
+  if(!doc || !doc.versiones_anteriores) return;
+  const version = doc.versiones_anteriores.find(v => v.num_version === numVersion);
+  if(!version) return;
+
+  if(!confirm(
+    `¿Convertir la versión v${numVersion} en la ACTIVA?\n\n` +
+    `Archivo: ${version.nombre_archivo}\n` +
+    `Motivo: ${version.motivo || 'Sin motivo'}\n\n` +
+    `La versión actualmente activa pasará a versiones anteriores.`
+  )) return;
+
+  try {
+    // La versión actual pasa a anteriores
+    const versionActualNum = doc.versiones_anteriores.length + 1;
+    doc.versiones_anteriores.push({
+      num_version: versionActualNum,
+      storage_path: doc.storage_path,
+      nombre_archivo: doc.nombre_archivo,
+      paginas: doc.paginas,
+      created_at: doc.created_at,
+      reemplazado_at: new Date().toISOString(),
+      motivo: `Restaurada v${numVersion} en lugar de esta`
+    });
+
+    // La versión seleccionada pasa a ser activa
+    doc.storage_path = version.storage_path;
+    doc.nombre_archivo = version.nombre_archivo;
+    doc.paginas = version.paginas;
+    doc.created_at = version.created_at;
+
+    // Remover la versión restaurada del array
+    doc.versiones_anteriores = doc.versiones_anteriores.filter(v => v.num_version !== numVersion);
+
+    await DB.saveDocumento(doc);
+
+    // Cerrar modal y recargar
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalVersionesDoc'));
+    if(modal) modal.hide();
+    renderDetalleExpediente(doc.expediente_id);
+    toast(`Versión v${numVersion} restaurada como activa`);
+  } catch(e){
+    toast('Error al restaurar: ' + e.message, 'danger');
+  }
+}
+
+async function eliminarVersion(docId, numVersion){
+  const doc = await DB.getDocumento(docId);
+  if(!doc || !doc.versiones_anteriores) return;
+  const version = doc.versiones_anteriores.find(v => v.num_version === numVersion);
+  if(!version) return;
+
+  if(!confirm(
+    `¿Eliminar PERMANENTEMENTE la versión v${numVersion}?\n\n` +
+    `Archivo: ${version.nombre_archivo}\n` +
+    `Motivo: ${version.motivo || 'Sin motivo'}\n\n` +
+    `⚠️ Esta acción NO se puede deshacer.`
+  )) return;
+
+  try {
+    if(version.storage_path){
+      await DB.deleteArchivo(version.storage_path);
+      if(SB.isActive()) await SB.deletePDF(version.storage_path);
+    }
+    doc.versiones_anteriores = doc.versiones_anteriores.filter(v => v.num_version !== numVersion);
+    await DB.saveDocumento(doc);
+
+    // Recargar el modal
+    const parts = docId.split('_');
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalVersionesDoc'));
+    if(modal) modal.hide();
+    renderDetalleExpediente(doc.expediente_id);
+    toast(`Versión v${numVersion} eliminada`);
+  } catch(e){
+    toast('Error al eliminar: ' + e.message, 'danger');
+  }
+}
+
+function escapeHtml(s){
+  if(s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatearFecha(iso){
+  if(!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('es-CO', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  } catch { return iso; }
+}
+
+async function quitarDocPago(expId, pagoId, tipoId){
+  const docId = `${expId}_${pagoId}_${tipoId}`;
+  const doc = await DB.getDocumento(docId);
+  const numVersiones = doc?.versiones_anteriores?.length || 0;
+  const msg = numVersiones > 0
+    ? `¿Quitar este documento del pago?\n\n⚠️ También se eliminarán las ${numVersiones} versiones anteriores conservadas.\n\nEsta acción NO se puede deshacer.`
+    : '¿Quitar este documento del pago?';
+  if(!confirm(msg)) return;
+  try {
     if(doc && doc.storage_path){
       await DB.deleteArchivo(doc.storage_path);
       if(SB.isActive()) await SB.deletePDF(doc.storage_path);
     }
+    // Eliminar también los storage_path de las versiones anteriores
+    if(doc?.versiones_anteriores){
+      for(const v of doc.versiones_anteriores){
+        if(v.storage_path){
+          try {
+            await DB.deleteArchivo(v.storage_path);
+            if(SB.isActive()) await SB.deletePDF(v.storage_path);
+          } catch(err){ console.warn('No se pudo eliminar versión anterior:', err); }
+        }
+      }
+    }
     await DB.deleteDocumento(docId);
     await actualizarEstadoExpediente(expId);
     renderDetalleExpediente(expId);
-    toast('Documento eliminado');
+    toast(numVersiones > 0 ? `Documento y ${numVersiones} versiones eliminados` : 'Documento eliminado');
   } catch(e){
     console.error('quitarDocPago error:', e);
     toast('Error: ' + e.message, 'danger');

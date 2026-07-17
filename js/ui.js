@@ -805,22 +805,36 @@ function toggleHabilitantesPago(pagoId){
 function renderDocSlotPago(docTipo, subido, expId, pagoId, bloqueado){
   const uploaded = subido ? ' uploaded' : '';
   const inputId = `input-pago-${pagoId}-${docTipo.id}`;
-  const dropAttrs = !bloqueado && !subido
+  const dropAttrs = !bloqueado
     ? `ondragover="event.preventDefault();event.stopPropagation();this.classList.add('drag-slot');"
        ondragleave="this.classList.remove('drag-slot');"
        ondrop="event.preventDefault();event.stopPropagation();this.classList.remove('drag-slot');manejarDropEnSlot('${expId}','${pagoId}','${docTipo.id}',event);"`
     : '';
+  const numVersionesAnteriores = subido?.versiones_anteriores?.length || 0;
+  const versionActual = numVersionesAnteriores + 1;
+  const tieneVersiones = numVersionesAnteriores > 0;
   return `
     <div class="col-md-6 col-lg-3">
       <div class="doc-slot p-2 border rounded${uploaded}" style="min-height:70px;background:${subido ? '#e8f5e9' : '#f8f9fa'}" ${dropAttrs}>
         <div class="d-flex align-items-start" style="gap:6px">
           <i class="bi ${docTipo.icon}" style="color:${docTipo.color};font-size:1.2rem"></i>
           <div class="flex-grow-1" style="min-width:0">
-            <div class="fw-bold small text-truncate" title="${docTipo.nombre}">${docTipo.nombre}</div>
+            <div class="fw-bold small text-truncate" title="${docTipo.nombre}">
+              ${docTipo.nombre}
+              ${tieneVersiones ? `<span class="badge bg-primary ms-1" style="font-size:0.6rem" title="Versión actual (${numVersionesAnteriores} anteriores)">v${versionActual}</span>` : ''}
+            </div>
             <div class="small text-muted">${docTipo.codigo}</div>
             ${subido ? `
               <div class="mt-1">
                 <span class="badge bg-success small"><i class="bi bi-check-circle me-1"></i>Cargado</span>
+                ${tieneVersiones ? `<button class="btn btn-sm btn-link text-primary p-0 ms-1"
+                  onclick="verVersionesDoc('${expId}','${pagoId}','${docTipo.id}')" title="Ver ${numVersionesAnteriores} versión${numVersionesAnteriores>1?'es':''} anterior${numVersionesAnteriores>1?'es':''}"><i class="bi bi-clock-history"></i></button>` : ''}
+                ${!bloqueado ? `<label for="${inputId}" class="btn btn-sm btn-link text-warning p-0 ms-1" title="Reemplazar con nueva versión" style="cursor:pointer">
+                  <i class="bi bi-arrow-repeat"></i>
+                </label>
+                <input type="file" id="${inputId}" style="display:none"
+                       accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp"
+                       onchange="subirDocPago('${expId}','${pagoId}','${docTipo.id}',this.files[0])">` : ''}
                 ${!bloqueado ? `<button class="btn btn-sm btn-link text-danger p-0 ms-1"
                   onclick="quitarDocPago('${expId}','${pagoId}','${docTipo.id}')" title="Quitar"><i class="bi bi-x-circle"></i></button>` : ''}
               </div>
