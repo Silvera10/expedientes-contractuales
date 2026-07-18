@@ -2594,6 +2594,8 @@ async function foliarYOrganizarPDF(expId, inputEl){
         { pats: ['resolucion rectificacion rp', 'resolución rectificación rp', 'rectificacion rp', 'rectificación rp', 'rectificacion del rp', 'rectificación del rp', 'rectificacion registro presupuestal', 'rectificación registro presupuestal', 'rectifica rp', 'rectifica el rp', 'corrige rp', 'corrige el rp', 'modificacion rp', 'modificación rp', 'resolucion rp', 'resolución rp'], tipo: 'resolucion_rect_rp' },
         { pats: ['registro presupuestal', 'rp '], tipo: 'rp' },
         { pats: ['acta de inicio'], tipo: 'acta_inicio' },
+        { pats: ['otrosi', 'otrosí', 'otro si', 'otro sí', 'modificacion contrato', 'modificación contrato', 'modificatorio contrato', 'adicion contrato', 'adición contrato', 'prorroga contrato', 'prórroga contrato', 'ampliacion contrato', 'ampliación contrato', 'cesion contrato', 'cesión contrato', 'suspension contrato', 'suspensión contrato', 'reinicio contrato', 'adicional al contrato'], tipo: 'otrosi' },
+        { pats: ['concepto favorable supervisor', 'concepto favorable del supervisor', 'concepto favorable', 'concepto supervisor favorable', 'visto bueno supervisor', 'aval supervisor', 'aval del supervisor', 'aprobacion supervisor', 'aprobación supervisor', 'certificacion supervisor', 'certificación supervisor'], tipo: 'concepto_favorable_supervisor' },
         { pats: ['orden de compra', 'orden compra'], tipo: 'orden_compra' },
         { pats: ['informe contratista', 'informe del contratista'], tipo: 'informe_contratista' },
         { pats: ['informe supervisor', 'informe de supervision', 'informe de supervisión', 'informe del supervisor'], tipo: 'informe_supervisor' },

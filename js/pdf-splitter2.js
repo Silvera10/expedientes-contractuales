@@ -323,6 +323,12 @@ const DETECTOR_REGLAS = [
     palabras: ['con-03', 'acta de inicio', 'acta de iniciación', 'acta de iniciacion', 'inicio del contrato', 'se da inicio', 'fecha de inicio del contrato'],
     peso: 3
   },
+  {
+    tipo: 'otrosi',
+    nombre: 'Otrosí / Modificación al Contrato',
+    palabras: ['con-05', 'otrosí', 'otrosi', 'otro sí', 'otro si al contrato', 'modificación al contrato', 'modificacion al contrato', 'modificatorio al contrato', 'contrato adicional', 'adición al contrato', 'adicion al contrato', 'prórroga al contrato', 'prorroga al contrato', 'ampliación del plazo', 'ampliacion del plazo', 'ampliación del valor', 'ampliacion del valor', 'cesión del contrato', 'cesion del contrato', 'suspensión del contrato', 'suspension del contrato', 'acuerdan modificar', 'acuerdan las partes adicionar', 'las partes acuerdan prorrogar', 'las partes acuerdan modificar', 'ley 80 artículo 40', 'artículo 40 ley 80', 'clausula modificatoria', 'cláusula modificatoria'],
+    peso: 5
+  },
 
   // ═══════════════════════════════════════
   // FASE EJECUCIÓN
@@ -350,6 +356,12 @@ const DETECTOR_REGLAS = [
     nombre: 'Informe de Supervisión',
     palabras: ['eje-04', 'informe de supervisión', 'informe de supervision', 'informe del supervisor', 'certificación de cumplimiento', 'certificacion de cumplimiento', 'el supervisor certifica', 'certifico que el contratista'],
     peso: 3
+  },
+  {
+    tipo: 'concepto_favorable_supervisor',
+    nombre: 'Concepto Favorable del Supervisor',
+    palabras: ['eje-08', 'concepto favorable del supervisor', 'concepto favorable supervisor', 'concepto favorable', 'emite concepto favorable', 'emitir concepto favorable', 'el supervisor emite concepto favorable', 'concepto técnico favorable', 'concepto tecnico favorable', 'visto bueno del supervisor', 'aval del supervisor', 'aval favorable', 'aprobación del supervisor', 'aprobacion del supervisor', 'supervisor aprueba', 'supervisor da concepto', 'certifica y da concepto favorable'],
+    peso: 4
   },
   {
     tipo: 'acta_recibido',

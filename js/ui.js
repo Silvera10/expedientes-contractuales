@@ -62,11 +62,13 @@ const DOC_TIPOS = [
   { id:'rp',                 nombre:'Registro Presupuestal (RP)',       etapa:'con', orden:41, icon:'bi-file-earmark-lock',    color:'#198754', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-02' },
   { id:'resolucion_rect_rp', nombre:'Resolución Rectificación RP',      etapa:'con', orden:41.5,icon:'bi-pencil-square',       color:'#fd7e14', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-04' },
   { id:'acta_inicio',        nombre:'Acta de Inicio',                   etapa:'con', orden:42, icon:'bi-play-circle',          color:'#17a2b8', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-03' },
+  { id:'otrosi',             nombre:'Otrosí / Modificación al Contrato',etapa:'con', orden:42.5,icon:'bi-file-plus',            color:'#6f42c1', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-05' },
 
   // \u2500\u2500 4. FASE DE EJECUCI\u00d3N (etapa 'eje') \u2500\u2500
   { id:'orden_compra',       nombre:'Orden de Compra / Servicio',       etapa:'eje', orden:50, icon:'bi-cart-check',           color:'#dc3545', vigencia_dias:null, regla:null, codigo:'EJE-01' },
   { id:'informe_contratista',nombre:'Informe del Contratista',          etapa:'eje', orden:52, icon:'bi-file-earmark-person',  color:'#dc3545', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-03' },
   { id:'informe_supervisor', nombre:'Informe de Supervisi\u00f3n',           etapa:'eje', orden:53, icon:'bi-clipboard-check',     color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-04' },
+  { id:'concepto_favorable_supervisor', nombre:'Concepto Favorable del Supervisor', etapa:'eje', orden:53.5, icon:'bi-hand-thumbs-up', color:'#20c997', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-08' },
   { id:'acta_recibido',      nombre:'Acta Recibo a Satisfacci\u00f3n',       etapa:'eje', orden:54, icon:'bi-check2-square',       color:'#6c757d', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-05' },
   { id:'entrada_almacen',    nombre:'Entrada de Almac\u00e9n',               etapa:'eje', orden:55, icon:'bi-box-seam',            color:'#fd7e14', vigencia_dias:null, regla:'despues_contrato', codigo:'EJE-06' },
 
@@ -419,7 +421,7 @@ async function renderDetalleExpediente(expId){
   // Cargar documentos subidos
   const docsSubidos = await DB.loadDocumentos(expId);
   // Tipos que permiten múltiples documentos
-  const TIPOS_MULTIPLES = ['invitacion', 'cotizaciones', 'carta_propuesta'];
+  const TIPOS_MULTIPLES = ['invitacion', 'cotizaciones', 'carta_propuesta', 'otrosi', 'concepto_favorable_supervisor'];
   const subidosMap = {};
   const subidosMultiMap = {}; // tipo → [doc1, doc2, ...]
   docsSubidos.forEach(d => {
