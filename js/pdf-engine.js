@@ -625,13 +625,13 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
       x: width / 2 - fontBold.widthOfTextAtSize(titulo, 16) / 2,
       y: height - 60,
       size: 16, font: fontBold,
-      color: rgb(0.102, 0.227, 0.361)
+      color: rgb(0, 0, 0)
     });
     page.drawLine({
       start: { x: 50, y: height - 70 },
       end: { x: width - 50, y: height - 70 },
-      color: rgb(0.831, 0.627, 0.090),
-      thickness: 2
+      color: rgb(0, 0, 0),
+      thickness: 1.5
     });
     let y = height - 100;
     page.drawText('N\u00b0', { x: 55, y, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
@@ -673,15 +673,17 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
       y = dibujarCabecera(page, true);
     }
     y -= 6;
+    // Header de fase: solo borde negro, fondo blanco (ahorro de tinta)
     page.drawRectangle({
       x: 50, y: y - 4,
       width: width - 100, height: 18,
-      color: rgb(0.102, 0.227, 0.361) // azul oscuro
+      borderColor: rgb(0, 0, 0),
+      borderWidth: 1
     });
     page.drawText(FASES[faseKey] || faseKey.toUpperCase(), {
       x: 58, y: y + 1,
       size: 9, font: fontBold,
-      color: rgb(1, 1, 1) // blanco
+      color: rgb(0, 0, 0)
     });
     y -= 22;
   }
@@ -698,19 +700,18 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
       y = dibujarCabecera(page, true);
     }
     y -= 8;
-    // Fondo verde suave para diferenciar
+    // Header de PAGO: solo borde negro (ahorro de tinta)
     page.drawRectangle({
       x: 60, y: y - 4,
       width: width - 120, height: 32,
-      color: rgb(0.85, 0.94, 0.86), // verde muy suave
-      borderColor: rgb(0.30, 0.65, 0.35),
+      borderColor: rgb(0, 0, 0),
       borderWidth: 0.8
     });
     const titulo = sanitizeForPdf(`PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`);
     page.drawText(titulo, {
       x: 68, y: y + 18,
       size: 10, font: fontBold,
-      color: rgb(0.10, 0.40, 0.15)
+      color: rgb(0, 0, 0)
     });
     // Concepto (truncado)
     if(pago.concepto){
@@ -719,7 +720,7 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
       page.drawText(`Concepto: ${concepto}`, {
         x: 68, y: y + 6,
         size: 8, font: fontNormal,
-        color: rgb(0.25, 0.25, 0.25)
+        color: rgb(0.2, 0.2, 0.2)
       });
     }
     // Fecha, valor, factura en la esquina derecha
@@ -734,7 +735,7 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
       page.drawText(info, {
         x: infoX - w, y: y + 18,
         size: 8, font: fontBold,
-        color: rgb(0.10, 0.40, 0.15)
+        color: rgb(0, 0, 0)
       });
     }
     y -= 36;
@@ -790,19 +791,19 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
       });
     }
 
-    page.drawText(num, { x: 58, y, size: 10, font: fontBold, color: rgb(0.102, 0.227, 0.361) });
+    page.drawText(num, { x: 58, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
 
     const codigo = docTipo ? (docTipo.codigo || '') : '';
     if(codigo){
-      page.drawText(sanitizeForPdf(codigo), { x: 80, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
+      page.drawText(sanitizeForPdf(codigo), { x: 80, y, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
     }
 
     let nombreCorto = sanitizeForPdf(nombre);
     if(nombreCorto.length > 45) nombreCorto = nombreCorto.substring(0, 45) + '...';
-    page.drawText(nombreCorto, { x: 130, y, size: 10, font: fontNormal, color: rgb(0.2, 0.2, 0.2) });
+    page.drawText(nombreCorto, { x: 130, y, size: 10, font: fontNormal, color: rgb(0.1, 0.1, 0.1) });
 
-    page.drawText(String(item.paginas), { x: 432, y, size: 10, font: fontNormal, color: rgb(0.4, 0.4, 0.4) });
-    page.drawText(String(item.folioInicio), { x: 488, y, size: 10, font: fontBold, color: rgb(0.102, 0.227, 0.361) });
+    page.drawText(String(item.paginas), { x: 432, y, size: 10, font: fontNormal, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText(String(item.folioInicio), { x: 488, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
 
     y -= 22;
   });
@@ -817,7 +818,7 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
   page.drawLine({
     start: { x: 50, y: y + 8 },
     end: { x: width - 50, y: y + 8 },
-    color: rgb(0.831, 0.627, 0.090),
+    color: rgb(0, 0, 0),
     thickness: 1
   });
 
@@ -825,14 +826,14 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
   page.drawText(totalDocs, {
     x: 130, y: y - 8,
     size: 10, font: fontBold,
-    color: rgb(0.3, 0.3, 0.3)
+    color: rgb(0, 0, 0)
   });
 
   const totalPags = pdfDocs.reduce((s, d) => s + d.paginas, 0);
   page.drawText(`${totalPags} p\u00e1ginas`, {
     x: 420, y: y - 8,
     size: 10, font: fontBold,
-    color: rgb(0.3, 0.3, 0.3)
+    color: rgb(0, 0, 0)
   });
 }
 
@@ -845,7 +846,7 @@ function estamparFolio(page, folio, totalFolios, fontBold){
   const fontSize = 8;
   const textWidth = fontBold.widthOfTextAtSize(texto, fontSize);
 
-  // Fondo del sello
+  // Sello: solo borde negro, sin relleno (ahorro de tinta)
   const padX = 6, padY = 3;
   const boxX = width - textWidth - padX * 2 - 15;
   const boxY = height - 22;
@@ -854,10 +855,8 @@ function estamparFolio(page, folio, totalFolios, fontBold){
     x: boxX, y: boxY,
     width: textWidth + padX * 2,
     height: fontSize + padY * 2,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(0.102, 0.227, 0.361),
-    borderWidth: 0.8,
-    opacity: 0.92
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 0.6
   });
 
   page.drawText(texto, {
@@ -865,7 +864,7 @@ function estamparFolio(page, folio, totalFolios, fontBold){
     y: boxY + padY,
     size: fontSize,
     font: fontBold,
-    color: rgb(0.102, 0.227, 0.361)
+    color: rgb(0, 0, 0)
   });
 }
 
