@@ -707,7 +707,7 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
               <i class="bi bi-printer"></i>
             </button>
             ${!bloqueado ? `
-            <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editarPagoPeriodo('${exp.id}','${pago.id}')" title="Editar concepto, fecha, valor y factura">
+            <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editarPagoPeriodo('${exp.id}','${pago.id}')" title="Editar periodo, concepto, fecha, valor y factura">
               <i class="bi bi-pencil"></i>
             </button>
             ${(FORMAS_PAGO[exp.datos.forma_pago].numPagos === 0) ? `

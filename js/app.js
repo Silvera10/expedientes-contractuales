@@ -1495,19 +1495,30 @@ async function editarPagoPeriodo(expId, pagoId){
   const pago = exp.datos.pagos_periodicos.find(p => p.id === pagoId);
   if(!pago) return;
 
-  const conceptoActual = pago.concepto || `Pago correspondiente al ${pago.periodo} del contrato ${exp.contrato_numero || 'S/N'} de ${exp.anio || ''} - ${exp.objeto || ''}`.substring(0, 200);
-  const nuevoConcepto = prompt(`Concepto del pago (${pago.periodo}):\nEj: "Servicios de aseo prestados durante enero-marzo 2026"`, conceptoActual);
+  // 1. Editar el NOMBRE del periodo (útil para contratos que no empiezan en enero)
+  const nuevoPeriodo = prompt(
+    `Nombre del periodo — PAGO ${String(pago.numero).padStart(2,'0')}:\n` +
+    `Ej: "Trimestre I (Abr-Jun)" o "Enero-Marzo" o "Mes de Julio"\n` +
+    `(Deja igual si el actual está correcto)`,
+    pago.periodo || ''
+  );
+  if(nuevoPeriodo === null) return;
+  const periodoFinal = nuevoPeriodo.trim() || pago.periodo;
+
+  const conceptoActual = pago.concepto || `Pago correspondiente al ${periodoFinal} del contrato ${exp.contrato_numero || 'S/N'} de ${exp.anio || ''} - ${exp.objeto || ''}`.substring(0, 200);
+  const nuevoConcepto = prompt(`Concepto del pago (${periodoFinal}):\nEj: "Servicios de aseo prestados durante enero-marzo 2026"`, conceptoActual);
   if(nuevoConcepto === null) return;
 
-  const nuevaFecha = prompt(`Fecha del pago (${pago.periodo}):\nFormato AAAA-MM-DD`, pago.fecha_pago || '');
+  const nuevaFecha = prompt(`Fecha del pago (${periodoFinal}):\nFormato AAAA-MM-DD`, pago.fecha_pago || '');
   if(nuevaFecha === null) return;
 
-  const nuevoValor = prompt(`Valor pagado ${pago.periodo} (solo números, sin puntos):`, pago.valor_pagado || '');
+  const nuevoValor = prompt(`Valor pagado ${periodoFinal} (solo números, sin puntos):`, pago.valor_pagado || '');
   if(nuevoValor === null) return;
 
-  const nuevaFactura = prompt(`N° de Factura o Cuenta de Cobro (${pago.periodo}) - opcional:`, pago.numero_factura || '');
+  const nuevaFactura = prompt(`N° de Factura o Cuenta de Cobro (${periodoFinal}) - opcional:`, pago.numero_factura || '');
   if(nuevaFactura === null) return;
 
+  pago.periodo = periodoFinal;
   pago.concepto = nuevoConcepto.trim() || null;
   pago.fecha_pago = nuevaFecha.trim() || null;
   pago.valor_pagado = nuevoValor.trim() ? Number(nuevoValor.replace(/[^\d]/g,'')) : null;
