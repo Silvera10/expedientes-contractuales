@@ -223,39 +223,38 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
   const page = pdfDoc.addPage(PageSizes.Letter);
   const { width, height } = page.getSize();
 
-  // Header decorativo
-  page.drawRectangle({
-    x: 0, y: height - 80,
-    width: width, height: 80,
-    color: rgb(0.15, 0.45, 0.20) // verde oscuro
-  });
+  // Título superior (sin fondo de color)
   page.drawText('SOPORTES DE PAGO', {
     x: width / 2 - fontBold.widthOfTextAtSize('SOPORTES DE PAGO', 20) / 2,
-    y: height - 45,
+    y: height - 55,
     size: 20, font: fontBold,
-    color: rgb(1, 1, 1)
+    color: rgb(0, 0, 0)
   });
   page.drawText('EXPEDIENTE CONTRACTUAL', {
     x: width / 2 - fontNormal.widthOfTextAtSize('EXPEDIENTE CONTRACTUAL', 10) / 2,
-    y: height - 65,
+    y: height - 75,
     size: 10, font: fontNormal,
-    color: rgb(0.9, 0.95, 0.9)
+    color: rgb(0.3, 0.3, 0.3)
+  });
+  page.drawLine({
+    start: { x: 50, y: height - 90 },
+    end: { x: width - 50, y: height - 90 },
+    color: rgb(0, 0, 0), thickness: 1.5
   });
 
-  // Bloque del pago (grande y destacado)
-  const pagoBoxY = height - 180;
+  // Bloque del pago (solo borde, sin relleno)
+  const pagoBoxY = height - 200;
   page.drawRectangle({
     x: 60, y: pagoBoxY,
     width: width - 120, height: 90,
-    color: rgb(0.90, 0.96, 0.91),
-    borderColor: rgb(0.15, 0.45, 0.20),
-    borderWidth: 1.5
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1
   });
   const tituloPago = sanitizeForPdf(`PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`);
   page.drawText(tituloPago, {
     x: 75, y: pagoBoxY + 68,
     size: 14, font: fontBold,
-    color: rgb(0.10, 0.35, 0.15)
+    color: rgb(0, 0, 0)
   });
   let py = pagoBoxY + 48;
   if(pago.concepto){
@@ -263,7 +262,7 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
     if(concepto.length > 95) concepto = concepto.substring(0, 95) + '...';
     page.drawText(`Concepto: ${concepto}`, {
       x: 75, y: py, size: 9, font: fontNormal,
-      color: rgb(0.25, 0.25, 0.25)
+      color: rgb(0.2, 0.2, 0.2)
     });
     py -= 14;
   }
@@ -274,7 +273,7 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
   if(info.length){
     page.drawText(info.join('   |   '), {
       x: 75, y: py, size: 10, font: fontBold,
-      color: rgb(0.10, 0.35, 0.15)
+      color: rgb(0, 0, 0)
     });
   }
 
@@ -333,7 +332,7 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
   page.drawText(marca, {
     x: width / 2 - fontNormal.widthOfTextAtSize(marca, 8) / 2,
     y: 40, size: 8, font: fontNormal,
-    color: rgb(0.5, 0.5, 0.5)
+    color: rgb(0.4, 0.4, 0.4)
   });
 }
 
@@ -346,12 +345,12 @@ async function generarIndicePago(pdfDoc, pago, pdfDocs, fontBold, fontNormal){
     x: width / 2 - fontBold.widthOfTextAtSize(titulo, 14) / 2,
     y: height - 60,
     size: 14, font: fontBold,
-    color: rgb(0.10, 0.35, 0.15)
+    color: rgb(0, 0, 0)
   });
   page.drawLine({
     start: { x: 50, y: height - 70 },
     end: { x: width - 50, y: height - 70 },
-    color: rgb(0.15, 0.45, 0.20), thickness: 2
+    color: rgb(0, 0, 0), thickness: 1.5
   });
 
   let y = height - 100;
@@ -385,13 +384,13 @@ async function generarIndicePago(pdfDoc, pago, pdfDocs, fontBold, fontNormal){
         color: rgb(0.96, 0.97, 0.98)
       });
     }
-    page.drawText(num, { x: 58, y, size: 10, font: fontBold, color: rgb(0.10, 0.35, 0.15) });
-    page.drawText(sanitizeForPdf(meta.codigo), { x: 85, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
+    page.drawText(num, { x: 58, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
+    page.drawText(sanitizeForPdf(meta.codigo), { x: 85, y, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
     let nombreCorto = sanitizeForPdf(meta.nombre);
     if(nombreCorto.length > 42) nombreCorto = nombreCorto.substring(0, 42) + '...';
-    page.drawText(nombreCorto, { x: 145, y, size: 10, font: fontNormal, color: rgb(0.2, 0.2, 0.2) });
-    page.drawText(String(item.paginas), { x: 432, y, size: 10, font: fontNormal, color: rgb(0.4, 0.4, 0.4) });
-    page.drawText(String(item.folioInicio), { x: 483, y, size: 10, font: fontBold, color: rgb(0.10, 0.35, 0.15) });
+    page.drawText(nombreCorto, { x: 145, y, size: 10, font: fontNormal, color: rgb(0.1, 0.1, 0.1) });
+    page.drawText(String(item.paginas), { x: 432, y, size: 10, font: fontNormal, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText(String(item.folioInicio), { x: 483, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
     y -= 22;
   });
 
@@ -399,10 +398,10 @@ async function generarIndicePago(pdfDoc, pago, pdfDocs, fontBold, fontNormal){
   y -= 10;
   page.drawLine({
     start: { x: 50, y: y + 8 }, end: { x: width - 50, y: y + 8 },
-    color: rgb(0.15, 0.45, 0.20), thickness: 1
+    color: rgb(0, 0, 0), thickness: 1
   });
   page.drawText(`Total: ${pdfDocs.length} soportes de este pago`, {
-    x: 145, y: y - 8, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.3)
+    x: 145, y: y - 8, size: 10, font: fontBold, color: rgb(0.2, 0.2, 0.2)
   });
 }
 
