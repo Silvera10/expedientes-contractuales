@@ -6,6 +6,30 @@
 const { PDFDocument, rgb, StandardFonts, PageSizes } = PDFLib;
 
 /* ══════════════════════════════════════════
+   Helper: sanitizar texto para pdf-lib WinAnsi
+   Remueve saltos de línea, tabs, control chars y
+   sustituye caracteres Unicode no soportados por WinAnsi
+══════════════════════════════════════════ */
+function sanitizeForPdf(s){
+  if(s == null) return '';
+  return String(s)
+    // Reemplazar saltos de línea, tabs y otros whitespace especial por espacio
+    .replace(/[\r\n\t\v\f]+/g, ' ')
+    // Eliminar caracteres de control (0x00-0x1F excepto ya reemplazados, y 0x7F DEL)
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    // Sustituciones comunes para caracteres Unicode que WinAnsi no puede codificar
+    .replace(/[‘’‚‛]/g, "'")  // comillas simples curly → recta
+    .replace(/[“”„‟]/g, '"')  // comillas dobles curly → recta
+    .replace(/[–—―]/g, '-')        // en-dash, em-dash → guión
+    .replace(/[…]/g, '...')                  // ellipsis → 3 puntos
+    .replace(/[ ]/g, ' ')                    // NBSP → espacio normal
+    .replace(/[​-‍﻿]/g, '')        // zero-width chars
+    // Colapsar múltiples espacios en uno
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* ══════════════════════════════════════════
    FUNCION PRINCIPAL: Generar expediente completo
 ══════════════════════════════════════════ */
 async function generarPDFExpediente(expediente, documentos){
@@ -227,7 +251,7 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
     borderColor: rgb(0.15, 0.45, 0.20),
     borderWidth: 1.5
   });
-  const tituloPago = `PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`;
+  const tituloPago = sanitizeForPdf(`PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`);
   page.drawText(tituloPago, {
     x: 75, y: pagoBoxY + 68,
     size: 14, font: fontBold,
@@ -235,7 +259,8 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
   });
   let py = pagoBoxY + 48;
   if(pago.concepto){
-    const concepto = pago.concepto.length > 95 ? pago.concepto.substring(0, 95) + '...' : pago.concepto;
+    let concepto = sanitizeForPdf(pago.concepto);
+    if(concepto.length > 95) concepto = concepto.substring(0, 95) + '...';
     page.drawText(`Concepto: ${concepto}`, {
       x: 75, y: py, size: 9, font: fontNormal,
       color: rgb(0.25, 0.25, 0.25)
@@ -243,9 +268,9 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
     py -= 14;
   }
   const info = [];
-  if(pago.fecha_pago) info.push(`Fecha: ${pago.fecha_pago}`);
+  if(pago.fecha_pago) info.push(`Fecha: ${sanitizeForPdf(pago.fecha_pago)}`);
   if(pago.valor_pagado) info.push(`Valor: $${Number(pago.valor_pagado).toLocaleString('es-CO')}`);
-  if(pago.numero_factura) info.push(`Factura N°: ${pago.numero_factura}`);
+  if(pago.numero_factura) info.push(`Factura N°: ${sanitizeForPdf(pago.numero_factura)}`);
   if(info.length){
     page.drawText(info.join('   |   '), {
       x: 75, y: py, size: 10, font: fontBold,
@@ -259,17 +284,17 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
     : null;
 
   const datos = [
-    { label: 'INSTITUCIÓN', valor: (exp.institucion || '').toUpperCase() },
-    { label: 'CONTRATO N°', valor: `${exp.contrato_numero || 'S/N'} DE ${exp.anio || ''}` },
-    { label: 'CONTRATISTA', valor: (exp.contratista || '').toUpperCase() },
-    { label: 'NIT / CÉDULA', valor: exp.nit || 'N/A' },
+    { label: 'INSTITUCIÓN', valor: sanitizeForPdf((exp.institucion || '').toUpperCase()) },
+    { label: 'CONTRATO N°', valor: sanitizeForPdf(`${exp.contrato_numero || 'S/N'} DE ${exp.anio || ''}`) },
+    { label: 'CONTRATISTA', valor: sanitizeForPdf((exp.contratista || '').toUpperCase()) },
+    { label: 'NIT / CÉDULA', valor: sanitizeForPdf(exp.nit || 'N/A') },
     { label: 'VALOR TOTAL CONTRATO', valor: exp.valor ? '$' + Number(exp.valor).toLocaleString('es-CO') : 'N/A' },
-    { label: 'OBJETO', valor: exp.objeto || 'N/A' }
+    { label: 'OBJETO', valor: sanitizeForPdf(exp.objeto || 'N/A') }
   ];
   if(instData && instData.rector){
-    datos.push({ label: 'RECTOR - ORD. GASTO', valor: instData.rector.toUpperCase() + (instData.cedulaRector ? ' - C.C. ' + instData.cedulaRector : '') });
+    datos.push({ label: 'RECTOR - ORD. GASTO', valor: sanitizeForPdf(instData.rector.toUpperCase() + (instData.cedulaRector ? ' - C.C. ' + instData.cedulaRector : '')) });
   }
-  datos.push({ label: 'TOTAL SOPORTES', valor: `${totalFolios} folios (${(await Promise.resolve(0)) + 0 || totalFolios - 2} páginas de documentos + portada + índice)`.replace(/\(0\+ 0.*\)/, `(${totalFolios} folios totales)`) });
+  datos.push({ label: 'TOTAL SOPORTES', valor: `${totalFolios} folios totales` });
 
   let dy = pagoBoxY - 25;
   const boxX = 60;
@@ -316,7 +341,7 @@ async function generarIndicePago(pdfDoc, pago, pdfDocs, fontBold, fontNormal){
   const page = pdfDoc.addPage(PageSizes.Letter);
   const { width, height } = page.getSize();
 
-  const titulo = `SOPORTES DEL PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`;
+  const titulo = sanitizeForPdf(`SOPORTES DEL PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`);
   page.drawText(titulo, {
     x: width / 2 - fontBold.widthOfTextAtSize(titulo, 14) / 2,
     y: height - 60,
@@ -361,8 +386,9 @@ async function generarIndicePago(pdfDoc, pago, pdfDocs, fontBold, fontNormal){
       });
     }
     page.drawText(num, { x: 58, y, size: 10, font: fontBold, color: rgb(0.10, 0.35, 0.15) });
-    page.drawText(meta.codigo, { x: 85, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
-    const nombreCorto = meta.nombre.length > 42 ? meta.nombre.substring(0, 42) + '...' : meta.nombre;
+    page.drawText(sanitizeForPdf(meta.codigo), { x: 85, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
+    let nombreCorto = sanitizeForPdf(meta.nombre);
+    if(nombreCorto.length > 42) nombreCorto = nombreCorto.substring(0, 42) + '...';
     page.drawText(nombreCorto, { x: 145, y, size: 10, font: fontNormal, color: rgb(0.2, 0.2, 0.2) });
     page.drawText(String(item.paginas), { x: 432, y, size: 10, font: fontNormal, color: rgb(0.4, 0.4, 0.4) });
     page.drawText(String(item.folioInicio), { x: 483, y, size: 10, font: fontBold, color: rgb(0.10, 0.35, 0.15) });
@@ -525,8 +551,9 @@ async function generarPortada(pdfDoc, exp, totalFolios, fontBold, fontNormal){
         color: rgb(0.4, 0.4, 0.4)
       });
     }
-    // Wrap valor para que no se desborde
-    const valorLineas = wrapText(d.valor, fontBold, valorFontSize, valorMaxWidth);
+    // Wrap valor para que no se desborde (sanitizado para WinAnsi)
+    const valorSanitizado = sanitizeForPdf(d.valor);
+    const valorLineas = wrapText(valorSanitizado, fontBold, valorFontSize, valorMaxWidth);
     // Limitar a máximo 4 líneas
     const lineasMostrar = valorLineas.slice(0, 4);
     if(valorLineas.length > 4){
@@ -680,7 +707,7 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
       borderColor: rgb(0.30, 0.65, 0.35),
       borderWidth: 0.8
     });
-    const titulo = `PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`;
+    const titulo = sanitizeForPdf(`PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}`);
     page.drawText(titulo, {
       x: 68, y: y + 18,
       size: 10, font: fontBold,
@@ -688,7 +715,8 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
     });
     // Concepto (truncado)
     if(pago.concepto){
-      const concepto = pago.concepto.length > 75 ? pago.concepto.substring(0, 75) + '...' : pago.concepto;
+      let concepto = sanitizeForPdf(pago.concepto);
+      if(concepto.length > 75) concepto = concepto.substring(0, 75) + '...';
       page.drawText(`Concepto: ${concepto}`, {
         x: 68, y: y + 6,
         size: 8, font: fontNormal,
@@ -698,9 +726,9 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
     // Fecha, valor, factura en la esquina derecha
     let infoX = width - 68;
     const infoParts = [];
-    if(pago.fecha_pago) infoParts.push(pago.fecha_pago);
+    if(pago.fecha_pago) infoParts.push(sanitizeForPdf(pago.fecha_pago));
     if(pago.valor_pagado) infoParts.push('$' + Number(pago.valor_pagado).toLocaleString('es-CO'));
-    if(pago.numero_factura) infoParts.push('Fact. ' + pago.numero_factura);
+    if(pago.numero_factura) infoParts.push('Fact. ' + sanitizeForPdf(pago.numero_factura));
     if(infoParts.length){
       const info = infoParts.join('  |  ');
       const w = fontNormal.widthOfTextAtSize(info, 8);
@@ -767,10 +795,11 @@ async function generarIndice(pdfDoc, pdfDocs, fontBold, fontNormal, expediente){
 
     const codigo = docTipo ? (docTipo.codigo || '') : '';
     if(codigo){
-      page.drawText(codigo, { x: 80, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
+      page.drawText(sanitizeForPdf(codigo), { x: 80, y, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
     }
 
-    const nombreCorto = nombre.length > 45 ? nombre.substring(0, 45) + '...' : nombre;
+    let nombreCorto = sanitizeForPdf(nombre);
+    if(nombreCorto.length > 45) nombreCorto = nombreCorto.substring(0, 45) + '...';
     page.drawText(nombreCorto, { x: 130, y, size: 10, font: fontNormal, color: rgb(0.2, 0.2, 0.2) });
 
     page.drawText(String(item.paginas), { x: 432, y, size: 10, font: fontNormal, color: rgb(0.4, 0.4, 0.4) });
