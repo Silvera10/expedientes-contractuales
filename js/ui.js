@@ -241,13 +241,15 @@ const FORMAS_PAGO = {
 };
 
 // Documentos que se repiten POR CADA PAGO (soportes contables/legales)
+// ORDEN: OPCI\u00d3N C - Auditor\u00eda/Contralor\u00eda FOSE
+// Primero verifica CUMPLIMIENTO (docs 1-5), luego AUTORIZACI\u00d3N y EJECUCI\u00d3N del pago (docs 6-8)
 // Base legal: Art. 617 ET (factura), Ley 42/1993 (control fiscal), Ley 100 Art.282 (PILA),
 // Ley 1474/2011 Art. 82-84 (supervisi\u00f3n), Decreto 1082/2015 (acta recibo)
 const DOCS_POR_PAGO = [
   { id:'factura',            nombre:'Factura / Cuenta de Cobro', icon:'bi-receipt-cutoff', color:'#dc3545', codigo:'EJE-02', requerido:true },
-  { id:'informe_contratista',nombre:'Informe del Contratista',   icon:'bi-file-earmark-person', color:'#dc3545', codigo:'EJE-03', requerido:true },
-  { id:'informe_supervisor', nombre:'Informe de Supervisi\u00f3n',    icon:'bi-clipboard-check', color:'#6c757d', codigo:'EJE-04', requerido:true },
   { id:'acta_recibido',      nombre:'Acta de Recibo a Satisfacci\u00f3n', icon:'bi-check2-square', color:'#6c757d', codigo:'EJE-05', requerido:true },
+  { id:'informe_supervisor', nombre:'Informe de Supervisi\u00f3n',    icon:'bi-clipboard-check', color:'#6c757d', codigo:'EJE-04', requerido:true },
+  { id:'informe_contratista',nombre:'Informe del Contratista',   icon:'bi-file-earmark-person', color:'#dc3545', codigo:'EJE-03', requerido:true },
   { id:'seguridad_social',   nombre:'Seguridad Social (PILA)',   icon:'bi-heart-pulse', color:'#20c997', codigo:'DOC-10', requerido:true },
   { id:'orden_pago',         nombre:'Orden de Pago',             icon:'bi-cash-coin', color:'#343a40', codigo:'PAG-01', requerido:true },
   { id:'egreso',             nombre:'Comprobante de Egreso',     icon:'bi-receipt', color:'#343a40', codigo:'PAG-02', requerido:true },
