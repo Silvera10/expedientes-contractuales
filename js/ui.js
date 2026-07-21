@@ -440,15 +440,25 @@ async function renderDetalleExpediente(expId){
   const esAnterior = (exp.datos && exp.datos.tipo_vigencia === 'anterior');
   const docsCatalogo = esAnterior ? [...DOC_TIPOS, ...DOC_TIPOS_ADICION] : DOC_TIPOS;
   const totalRequeridos = docsCatalogo.length;
-  // Contar tipos únicos subidos (no contar duplicados de tipos múltiples)
-  const tiposSubidos = new Set(docsSubidos.filter(d => docsCatalogo.find(t => t.id === d.tipo)).map(d => d.tipo));
+  // Separar docs sin pago_id (regulares) y con pago_id (de pagos periódicos)
+  const docsRegulares = docsSubidos.filter(d => !d.pago_id);
+  const docsDePagos = docsSubidos.filter(d => d.pago_id);
+  // Contar tipos únicos de docs regulares (dedup para catalogo)
+  const tiposSubidos = new Set(docsRegulares.filter(d => docsCatalogo.find(t => t.id === d.tipo)).map(d => d.tipo));
   const totalSubidos = tiposSubidos.size;
   // Detectar expediente_completo (cargado via Foliar PDF Completo)
   const tieneExpedienteCompleto = docsSubidos.some(d => d.tipo === 'expediente_completo');
   // Contar extras (que no son expediente_completo ni del catalogo)
-  const extrasCount = docsSubidos.filter(d => !docsCatalogo.find(t => t.id === d.tipo) && d.tipo !== 'expediente_completo').length;
+  const extrasCount = docsRegulares.filter(d => !docsCatalogo.find(t => t.id === d.tipo) && d.tipo !== 'expediente_completo').length;
   const pct = tieneExpedienteCompleto ? 100 : Math.round((totalSubidos / totalRequeridos) * 100);
   const bloqueado = exp.estado === 'bloqueado';
+
+  // Estadísticas de pagos periódicos
+  const totalDocsPagos = docsDePagos.length;
+  const totalPeriodos = (exp.datos?.pagos_periodicos || []).length;
+  // Total de PÁGINAS de todos los documentos (regulares + pagos + versiones anteriores no cuentan)
+  const totalPaginas = docsSubidos.reduce((sum, d) => sum + (Number(d.paginas) || 0), 0);
+  const totalDocsGlobal = docsSubidos.length;
 
   // Header del expediente
   let html = `
@@ -480,8 +490,10 @@ async function renderDetalleExpediente(expId){
             <span>
               ${tieneExpedienteCompleto
                 ? '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Expediente completo cargado</span>'
-                : `<strong>${totalSubidos}</strong> de <strong>${totalRequeridos}</strong> documentos`}
+                : `<strong>${totalSubidos}</strong> de <strong>${totalRequeridos}</strong> documentos base`}
               ${extrasCount > 0 ? ` <span class="badge bg-info text-dark ms-1">+${extrasCount} adicional${extrasCount !== 1 ? 'es' : ''}</span>` : ''}
+              ${totalDocsPagos > 0 ? ` <span class="badge bg-primary ms-1" title="Documentos en ${totalPeriodos} pago${totalPeriodos !== 1 ? 's' : ''} periódico${totalPeriodos !== 1 ? 's' : ''}"><i class="bi bi-cash-stack me-1"></i>+${totalDocsPagos} de pagos</span>` : ''}
+              ${totalDocsGlobal > 0 ? ` <span class="badge bg-dark ms-1" title="Total general: ${totalDocsGlobal} documento${totalDocsGlobal !== 1 ? 's' : ''} con ${totalPaginas} página${totalPaginas !== 1 ? 's' : ''}"><i class="bi bi-file-earmark-text me-1"></i>${totalDocsGlobal} docs · ${totalPaginas} págs</span>` : ''}
             </span>
             <span class="fw-bold" style="color:${pct === 100 ? 'var(--verde)' : pct >= 50 ? 'var(--dorado)' : 'var(--rojo)'}">${pct}%</span>
           </div>
@@ -650,12 +662,19 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
     const pd = docsPorPago[p.id] || {};
     return sum + DOCS_POR_PAGO.filter(dt => pd[dt.id]).length;
   }, 0);
+  // Contar TODOS los docs de pagos (requeridos + habilitantes) y páginas totales
+  const totalDocsPagosGlobal = docsSubidos.filter(d => d.pago_id).length;
+  const totalPaginasPagos = docsSubidos.filter(d => d.pago_id).reduce((s, d) => s + (Number(d.paginas) || 0), 0);
 
   let html = `<div class="mb-3">
     <div class="etapa-header etapa-pag" style="background:linear-gradient(90deg,#e8f5e9,#c8e6c9)">
       <i class="bi ${cfg.icon} me-1"></i>
       <strong>PAGOS PERIÓDICOS</strong> — ${cfg.nombre}
-      <span class="float-end">${totalDocsSubidos}/${totalDocsEsperados} docs</span>
+      <span class="float-end">
+        ${totalDocsSubidos}/${totalDocsEsperados} req.
+        ${totalDocsPagosGlobal > totalDocsSubidos ? `<span class="text-muted ms-1">(${totalDocsPagosGlobal} total)</span>` : ''}
+        <span class="badge bg-dark ms-2"><i class="bi bi-file-earmark-text me-1"></i>${totalPaginasPagos} pág${totalPaginasPagos !== 1 ? 's' : ''}</span>
+      </span>
     </div>
     <div class="alert alert-info small py-2 mb-2">
       <i class="bi bi-info-circle me-1"></i>
@@ -683,6 +702,11 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
     const total = DOCS_POR_PAGO.length;
     const pct = Math.round((cargados / total) * 100);
     const completo = pct === 100;
+    // Sumar páginas TOTALES de este pago (incluyendo habilitantes opcionales)
+    const paginasDelPago = docsSubidos
+      .filter(d => d.pago_id === pago.id)
+      .reduce((s, d) => s + (Number(d.paginas) || 0), 0);
+    const docsTotalesDelPago = docsSubidos.filter(d => d.pago_id === pago.id).length;
 
     html += `<div class="card mb-2 shadow-sm pago-card" data-exp-id="${exp.id}" data-pago-id="${pago.id}"
       ondragover="event.preventDefault();this.classList.add('drag-over');"
@@ -702,6 +726,7 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
           </div>
           <div>
             <span class="badge ${completo ? 'bg-success' : 'bg-warning text-dark'}">${cargados}/${total} (${pct}%)</span>
+            ${paginasDelPago > 0 ? `<span class="badge bg-dark ms-1" title="${docsTotalesDelPago} documento${docsTotalesDelPago !== 1 ? 's' : ''} en ${paginasDelPago} página${paginasDelPago !== 1 ? 's' : ''}"><i class="bi bi-file-earmark-text me-1"></i>${paginasDelPago} pág${paginasDelPago !== 1 ? 's' : ''}</span>` : ''}
             <button class="btn btn-sm btn-outline-primary ms-1" onclick="imprimirPagoIndividual('${exp.id}','${pago.id}')" title="Generar PDF solo de este pago (portada + índice + soportes foliados)"
                     ${cargados === 0 ? 'disabled' : ''}>
               <i class="bi bi-printer"></i>
