@@ -61,6 +61,8 @@ const DOC_TIPOS = [
   { id:'contrato',           nombre:'Contrato Firmado',                 etapa:'con', orden:40, icon:'bi-file-earmark-medical', color:'#198754', vigencia_dias:null, regla:null, codigo:'CON-01' },
   { id:'rp',                 nombre:'Registro Presupuestal (RP)',       etapa:'con', orden:41, icon:'bi-file-earmark-lock',    color:'#198754', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-02' },
   { id:'resolucion_rect_rp', nombre:'Resolución Rectificación RP',      etapa:'con', orden:41.5,icon:'bi-pencil-square',       color:'#fd7e14', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-04' },
+  { id:'poliza',             nombre:'Póliza / Garantía de Cumplimiento',etapa:'con', orden:41.7,icon:'bi-shield-fill-check',    color:'#0d6efd', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-06' },
+  { id:'condiciones_poliza', nombre:'Condiciones Generales de la Póliza',etapa:'con',orden:41.8,icon:'bi-file-earmark-text',    color:'#0d6efd', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-07' },
   { id:'acta_inicio',        nombre:'Acta de Inicio',                   etapa:'con', orden:42, icon:'bi-play-circle',          color:'#17a2b8', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-03' },
   { id:'otrosi',             nombre:'Otrosí / Modificación al Contrato',etapa:'con', orden:42.5,icon:'bi-file-plus',            color:'#6f42c1', vigencia_dias:null, regla:'despues_contrato', codigo:'CON-05' },
 

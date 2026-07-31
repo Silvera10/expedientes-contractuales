@@ -318,6 +318,18 @@ const DETECTOR_REGLAS = [
     peso: 5
   },
   {
+    tipo: 'poliza',
+    nombre: 'Póliza / Garantía de Cumplimiento',
+    palabras: ['con-06', 'póliza de cumplimiento', 'poliza de cumplimiento', 'garantía de cumplimiento', 'garantia de cumplimiento', 'garantía única', 'garantia unica', 'póliza n°', 'poliza n°', 'póliza no.', 'poliza no.', 'certificado de póliza', 'certificado de poliza', 'amparo de cumplimiento', 'seguros del estado', 'aseguradora solidaria', 'previsora seguros', 'suramericana seguros', 'liberty seguros', 'axa colpatria', 'valor asegurado', 'vigencia amparo', 'tomador contratante', 'beneficiario asegurado', 'ramo cumplimiento'],
+    peso: 4
+  },
+  {
+    tipo: 'condiciones_poliza',
+    nombre: 'Condiciones Generales de la Póliza',
+    palabras: ['con-07', 'condiciones generales de la póliza', 'condiciones generales de la poliza', 'condiciones generales póliza', 'condiciones generales poliza', 'clausulado póliza', 'clausulado poliza', 'condicionado póliza', 'condicionado poliza', 'cláusulas generales', 'clausulas generales', 'clausulado del seguro', 'condiciones del amparo', 'condiciones generales del seguro'],
+    peso: 4
+  },
+  {
     tipo: 'acta_inicio',
     nombre: 'Acta de Inicio',
     palabras: ['con-03', 'acta de inicio', 'acta de iniciación', 'acta de iniciacion', 'inicio del contrato', 'se da inicio', 'fecha de inicio del contrato'],
