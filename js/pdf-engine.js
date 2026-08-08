@@ -293,7 +293,36 @@ async function generarPortadaPago(pdfDoc, exp, pago, totalFolios, fontBold, font
   if(instData && instData.rector){
     datos.push({ label: 'RECTOR - ORD. GASTO', valor: sanitizeForPdf(instData.rector.toUpperCase() + (instData.cedulaRector ? ' - C.C. ' + instData.cedulaRector : '')) });
   }
-  datos.push({ label: 'TOTAL SOPORTES', valor: `${totalFolios} folios totales` });
+
+  // ═══════════════════════════════════════
+  // RESUMEN DE PAGOS DEL CONTRATO (balance acumulado)
+  // ═══════════════════════════════════════
+  const todosPagos = (exp.datos && exp.datos.pagos_periodicos) || [];
+  const pagoIdx = todosPagos.findIndex(p => p.id === pago.id);
+  const totalPagosProgramados = todosPagos.length;
+  const numeroPagoActual = pagoIdx >= 0 ? pagoIdx + 1 : pago.numero || 1;
+  const valorContrato = Number(exp.valor) || 0;
+  const valorEstePago = Number(pago.valor_pagado) || 0;
+
+  // Suma acumulada de pagos con valor hasta este pago inclusive
+  const valorAcumulado = todosPagos
+    .slice(0, pagoIdx >= 0 ? pagoIdx + 1 : todosPagos.length)
+    .reduce((s, p) => s + (Number(p.valor_pagado) || 0), 0);
+  const saldoPendiente = valorContrato - valorAcumulado;
+  const porcentajePagado = valorContrato > 0 ? Math.round((valorAcumulado / valorContrato) * 100) : 0;
+
+  if(totalPagosProgramados > 0){
+    datos.push({ label: 'NÚMERO DE PAGO', valor: `PAGO ${numeroPagoActual} DE ${totalPagosProgramados}` });
+    if(valorEstePago > 0){
+      datos.push({ label: 'VALOR ESTE PAGO', valor: '$' + valorEstePago.toLocaleString('es-CO') });
+    }
+    if(valorContrato > 0){
+      datos.push({ label: 'PAGADO ACUMULADO (incluye este)', valor: `$${valorAcumulado.toLocaleString('es-CO')}   (${porcentajePagado}% del contrato)` });
+      datos.push({ label: 'SALDO PENDIENTE POR PAGAR', valor: '$' + saldoPendiente.toLocaleString('es-CO') });
+    }
+  }
+
+  datos.push({ label: 'TOTAL SOPORTES DE ESTE PAGO', valor: `${totalFolios} folios totales` });
 
   let dy = pagoBoxY - 25;
   const boxX = 60;
