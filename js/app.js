@@ -1420,7 +1420,7 @@ async function eliminarVersion(docId, numVersion){
 
   try {
     if(version.storage_path){
-      await DB.deleteArchivo(version.storage_path);
+      await DB._del("archivos", version.storage_path);
       if(SB.isActive()) await SB.deletePDF(version.storage_path);
     }
     doc.versiones_anteriores = doc.versiones_anteriores.filter(v => v.num_version !== numVersion);
@@ -1465,7 +1465,7 @@ async function quitarDocPago(expId, pagoId, tipoId){
   if(!confirm(msg)) return;
   try {
     if(doc && doc.storage_path){
-      await DB.deleteArchivo(doc.storage_path);
+      await DB._del("archivos", doc.storage_path);
       if(SB.isActive()) await SB.deletePDF(doc.storage_path);
     }
     // Eliminar también los storage_path de las versiones anteriores
@@ -1473,7 +1473,7 @@ async function quitarDocPago(expId, pagoId, tipoId){
       for(const v of doc.versiones_anteriores){
         if(v.storage_path){
           try {
-            await DB.deleteArchivo(v.storage_path);
+            await DB._del("archivos", v.storage_path);
             if(SB.isActive()) await SB.deletePDF(v.storage_path);
           } catch(err){ console.warn('No se pudo eliminar versión anterior:', err); }
         }
@@ -1694,7 +1694,7 @@ async function eliminarPagoPeriodo(expId, pagoId){
   const docsDelPago = docs.filter(d => d.pago_id === pagoId);
   for(const d of docsDelPago){
     if(d.storage_path){
-      await DB.deleteArchivo(d.storage_path);
+      await DB._del("archivos", d.storage_path);
       if(SB.isActive()) await SB.deletePDF(d.storage_path);
     }
     await DB.deleteDocumento(d.id);
@@ -1836,7 +1836,7 @@ async function borrarTodosDocumentos(expId){
         // Borrar archivo principal
         if(d.storage_path){
           try {
-            await DB.deleteArchivo(d.storage_path);
+            await DB._del("archivos", d.storage_path);
             if(SB.isActive()) await SB.deletePDF(d.storage_path);
             archivosBorrados++;
           } catch(err){ console.warn('No se pudo borrar archivo:', d.storage_path); }
@@ -1846,7 +1846,7 @@ async function borrarTodosDocumentos(expId){
           for(const v of d.versiones_anteriores){
             if(v.storage_path){
               try {
-                await DB.deleteArchivo(v.storage_path);
+                await DB._del("archivos", v.storage_path);
                 if(SB.isActive()) await SB.deletePDF(v.storage_path);
                 archivosBorrados++;
               } catch(err){ console.warn('No se pudo borrar versión:', v.storage_path); }
@@ -1905,7 +1905,7 @@ async function borrarDocsDePago(expId, pagoId){
       try {
         if(d.storage_path){
           try {
-            await DB.deleteArchivo(d.storage_path);
+            await DB._del("archivos", d.storage_path);
             if(SB.isActive()) await SB.deletePDF(d.storage_path);
             archivosBorrados++;
           } catch(err){ console.warn('No se pudo borrar archivo:', d.storage_path); }
@@ -1914,7 +1914,7 @@ async function borrarDocsDePago(expId, pagoId){
           for(const v of d.versiones_anteriores){
             if(v.storage_path){
               try {
-                await DB.deleteArchivo(v.storage_path);
+                await DB._del("archivos", v.storage_path);
                 if(SB.isActive()) await SB.deletePDF(v.storage_path);
                 archivosBorrados++;
               } catch(err){}
