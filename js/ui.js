@@ -737,8 +737,12 @@ function renderSeccionPagosPeriodicos(exp, docsSubidos, bloqueado){
             <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editarPagoPeriodo('${exp.id}','${pago.id}')" title="Editar periodo, concepto, fecha, valor y factura">
               <i class="bi bi-pencil"></i>
             </button>
+            ${docsTotalesDelPago > 0 ? `
+            <button class="btn btn-sm btn-outline-warning ms-1" onclick="borrarDocsDePago('${exp.id}','${pago.id}')" title="Borrar TODOS los documentos de este pago (mantiene el bloque vacío)">
+              <i class="bi bi-eraser"></i>
+            </button>` : ''}
             ${(FORMAS_PAGO[exp.datos.forma_pago].numPagos === 0) ? `
-            <button class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPagoPeriodo('${exp.id}','${pago.id}')" title="Eliminar este pago">
+            <button class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPagoPeriodo('${exp.id}','${pago.id}')" title="Eliminar este pago completamente">
               <i class="bi bi-trash"></i>
             </button>` : ''}
             ` : ''}

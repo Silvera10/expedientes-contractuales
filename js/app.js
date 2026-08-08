@@ -1817,14 +1817,42 @@ async function borrarTodosDocumentos(expId){
     toast('No hay documentos para borrar', 'info');
     return;
   }
-  if(!confirm(`¿Borrar TODOS los ${docs.length} documentos del expediente?\n\nEl expediente se mantiene, solo se borran los archivos subidos.\n\nEsta acción no se puede deshacer.`)){
-    return;
-  }
-  toast(`Borrando ${docs.length} documentos...`, 'info');
+  const docsPagos = docs.filter(d => d.pago_id).length;
+  const docsRegs = docs.length - docsPagos;
+  const versiones = docs.reduce((s, d) => s + (d.versiones_anteriores?.length || 0), 0);
+  const msg = `¿Borrar TODOS los documentos del expediente?\n\n` +
+              `• ${docsRegs} documentos regulares\n` +
+              `• ${docsPagos} documentos de pagos periódicos\n` +
+              `• ${versiones} versiones anteriores conservadas\n\n` +
+              `El expediente se mantiene (con su modalidad y pagos), solo se borran los ARCHIVOS subidos.\n\n` +
+              `⚠️ Esta acción NO se puede deshacer.`;
+  if(!confirm(msg)) return;
+  toast(`Borrando ${docs.length} documentos + ${versiones} versiones...`, 'info');
   try {
     let borrados = 0;
+    let archivosBorrados = 0;
     for(const d of docs){
       try {
+        // Borrar archivo principal
+        if(d.storage_path){
+          try {
+            await DB.deleteArchivo(d.storage_path);
+            if(SB.isActive()) await SB.deletePDF(d.storage_path);
+            archivosBorrados++;
+          } catch(err){ console.warn('No se pudo borrar archivo:', d.storage_path); }
+        }
+        // Borrar archivos de versiones anteriores
+        if(d.versiones_anteriores){
+          for(const v of d.versiones_anteriores){
+            if(v.storage_path){
+              try {
+                await DB.deleteArchivo(v.storage_path);
+                if(SB.isActive()) await SB.deletePDF(v.storage_path);
+                archivosBorrados++;
+              } catch(err){ console.warn('No se pudo borrar versión:', v.storage_path); }
+            }
+          }
+        }
         await DB.deleteDocumento(d.id);
         borrados++;
       } catch(e){
@@ -1842,9 +1870,68 @@ async function borrarTodosDocumentos(expId){
 
     await actualizarEstadoExpediente(expId);
     renderDetalleExpediente(expId);
-    toast(`✓ ${borrados} documentos borrados. Expediente vacío listo para subir de nuevo.`, 'success');
+    toast(`✓ ${borrados} documentos + ${archivosBorrados} archivos borrados. Expediente vacío.`, 'success');
   } catch(e){
     console.error('Error borrando documentos:', e);
+    toast('Error: ' + e.message, 'danger');
+  }
+}
+
+async function borrarDocsDePago(expId, pagoId){
+  const exp = DB.getExpediente(expId);
+  if(!exp || exp.estado === 'bloqueado') return;
+  const pago = (exp.datos?.pagos_periodicos || []).find(p => p.id === pagoId);
+  if(!pago){ toast('Pago no encontrado', 'danger'); return; }
+
+  const allDocs = await DB.loadDocumentos(expId);
+  const docsDelPago = allDocs.filter(d => d.pago_id === pagoId);
+  if(!docsDelPago.length){
+    toast('Este pago no tiene documentos cargados', 'info');
+    return;
+  }
+  const versiones = docsDelPago.reduce((s, d) => s + (d.versiones_anteriores?.length || 0), 0);
+  const msg = `¿Borrar TODOS los ${docsDelPago.length} documentos del PAGO ${String(pago.numero).padStart(2,'0')} — ${pago.periodo}?\n\n` +
+              `• ${docsDelPago.length} documentos (requeridos + habilitantes)\n` +
+              `${versiones > 0 ? `• ${versiones} versiones anteriores conservadas\n` : ''}` +
+              `\nEl bloque de PAGO se mantiene vacío (mantiene fecha, valor, concepto).\n\n` +
+              `⚠️ Esta acción NO se puede deshacer.`;
+  if(!confirm(msg)) return;
+
+  toast(`Borrando ${docsDelPago.length} documentos del PAGO ${pago.numero}...`, 'info');
+  try {
+    let borrados = 0;
+    let archivosBorrados = 0;
+    for(const d of docsDelPago){
+      try {
+        if(d.storage_path){
+          try {
+            await DB.deleteArchivo(d.storage_path);
+            if(SB.isActive()) await SB.deletePDF(d.storage_path);
+            archivosBorrados++;
+          } catch(err){ console.warn('No se pudo borrar archivo:', d.storage_path); }
+        }
+        if(d.versiones_anteriores){
+          for(const v of d.versiones_anteriores){
+            if(v.storage_path){
+              try {
+                await DB.deleteArchivo(v.storage_path);
+                if(SB.isActive()) await SB.deletePDF(v.storage_path);
+                archivosBorrados++;
+              } catch(err){}
+            }
+          }
+        }
+        await DB.deleteDocumento(d.id);
+        borrados++;
+      } catch(e){
+        console.warn('Error borrando ' + d.id + ':', e);
+      }
+    }
+    await actualizarEstadoExpediente(expId);
+    renderDetalleExpediente(expId);
+    toast(`✓ PAGO ${pago.numero}: ${borrados} documentos + ${archivosBorrados} archivos borrados.`, 'success');
+  } catch(e){
+    console.error('Error:', e);
     toast('Error: ' + e.message, 'danger');
   }
 }
