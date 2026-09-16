@@ -2638,6 +2638,7 @@ async function foliarYOrganizarPDF(expId, inputEl){
         // Orden por especificidad: primero los más específicos
         { pats: ['plan de compras', 'plan compras', 'certificacion plan'], tipo: 'cert_plan_compras' },
         { pats: ['estudio previo', 'estudios previos'], tipo: 'estudio_previo' },
+        { pats: ['proyecto recursos destinacion especifica', 'proyecto recursos destinación específica', 'proyecto de recursos destinacion especifica', 'proyecto de recursos destinación específica', 'recursos destinacion especifica', 'recursos destinación específica', 'recursos de destinacion especifica', 'recursos de destinación específica', 'destinacion especifica', 'destinación específica', 'proyecto sgp', 'proyecto fse', 'proyecto rde', 'proyecto de inversion', 'proyecto de inversión', 'justificacion proyecto', 'justificación proyecto', 'proyecto recursos', 'proyecto contrato', 'proyecto contratacion', 'proyecto contratación', 'proyecto rentas cedidas', 'proyecto convenio', 'proyecto ley 21', 'proyecto ley 715'], tipo: 'proyecto_recursos_esp' },
         { pats: ['solicitud cdp', 'solicitud de cdp'], tipo: 'solicitud_cdp' },
         { pats: ['cdp'], tipo: 'cdp' },
         { pats: ['invitacion', 'invitación'], tipo: 'invitacion' },

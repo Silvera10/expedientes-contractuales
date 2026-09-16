@@ -29,6 +29,7 @@ const DOC_TIPOS = [
   // \u2500\u2500 1. FASE PRECONTRACTUAL / PLANEACI\u00d3N (etapa 'pre') \u2500\u2500
   { id:'cert_plan_compras',  nombre:'Certificaci\u00f3n Plan de Compras',    etapa:'pre', orden:1,  icon:'bi-clipboard2-check',    color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-01' },
   { id:'estudio_previo',     nombre:'Estudio Previo / Necesidad',       etapa:'pre', orden:2,  icon:'bi-file-earmark-ruled',  color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-02' },
+  { id:'proyecto_recursos_esp',nombre:'Proyecto Recursos Destinación Específica',etapa:'pre',orden:2.5,icon:'bi-diagram-3',      color:'#20c997', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-17' },
   { id:'solicitud_cdp',      nombre:'Solicitud de CDP',                 etapa:'pre', orden:3,  icon:'bi-file-earmark-arrow-up', color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-03' },
   { id:'cdp',                nombre:'CDP (Disponibilidad Presupuestal)', etapa:'pre', orden:4, icon:'bi-file-earmark-check',  color:'#0d6efd', vigencia_dias:null, regla:'antes_contrato', codigo:'PRE-04' },
   { id:'resolucion_mod_cdp', nombre:'Resoluci\u00f3n de Modificaci\u00f3n del CDP',etapa:'pre', orden:4.5,icon:'bi-arrow-repeat',     color:'#0d6efd', vigencia_dias:null, regla:null, codigo:'PRE-12' },

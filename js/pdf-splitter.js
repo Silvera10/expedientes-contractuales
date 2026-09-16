@@ -47,6 +47,12 @@ const DETECTOR_REGLAS = [
     peso: 4
   },
   {
+    tipo: 'proyecto_recursos_esp',
+    nombre: 'Proyecto Recursos Destinación Específica',
+    palabras: ['pre-17', 'proyecto recursos destinación específica', 'proyecto recursos destinacion especifica', 'recursos de destinación específica', 'recursos de destinacion especifica', 'recursos destinación específica', 'recursos destinacion especifica', 'destinación específica', 'destinacion especifica', 'proyecto sgp', 'sistema general de participaciones', 'proyecto fse', 'fondo de servicios educativos', 'ley 715 de 2001', 'decreto 4791 de 2008', 'rentas cedidas', 'proyecto de inversión educativa', 'proyecto de inversion educativa', 'justificación del proyecto', 'justificacion del proyecto', 'proyecto que justifica', 'recursos con destinación', 'recursos con destinacion', 'transferencias con destinación', 'transferencias con destinacion'],
+    peso: 4
+  },
+  {
     tipo: 'solicitud_cdp',
     nombre: 'Solicitud de CDP',
     palabras: ['pre-03', 'solicitud de cdp', 'solicitud de disponibilidad', 'solicitud certificado de disponibilidad', 'solicitar cdp', 'solicitud disponibilidad presupuestal', 'se solicita expedir cdp', 'solicito expedir'],
